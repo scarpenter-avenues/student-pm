@@ -22,9 +22,9 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
 ## How the mock-up works
 
 - **Demo roles:** use the profile button (top right, shows initials) → **Preview as**:
-  - Student (Avery K.) — the default on load. Her Sprint 2 check-in is overdue, so the check-in pop-up appears on page load.
+  - Student (Avery K.) — the default on load. Her Sprint 2 check-in is overdue, so the check-in pop-up appears on page load. Avery also has one paused goal.
   - Student · no goal yet (Mina L.) — shows the set-a-goal pop-up and setup.
-  - Team lead (Jordan M.)
+  - Team lead (Jordan M.) — Jordan's goal date (End of Sprint 2) has passed, so the "date passed" pop-up appears.
   - Team mentor (Ms. Patel)
   - Program coach (Coach Rivera)
 - **"Later" on goal pop-ups** is remembered for the browser tab's session (`sessionStorage`), so it won't reappear on refresh. Use a new tab to see it again.
@@ -37,7 +37,8 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
 
 - **Top bar:** team badge (an icon or a colored number block) plus the team name. Program coaches and team mentors get a ⌄ switcher: Coaches' Dashboard and their team(s). Also the Announcements button (with unread count) and the profile/preview menu.
 - **Announcement banner** (on task tabs): lists *every* unread announcement, each with its own "Mark read". There is no "Mark all read" or "All announcements" link.
-- **Team tabs:** Team Home · Backlog · Board · List · Timeline · Goals · Settings (gear icon, right-aligned).
+- **Team tabs:** Team Home · Planning · My Tasks · Board · List · Timeline · Goals · Settings (gear icon, right-aligned).
+- **My Tasks:** the Board filtered to the signed-in user (assignee filter hidden, empty columns kept, ＋ Add task pre-assigns you).
 - **Team Home:**
   - Tiptap notes with Edit / Cancel / Save floating at the top right of the notes area.
   - Events column: the real 2026–27 calendar.
@@ -47,7 +48,7 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
     - The family social and open lab events were removed at the user's request.
   - ＋ Announcement button.
 - **Sprint objectives** (Board / List / Timeline, under the sprint title): one line each (max 80 characters), subteam tags, met checkbox, competition countdown chip, collapsible. The sprint dropdown includes **All sprints**, which groups objectives by sprint.
-- **Backlog:**
+- **Planning tab** (formerly "Backlog"; code still calls it `backlog`, and the unplanned pool section is still named Backlog):
   - Dense planning view: 12px text, ~29px rows.
   - One pinned column header at the top (no per-section headers); fixed column widths so sections line up.
   - Collapsible sprint sections, each with a collapsible Objectives panel (collapsed by default).
@@ -58,6 +59,13 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
   - The board is exactly one screen tall, so when scrolled to the bottom the column titles sit under the top bar.
   - Cards show the subteam tag top-right; the priority dot was removed.
 - **List / Backlog column order:** Name · Type · Subteam · Assignee · Due date · Status · Priority. The Backlog adds a Move to column. Subteam cells use the colored tags.
+- **No done-circles anywhere** (circles mean select): tasks and subtasks are marked done by changing Status (task panel, Status column, a per-subtask status menu in the task panel, and inline in List/Backlog subtask rows). Exception: board card subtasks have a square checkbox to the right of the text (Done ↔ To do), since the board has no Status column; done subtasks get strikethrough.
+- **Multi-select in list views** (List, Backlog, Coaches' Dashboard All tasks): the row circle **selects** the row and fills like a radio button. Shift-click selects a range; Esc or Clear deselects; switching tabs clears. A floating bulk bar appears at the bottom:
+  - Backlog: Move to · Status · Priority · Assign (Move to clears the selection afterward).
+  - List: Status · Priority · Assign.
+  - Dashboard: Status · Priority only (teams have different rosters).
+  - Assign adds a person to each task (or Unassign). There's no bulk Delete because there's no single-task delete yet.
+  - Subtask rows in List and Backlog are selectable too and can be mixed with tasks (Status · Priority · Assign apply to both). Move to appears only when a task is selected; subtasks travel with their parent.
 - **Timeline:**
   - Grouped by subteam; status shown by bar color plus icon (gray/orange/green = To do/In progress/Done).
   - Event markers and lines; dense rows (34px).
@@ -74,6 +82,10 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
   - **Edit** opens on the review screen.
   - Goals read as written, verb-first, e.g. "Learn Java for FTC".
   - **Status scale:** Haven't started · Stuck · Making progress · Almost there · Got it. Avoid "Not yet": it's the school's lowest grade.
+  - **Multiple goals:** up to 3 active at once (`maxActiveGoals`). "＋ New goal" on My goal; the wizard intro says "Add another goal" when one exists. Each goal gets its own check-in, Edit, and Pause.
+  - **Pause:** tap-only reasons (no free text). Paused goals skip check-ins, are hidden from teammates, and sit in a **Paused goals** container under My goal with Resume. Coaches see them in student detail and as a "Goal paused" dashboard flag/filter.
+  - **Date passed:** when an active goal's "by" date is past → Keep going (wizard opens on the By step) · I got it (reflection) · Change my goal (new goal; old one becomes "Changed" in history) · Pause it. Dashboard flag/filter "Date passed".
+  - **Arrival pop-up** covers every active goal: no goal (or only paused goals → Resume / Set a new goal), due check-ins, passed dates, new feedback. "Start (N steps)" runs them in a queue (`goalQueue`; date decisions before check-ins; Cancel drops the rest).
   - **Check-in each sprint**, by pop-up on arrival when due (or when there's new feedback, or the student has no goal):
     1. Status.
     2. Evidence = finished tasks *in the covered sprint*; tasks from this goal are listed first and pre-ticked.
@@ -89,7 +101,7 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
   - Anyone can post an announcement to their own team.
 - **Coaches' Dashboard** (from the ⌄ menu; dark "All" badge):
   - **All tasks:** grouped by team; sprint filter (Previous / Current / Next / All Tasks), relative to each team's own sprints.
-  - **Goals:** grouped by team. Columns: Student · Goal · By · Status · Last check-in · Next check-in · Coach feedback · Attention. Filters, plus student detail with feedback tools.
+  - **Goals:** grouped by team, one row per active goal (student name on the first). Columns: Student · Goal · By · Status · Last check-in · Next check-in · Coach feedback · Attention. Filters, plus student detail with feedback tools.
 - **Settings:**
   - Team name, FTC number, color, and icon (program coach / mentors only; the icon is resized to 128px).
   - Members (name, role, subteams; no emails shown; adding someone requires a school email).
@@ -110,7 +122,7 @@ Tests are ad-hoc scripts injected before `</body>` into a scratch copy of `index
 
 ## Open items / next steps
 
-- **Goals:** a "date passed" flow (Keep going / Mark done / Change goal); reminders for coaches.
+- **Goals:** reminders for coaches (email/notification; needs the approved email method).
 - **Data:** unify board and backlog data; then design the Firestore data model and security rules (the brief's suggested starting point). Assignees become arrays of UIDs (`array-contains` for "My tasks").
-- **Not built yet:** team chat (or link to Google Chat spaces, pending approval), "My Tasks", drag-and-drop (planned for the React build; keep Move to and the tap menus for touch and keyboard), a bulk "Move selected to…" in the Backlog, a recurring-event option, and a Safari clear button for date fields.
+- **Not built yet:** team chat (or link to Google Chat spaces, pending approval), drag-and-drop (planned for the React build; keep Move to and the tap menus for touch and keyboard), task delete (single and bulk), a recurring-event option, and a Safari clear button for date fields.
 - Confirm the Onshape spelling ("OnShape" was kept as the user wrote it in the goal ideas) and the qualifier dates against the official FIRST NYC schedule.

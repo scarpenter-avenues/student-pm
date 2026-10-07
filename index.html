@@ -113,6 +113,7 @@
     .card-subtask-row { display: flex; align-items: center; gap: 8px; min-height: 37px; padding: 5px 3px; border-bottom: 1px solid #edf0f3; }
     .card-subtask-open { flex: 1; min-width: 0; overflow: hidden; padding: 4px 0; border: 0; background: transparent; color: #3f474e; font: inherit; font-size: 13px; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
     .card-subtask-row.completed .card-subtask-open { color: #828a91; text-decoration: line-through; }
+    .card-subtask-done { flex: 0 0 auto; width: 15px; height: 15px; margin: 0 2px 0 0; accent-color: var(--green); cursor: pointer; }
     .card-subtask-add { min-height: 34px; padding: 0 2px; border: 0; background: transparent; color: #68747e; font: inherit; font-size: 13px; text-align: left; }
     .card-subtask-add:hover { color: #2864c7; }
     .card-subtask-draft { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 5px; padding: 7px 0; }
@@ -143,10 +144,15 @@
     .task-name-cell { white-space: nowrap; }
     .task-name-cell > * { vertical-align: middle; }
     .task-name-cell > * + * { margin-left: 8px; }
-    .task-check { display: inline-grid; flex: 0 0 auto; place-items: center; width: 17px; height: 17px; padding: 0; border: 1px solid #adb7b2; border-radius: 50%; background: white; color: transparent; font-size: 10px; line-height: 1; }
-    .task-check::after { content: "✓"; }
-    .task-check:hover { border-color: var(--green); color: var(--green); }
-    .task-check.is-done { border-color: var(--green); background: var(--green); color: #fff; }
+    /* List rows: the circle selects the row for bulk actions and fills like a radio button. Tasks are marked done by changing Status. */
+    .row-select { display: inline-block; flex: 0 0 auto; width: 17px; height: 17px; padding: 0; border: 1px solid #adb7b2; border-radius: 50%; background: white; }
+    .row-select:hover { border-color: var(--team-ink); }
+    .row-select[aria-pressed="true"] { border-color: var(--team-ink); background: radial-gradient(circle, var(--team-ink) 0 45%, #fff 50%); }
+    #backlogView .row-select, #orgPage .row-select { width: 15px; height: 15px; }
+    .list-view tbody tr.is-selected, .backlog-table tr.is-selected { background: var(--team-softer); }
+    .bulk-bar { position: fixed; z-index: 35; bottom: 18px; left: 50%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 8px 10px 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: var(--shadow); font-size: 13px; transform: translateX(-50%); }
+    .bulk-bar strong { margin-right: 4px; white-space: nowrap; }
+    .bulk-bar .bulk-clear { margin-left: 4px; font-size: 12px; }
     .subtask-toggle { width: 22px; height: 26px; flex: 0 0 auto; padding: 0; border: 0; background: transparent; color: #737d86; font-size: 13px; }
     .subtask-toggle[aria-expanded="true"] { color: #356fd1; }
     .subtask-parent-count { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; color: #6e7881; font-size: 12px; font-weight: 500; }
@@ -559,11 +565,12 @@
     .detail-work-heading h2 { margin: 0; font-size: 17px; }
     .detail-work-count { color: #737d86; font-size: 12px; }
     .subtask-list, .comment-list { display: grid; gap: 7px; }
-    .subtask-item { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 42px; padding: 5px 8px; border: 1px solid #edf0f3; border-radius: 5px; }
+    .subtask-status { height: 26px; padding: 0 4px; border: 1px solid #d5dce5; border-radius: 5px; background: #fff; color: #4b5560; font-size: 12px; }
+    .subtask-item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; min-height: 42px; padding: 5px 8px; border: 1px solid #edf0f3; border-radius: 5px; }
     .subtask-item .subtask-panel-title { min-width: 0; padding: 4px 0; border: 0; background: transparent; color: #303941; font: inherit; font-size: 14px; text-align: left; }
     .subtask-item .subtask-panel-title:hover { color: #2864c7; text-decoration: underline; }
     .subtask-item.completed .subtask-panel-title { color: #828a91; text-decoration: line-through; }
-    .subtask-panel-meta { grid-column: 2 / -1; color: #737d86; font-size: 12px; }
+    .subtask-panel-meta { grid-column: 1 / -1; color: #737d86; font-size: 12px; }
     .list-subtask-row td { background: #fcfdff; }
     .list-subtask-name { display: flex; align-items: center; gap: 9px; padding-left: 72px !important; }
     .list-subtask-name .task-title-open { font-size: 14px; }
@@ -686,7 +693,6 @@
     #backlogView .backlog-status, #backlogView .state-pill { padding: 1px 6px; font-size: 12px; line-height: 18px; }
     #backlogView .task-name-cell > * + * { margin-left: 6px; }
     #backlogView .tag { padding: 1px 6px; font-size: 12px; line-height: 18px; }
-    #backlogView .task-check { width: 15px; height: 15px; font-size: 9px; }
     #backlogView .subtask-toggle { width: 18px; height: 20px; font-size: 11px; }
     #backlogView .list-subtask-name { padding-left: 58px !important; }
     #backlogView .list-subtask-name .task-title-open { font-size: 12px; }
@@ -873,6 +879,22 @@
     .history-top strong { font-size: 15px; }
     .history-meta { margin: 0; color: #737d86; font-size: 12px; }
     .history-entry .text-button { justify-self: start; padding: 2px 0; font-size: 12px; }
+    .goal-block + .goal-block { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .goal-block-actions { margin: 0 0 10px; }
+    .goal-block-actions .goal-button { height: 30px; padding: 0 11px; font-size: 13px; }
+    .paused-goals { margin-top: 18px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .paused-goals summary { color: #4b5560; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .paused-goal { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px 12px; margin-top: 8px; padding: 9px 12px; border: 1px dashed #cfd6dd; border-radius: 8px; background: #f7f8fa; }
+    .paused-goal strong { color: #4b5560; font-size: 14px; }
+    .paused-goal .goal-button { height: 30px; padding: 0 11px; font-size: 13px; }
+    .paused-goal .goal-timeline-wrap { flex-basis: 100%; }
+    .history-entry.h-paused, .history-entry.h-changed { border-left-color: #cfd6dd; }
+    .goal-options { display: grid; gap: 8px; }
+    .goal-option { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #fff; text-align: left; }
+    .goal-option strong { color: #202124; font-size: 15px; }
+    .goal-option span { color: #66717a; font-size: 13px; }
+    .goal-option:hover, .goal-option:focus-visible { border-color: var(--team-line); background: var(--team-softer); }
+    .goal-row-more td { border-top-color: transparent; }
     .goal-modal-overlay { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(22, 32, 29, .38); }
     .goal-modal { width: min(560px, 100%); max-height: calc(100vh - 32px); overflow-y: auto; padding: 20px 22px; border-radius: 12px; background: #fff; box-shadow: var(--shadow); }
     .goal-modal h2 { margin: 6px 0 4px; font-size: 20px; line-height: 1.3; }
@@ -983,7 +1005,6 @@
     #orgPage .backlog-table th { padding-top: 5px; padding-bottom: 5px; color: #89938f; font-weight: 600; }
     #orgPage .backlog-status, #orgPage .state-pill { padding: 1px 6px; font-size: 12px; line-height: 18px; }
     #orgPage .tag { padding: 1px 6px; font-size: 12px; line-height: 18px; }
-    #orgPage .task-check { width: 15px; height: 15px; font-size: 9px; }
     #orgPage .task-name-cell > * + * { margin-left: 6px; }
     #orgPage .task-name-cell .task-title-open { max-width: calc(100% - 24px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     #orgPage .assignee-display .avatar { width: 18px; height: 18px; font-size: 7px; }
@@ -1017,7 +1038,8 @@
        scrolling to the bottom parks the column titles right under the top bar with every column's bottom in view. */
     :root { --topbar-h: 99px; }
     .board { box-sizing: border-box; height: calc(100vh - var(--topbar-h)); grid-template-rows: minmax(0, 1fr); }
-    #boardPage[data-view="board"] { padding-bottom: 0; }
+    #boardPage[data-view="board"], #boardPage[data-view="mytasks"] { padding-bottom: 0; }
+    #boardPage[data-view="mytasks"] #assigneeFilter { display: none; }
     .column, .column:first-child { display: flex; flex-direction: column; max-height: 100%; padding: 0 8px 8px; border: 0; border-radius: 10px; background: var(--team-wash); }
     .column-head { flex: 0 0 auto; padding: 0 4px; }
     .column .task-list { flex: 1 1 auto; min-height: 0; padding: 2px 2px 4px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
@@ -1042,7 +1064,8 @@
         </div>
         <nav class="tabs-row" aria-label="Team workspace views">
           <button type="button" class="top-tab" data-workspace-view="info">Team Home</button>
-          <button type="button" class="top-tab" data-workspace-view="backlog">Backlog</button>
+          <button type="button" class="top-tab" data-workspace-view="backlog">Planning</button>
+          <button type="button" class="top-tab" data-workspace-view="mytasks">My Tasks</button>
           <button type="button" class="top-tab active" data-workspace-view="board">Board</button>
           <button type="button" class="top-tab" data-workspace-view="list">List</button>
           <button type="button" class="top-tab" data-workspace-view="timeline">Timeline</button>
@@ -1142,7 +1165,7 @@
         </div></div>
         <section class="sprint-objectives" id="sprintObjectives" data-objectives-sprint="main" aria-label="Sprint objectives"></section>
         <p class="sprint-view-note" id="sprintViewNote" hidden></p>
-        <div class="board-meta"><span><strong id="taskCount">8 tasks</strong> · Current sprint</span><span class="board-meta-right"><span class="mini-avatars" id="teamAvatars"></span></span></div>
+        <div class="board-meta"><span><strong id="taskCount">8 tasks</strong> · <span id="taskScope">Current sprint</span></span><span class="board-meta-right"><span class="mini-avatars" id="teamAvatars"></span></span></div>
         <div class="board" id="boardView">
           <section class="column" data-state="todo"><div class="column-head"><span class="column-name">To do</span><span class="column-count">2</span></div><div class="task-list">
             <button class="task-card" type="button" data-title="Update intake checklist" data-detail="Review the current intake checklist and add the new inspection steps before the next practice run." data-subteam="Mechanical" data-assignee="Jordan M." data-start="2026-10-06" data-due="2026-10-09" data-priority="High" data-state="To do"><h3>Update intake checklist</h3><span class="tag-row"><span class="tag mechanical">Mechanical</span></span><span class="task-footer"><span class="assignee"><span class="avatar">JM</span>Jordan M.</span><span class="task-due">Oct 09</span></span></button>
@@ -1195,7 +1218,7 @@
             <div><h2 id="orgGoalsHeading">Goals</h2><p id="orgGoalsSummary"></p></div>
             <div class="sprint-controls">
               <select class="select-control" id="orgGoalStatus" aria-label="Filter by goal status"><option value="all">Any status</option><option>Haven't started</option><option>Stuck</option><option>Making progress</option><option>Almost there</option><option value="none">No goal yet</option></select>
-              <select class="select-control" id="orgGoalFlag" aria-label="Filter by attention"><option value="any">Everyone</option><option value="attention">Needs attention</option><option value="stuck">Stuck</option><option value="overdue">Check-in due or overdue</option><option value="feedback">Needs coach feedback</option><option value="plan">Plan didn't work twice</option><option value="none">No goal yet</option></select>
+              <select class="select-control" id="orgGoalFlag" aria-label="Filter by attention"><option value="any">Everyone</option><option value="attention">Needs attention</option><option value="stuck">Stuck</option><option value="overdue">Check-in due or overdue</option><option value="feedback">Needs coach feedback</option><option value="plan">Plan didn't work twice</option><option value="passed">Goal date passed</option><option value="none">No goal yet</option><option value="paused">Goal paused</option></select>
               <select class="select-control" id="orgGoalTeam" aria-label="Filter by team"></select>
               <input class="search-control" id="orgGoalSearch" type="search" placeholder="⌕  Find a student or goal" aria-label="Find a student or goal">
             </div>
@@ -1278,6 +1301,9 @@
     let activeSubtaskParent = null;
     let activeTaskDraft = null;
     let isCreatingTask = false;
+    const bulk = { view: null, selected: new Set(), last: null, hold: false };
+    let orgRowLookup = new Map();
+    const bulkParents = new WeakMap();
     const dayMilliseconds = 86400000;
     const currentSprintIndex = 2;
     const eventTypes = { Competition: "🏆", "Work session": "🔧", Other: "📌" };
@@ -1543,8 +1569,14 @@
       }
       updateSprintDateTitles();
     }
+    // Editing dates doesn't expand the sprint: a collapsed sprint shows the editor just below its header, outside the <details>.
+    function placeSprintDateEditor(section) {
+      const editor = section.dateEditor;
+      if (!editor) return;
+      if (section.open) section.querySelector("summary").after(editor); else section.after(editor);
+    }
     function openSprintDateEditor(section, index) {
-      let editor = section.querySelector(".sprint-date-editor");
+      let editor = section.dateEditor;
       if (!editor) {
         editor = document.createElement("div");
         editor.className = "sprint-date-editor";
@@ -1558,7 +1590,8 @@
         const hint = document.createElement("p"); hint.className = "sprint-date-hint"; hint.textContent = "Changing the end date shifts all later sprints by the same number of days.";
         actions.append(save, cancel); startLabel.append(startInput); endLabel.append(endInput);
         editor.append(startLabel, endLabel, actions, hint);
-        section.querySelector("summary").after(editor);
+        section.dateEditor = editor;
+        section.addEventListener("toggle", () => placeSprintDateEditor(section));
         save.addEventListener("click", () => {
           saveSprintDateRange(index, startInput.value, endInput.value);
           editor.hidden = true;
@@ -1573,10 +1606,12 @@
       hint.textContent = followingSprint
         ? `Later sprints shift by the same number of days when this sprint ends. Next: ${followingSprint.name} · ${formatMonthDay(followingSprint.start, true)} – ${formatMonthDay(followingSprint.end, true)}.`
         : "Changing the end date shifts all later sprints by the same number of days.";
+      placeSprintDateEditor(section);
       editor.hidden = false;
       editor.querySelector("[data-sprint-start]").focus();
     }
     function setPage(page) {
+      clearSelection();
       const showArchive = page === "announcements";
       const showOrg = page === "org";
       boardPage.style.display = showArchive || showOrg ? "none" : "block";
@@ -1734,11 +1769,14 @@
       const list = document.createElement("div"); list.className = "card-subtask-list"; list.hidden = !card.taskExpanded;
       card.taskSubtasks.forEach((subtask, index) => {
         const row = document.createElement("div"); row.className = `card-subtask-row${subtask.state === "Done" ? " completed" : ""}`;
-        const check = document.createElement("button"); check.type = "button"; check.className = `task-check${subtask.state === "Done" ? " is-done" : ""}`; check.setAttribute("aria-label", `${subtask.state === "Done" ? "Reopen" : "Complete"} ${subtask.title}`);
-        check.addEventListener("click", event => { event.stopPropagation(); subtask.state = subtask.state === "Done" ? "To do" : "Done"; renderCardSubtasks(card); renderList(); });
         const title = document.createElement("button"); title.type = "button"; title.className = "card-subtask-open"; title.textContent = subtask.title;
         title.addEventListener("click", () => openSubtaskDetails(card, subtask));
-        row.append(check, title); list.append(row);
+        // Board cards have no Status column, so a checkbox after the text marks a subtask done (circles elsewhere mean "select").
+        const done = document.createElement("input"); done.type = "checkbox"; done.className = "card-subtask-done"; done.checked = subtask.state === "Done";
+        done.setAttribute("aria-label", `Done: ${subtask.title}`);
+        done.addEventListener("click", event => event.stopPropagation());
+        done.addEventListener("change", () => { subtask.state = done.checked ? "Done" : "To do"; renderCardSubtasks(card); renderList(); });
+        row.append(title, done); list.append(row);
       });
       if (card.taskExpanded) {
         const add = document.createElement("button"); add.type = "button"; add.className = "card-subtask-add"; add.textContent = "+ Add subtask";
@@ -1863,7 +1901,7 @@
       activeTaskDraft = { subtasks: [], comments: [] };
       document.getElementById("detailComplete").textContent = "＋ Add task";
       document.getElementById("detailTaskTitle").value = "";
-      detailAssignees.setValue([]);
+      detailAssignees.setValue(boardPage.dataset.view === "mytasks" ? [currentUserName()] : []);
       document.getElementById("detailStart").value = "";
       document.getElementById("detailDue").value = "";
       document.getElementById("detailStatus").value = state;
@@ -1965,12 +2003,14 @@
       }
       collections.subtasks.forEach((subtask, index) => {
         const item = document.createElement("div"); item.className = `subtask-item${subtask.state === "Done" ? " completed" : ""}`;
-        const checkbox = document.createElement("button"); checkbox.type = "button"; checkbox.className = `task-check${subtask.state === "Done" ? " is-done" : ""}`; checkbox.dataset.subtaskIndex = index; checkbox.setAttribute("aria-label", `${subtask.state === "Done" ? "Reopen" : "Complete"} ${subtask.title}`);
+        const status = document.createElement("select"); status.className = "subtask-status"; status.dataset.subtaskIndex = index; status.setAttribute("aria-label", `Status of ${subtask.title}`);
+        fieldOptions.status.forEach(value => status.append(new Option(value, value)));
+        status.value = subtask.state || "To do";
         const title = document.createElement("button"); title.type = "button"; title.className = "subtask-panel-title"; title.textContent = subtask.title;
         title.addEventListener("click", () => activeSubtaskParent ? openSubtaskDetails(activeSubtaskParent, subtask) : activeTaskCard && openSubtaskDetails(activeTaskCard, subtask));
         const remove = document.createElement("button"); remove.type = "button"; remove.className = "subtask-remove"; remove.dataset.removeSubtask = index; remove.setAttribute("aria-label", `Remove subtask ${subtask.title}`); remove.textContent = "×";
-        const meta = document.createElement("span"); meta.className = "subtask-panel-meta"; meta.textContent = `${assigneesOf(subtask).join(", ") || "Unassigned"} · ${subtask.due ? formatTaskDue(subtask.due) : "No date"} · ${subtask.state}`;
-        item.append(checkbox, title, remove, meta); subtaskList.append(item);
+        const meta = document.createElement("span"); meta.className = "subtask-panel-meta"; meta.textContent = `${assigneesOf(subtask).join(", ") || "Unassigned"} · ${subtask.due ? formatTaskDue(subtask.due) : "No date"}`;
+        item.append(title, status, remove, meta); subtaskList.append(item);
       });
 
       const commentList = document.getElementById("commentList");
@@ -2036,7 +2076,9 @@
     }
     function filterTasks() {
       const subteam = document.getElementById("subteamFilter").value;
-      const assignee = document.getElementById("assigneeFilter").value;
+      // My Tasks is the board filtered to the signed-in user, with every column kept so there's always somewhere to add a task.
+      const mine = boardPage.dataset.view === "mytasks";
+      const assignee = mine ? currentUserName() : document.getElementById("assigneeFilter").value;
       const query = document.getElementById("taskSearch").value.trim().toLowerCase();
       let visible = 0;
       document.querySelectorAll(".task-card").forEach(card => {
@@ -2050,9 +2092,10 @@
         const cards = [...column.querySelectorAll(".task-card")];
         const count = cards.filter(card => !card.hidden).length;
         column.querySelector(".column-count").textContent = count;
-        column.hidden = count === 0;
+        column.hidden = count === 0 && !mine;
       });
       document.getElementById("taskCount").textContent = `${visible} ${visible === 1 ? "task" : "tasks"}`;
+      document.getElementById("taskScope").textContent = mine ? `Assigned to you · ${sprintSchedule[currentSprintIndex].name}` : "Current sprint";
       renderList();
     }
     function statusChip(value) {
@@ -2076,8 +2119,7 @@
           card.taskSubtasks ||= [];
           const row = document.createElement("tr");
           const name = document.createElement("td"); name.className = "task-name-cell";
-          const isDone = card.dataset.state === "Done";
-          const check = document.createElement("button"); check.type = "button"; check.className = `task-check${isDone ? " is-done" : ""}`; check.setAttribute("aria-label", `${isDone ? "Reopen" : "Complete"} ${card.dataset.title}`);
+          const check = selectButton("list", card, card.dataset.title);
           const childToggle = document.createElement("button"); childToggle.type = "button"; childToggle.className = "subtask-toggle"; childToggle.setAttribute("aria-expanded", String(card.taskExpanded));
           childToggle.setAttribute("aria-label", `${card.taskExpanded ? "Collapse" : "Expand"} ${card.taskSubtasks.length} subtasks`); childToggle.textContent = card.taskSubtasks.length ? (card.taskExpanded ? "▾" : "▸") : "";
           childToggle.disabled = card.taskSubtasks.length === 0;
@@ -2094,16 +2136,14 @@
           const status = document.createElement("td"); status.className = "inline-editable"; status.dataset.field = "status"; status.append(statusChip(card.dataset.state));
           row.append(name, type, team, owner, due, status, priority);
           row.taskCard = card;
-          row.addEventListener("click", event => { if (!event.target.closest(".task-check, .inline-editable")) openTaskDetails(card); });
-          check.addEventListener("click", event => { event.stopPropagation(); moveTask(card, isDone ? "To do" : "Done"); });
+          row.addEventListener("click", event => { if (!event.target.closest(".row-select, .inline-editable")) openTaskDetails(card); });
           childToggle.addEventListener("click", event => { event.stopPropagation(); if (!card.taskSubtasks.length) return; card.taskExpanded = !card.taskExpanded; renderCardSubtasks(card); renderList(); });
           rows.append(row);
           if (card.taskExpanded && card.taskSubtasks.length) {
             card.taskSubtasks.forEach(subtask => {
               const childRow = document.createElement("tr"); childRow.className = "subtask-row list-subtask-row";
               const childName = document.createElement("td"); childName.className = "list-subtask-name";
-              const childCheck = document.createElement("button"); childCheck.type = "button"; childCheck.className = `task-check${subtask.state === "Done" ? " is-done" : ""}`; childCheck.setAttribute("aria-label", `${subtask.state === "Done" ? "Reopen" : "Complete"} ${subtask.title}`);
-              childCheck.addEventListener("click", event => { event.stopPropagation(); subtask.state = subtask.state === "Done" ? "To do" : "Done"; renderCardSubtasks(card); renderList(); });
+              const childCheck = selectButton("list", subtask, subtask.title, card);
               const childTitle = document.createElement("button"); childTitle.type = "button"; childTitle.className = "task-title-open"; childTitle.textContent = subtask.title;
               childTitle.addEventListener("click", () => openSubtaskDetails(card, subtask));
               childName.append(childCheck, childTitle);
@@ -2114,7 +2154,8 @@
               const childTeam = document.createElement("td"); childTeam.append(subteamTag(subtask.subteam || card.dataset.subteam));
               const childType = document.createElement("td"); childType.textContent = subtask.type || "Task";
               if (subtask.state === "Done") childRow.classList.add("completed");
-              const childStatus = document.createElement("td"); childStatus.append(statusChip(subtask.state || "To do"));
+              const childStatus = document.createElement("td"); childStatus.className = "inline-editable"; childStatus.dataset.field = "status"; childStatus.append(statusChip(subtask.state || "To do"));
+              childRow.taskCard = card; childRow.subtaskRecord = subtask;
               childRow.append(childName, childType, childTeam, childOwner, childDue, childStatus, childPriorityCell); rows.append(childRow);
             });
             const addSubtaskRow = document.createElement("tr"); addSubtaskRow.className = "subtask-add-row";
@@ -2128,6 +2169,7 @@
         addCell.addEventListener("click", () => createSprintDraftRow(rows, label, addRow));
         addRow.append(addCell); rows.append(addRow);
       });
+      syncSelection();
     }
     function formatEventDate(iso) {
       return toUtcDate(iso).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
@@ -2790,14 +2832,14 @@
           document.querySelectorAll(".task-card").forEach(card => rows.push({
             team, sprint: "current", sprintName: sprintSchedule[currentSprintIndex].name, record: card.dataset, status: card.dataset.state,
             open: () => { openTaskDetails(card); setDetailProject(team.profile); },
-            toggle: () => moveTask(card, card.dataset.state === "Done" ? "To do" : "Done", false)
+            setStatus: value => moveTask(card, value, false)
           }));
           document.querySelectorAll("#backlogView .backlog-section").forEach(section => (section.taskRecords || []).forEach(task => {
             const index = section.dataset.sprintIndex === undefined ? null : Number(section.dataset.sprintIndex);
             rows.push({
               team, sprint: index === null ? "backlog" : liveSprintKey(index), sprintName: index === null ? "Backlog" : sprintSchedule[index].name, record: task, status: task.status,
               open: () => { openBacklogTask(task); setDetailProject(team.profile); },
-              toggle: () => { task.status = task.status === "Done" ? "To do" : "Done"; renderBacklogTable(section); }
+              setStatus: value => { task.status = value; renderBacklogTable(section); }
             });
           }));
         } else {
@@ -2805,7 +2847,7 @@
           team.tasks.forEach(task => rows.push({
             team, sprint: task.sprint, sprintName: task.sprint === "backlog" ? "Backlog" : sprints[task.sprint]?.name || "", record: task, status: task.status,
             open: () => openOrgTask(task),
-            toggle: () => { task.status = task.status === "Done" ? "To do" : "Done"; }
+            setStatus: value => { task.status = value; }
           }));
         }
       });
@@ -2817,9 +2859,7 @@
       const tr = document.createElement("tr"); tr.className = "backlog-task-row";
       const task = row.record;
       const name = document.createElement("td"); name.className = "task-name-cell";
-      const check = document.createElement("button"); check.type = "button"; check.className = `task-check${row.status === "Done" ? " is-done" : ""}`;
-      check.setAttribute("aria-label", `${row.status === "Done" ? "Reopen" : "Complete"} ${task.title}`);
-      check.addEventListener("click", () => { row.toggle(); renderOrgList(); });
+      const check = selectButton("org", task, task.title);
       const title = document.createElement("button"); title.type = "button"; title.className = "task-title-open"; title.textContent = task.title;
       title.addEventListener("click", row.open);
       name.append(check, title);
@@ -2855,6 +2895,7 @@
       const teams = dashboardTeams().filter(team => teamFilter.value === "all" || teamFilter.value === String(orgTeams.indexOf(team)));
       const groups = document.getElementById("orgGroups");
       groups.classList.toggle("with-sprint", showSprint);
+      orgRowLookup = new Map(rows.map(row => [row.record, row]));
       groups.replaceChildren(...teams.flatMap(team => {
         const teamRows = rows.filter(row => row.team === team);
         // While searching or filtering by status, hide teams with nothing to show.
@@ -2896,6 +2937,7 @@
       const shown = rows.filter(row => teams.includes(row.team)).length;
       const label = { prev: "each team's previous sprint", current: "each team's current sprint", next: "each team's next sprint", all: "all sprints and backlogs" }[orgSprintFilter];
       document.getElementById("orgSummary").textContent = `${pluralize(shown, "task")} across ${pluralize(teamCount, "team")} · ${label}`;
+      syncSelection();
     }
     function setDetailProject(profile) {
       document.querySelector('.detail-project [data-team="name"]').textContent = profile.name;
@@ -3001,6 +3043,17 @@
         ]
       },
       {
+        id: nextGoalId++, student: "Avery K.", team: "Circuit Breakers", state: "paused", status: "Making progress", created: "2026-09-08", paused: "2026-09-22",
+        wish: "drive consistent cycles in practice matches", evidence: "I finish 5 practice matches in a row without a penalty",
+        by: { label: "End of Sprint 5", date: "2026-11-15" }, obstacle: "I get nervous when people are watching",
+        plan: "If I feel nervous at the controls, then I'll take three slow breaths before the match starts",
+        events: [
+          goalEvent({ type: "created", date: "2026-09-08", author: "Avery K.", team: "Circuit Breakers" }),
+          goalEvent({ type: "checkin", date: "2026-09-15", author: "Avery K.", team: "Circuit Breakers", status: "Making progress", tasks: [], note: "Drove two practice matches.", planResult: "It worked", nextStep: "Drive at the next scrimmage" }),
+          goalEvent({ type: "paused", date: "2026-09-22", author: "Avery K.", team: "Circuit Breakers", reason: "Focusing on my other goal" })
+        ]
+      },
+      {
         id: nextGoalId++, student: "Avery K.", team: "Gear Grinders", state: "done", status: "Got it", created: "2026-01-12", finished: "2026-03-02",
         wish: "wire a REV Control Hub safely", evidence: "I can wire and check the drivetrain motors without help",
         by: { label: "End of season", date: "2026-03-14" }, obstacle: "I rush and skip checking connections",
@@ -3017,7 +3070,7 @@
       {
         id: nextGoalId++, student: "Jordan M.", team: "Circuit Breakers", state: "active", status: "Almost there", created: "2026-09-10",
         wish: "run a design review that ends with a decision", evidence: "Our team picks an intake design at a review I lead, with notes in Team Home",
-        by: { label: "End of Sprint 4", date: "2026-11-01" }, obstacle: "I let discussions go on too long",
+        by: { label: "End of Sprint 2", date: "2026-10-01" }, obstacle: "I let discussions go on too long",
         plan: "If we pass 15 minutes on one idea, then I'll call a vote",
         events: [
           goalEvent({ type: "created", date: "2026-09-10", author: "Jordan M.", team: "Circuit Breakers" }),
@@ -3053,7 +3106,12 @@
 
     function isStudentViewer() { return !isAdultRole(demoRole); }
     function goalsOf(student) { return studentGoals.filter(goal => goal.student === student); }
-    function activeGoal(student) { return studentGoals.find(goal => goal.student === student && goal.state === "active") || null; }
+    // Students can work on more than one goal at once (capped so check-ins stay quick) and pause a goal without losing it.
+    const maxActiveGoals = 3;
+    function activeGoals(student) { return studentGoals.filter(goal => goal.student === student && goal.state === "active"); }
+    function pausedGoals(student) { return studentGoals.filter(goal => goal.student === student && goal.state === "paused"); }
+    function datePassed(goal) { return Boolean(goal?.state === "active" && goal.by?.date && goal.by.date < todayIso()); }
+    const pauseReasons = ["Focusing on my other goal", "Not the right time in the season", "I need to learn something else first", "My job on the team changed"];
     // Goals read as the student wrote them, starting with a verb ("Learn Java for FTC").
     function goalStatementText(wish) { const text = wish.trim(); return text.charAt(0).toUpperCase() + text.slice(1); }
     function goalStatement(goal) { return goalStatementText(goal.wish); }
@@ -3087,7 +3145,7 @@
 
     // ----- shared modal -----
     function openGoalModal(build, { label = "Goal" } = {}) {
-      closeGoalModal();
+      document.getElementById("goalModal")?.remove();
       const overlay = document.createElement("div"); overlay.className = "goal-modal-overlay"; overlay.id = "goalModal";
       const dialog = document.createElement("div"); dialog.className = "goal-modal"; dialog.setAttribute("role", "dialog"); dialog.setAttribute("aria-modal", "true"); dialog.setAttribute("aria-label", label);
       overlay.append(dialog);
@@ -3096,7 +3154,14 @@
       build(dialog);
       dialog.querySelector("textarea, input:not([type=radio]):not([type=checkbox]), select, button.primary")?.focus();
     }
-    function closeGoalModal() { document.getElementById("goalModal")?.remove(); }
+    // Goal steps can be queued (e.g. two due check-ins on arrival). Saving a step opens the next one; cancelling drops the rest.
+    let goalQueue = [];
+    function closeGoalModal() { goalQueue = []; document.getElementById("goalModal")?.remove(); }
+    function finishGoalStep() {
+      const next = goalQueue.shift();
+      if (next) next(); else document.getElementById("goalModal")?.remove();
+    }
+    function runGoalQueue(steps) { goalQueue = steps.slice(1); steps[0]?.(); }
     function modalButtons(...buttons) { const row = document.createElement("div"); row.className = "goal-modal-actions"; row.append(...buttons); return row; }
     function makeButton(text, className, onClick) { const button = document.createElement("button"); button.type = "button"; button.className = className; button.textContent = text; button.addEventListener("click", onClick); return button; }
 
@@ -3127,7 +3192,8 @@
       const text = obstacle.trim().replace(/[.!]+$/, "");
       return /^I\b|^I'/.test(text) ? text : text.charAt(0).toLowerCase() + text.slice(1);
     }
-    function openGoalWizard(goal = null) {
+    // startAt jumps an edit to one question (e.g. "by" when the goal date passed); replaces closes an old goal as "Changed" once the new one is saved.
+    function openGoalWizard(goal = null, { startAt = null, replaces = null } = {}) {
       const editing = Boolean(goal);
       const draft = editing
         ? { wish: goal.wish, evidence: goal.evidence, by: { ...goal.by }, obstacle: goal.obstacle, plan: goal.plan, firstStep: "", addTask: false }
@@ -3135,7 +3201,7 @@
       const questionKeys = ["wish", "evidence", "by", "obstacle", "plan", ...(editing ? [] : ["firstStep"])];
       const steps = [...(editing ? [] : ["intro"]), ...questionKeys, "review"];
       // Editing opens on the review screen so a student can change just one part.
-      let index = editing ? steps.indexOf("review") : 0;
+      let index = editing ? steps.indexOf(startAt || "review") : 0;
       // After jumping to a step from the review screen, "Next" goes straight back to the review.
       let returnToReview = editing;
       const stepInfo = key => goalSteps.find(step => step.key === key);
@@ -3167,6 +3233,9 @@
           const kicker = document.createElement("p"); kicker.className = "goal-kicker"; kicker.textContent = "Set my goal";
           const title = document.createElement("h2"); title.textContent = "Let's set your learning goal";
           const lead = document.createElement("p"); lead.className = "goal-lead"; lead.textContent = "It takes about 5 minutes. After that, you'll check in for about a minute at the end of each sprint.";
+          const current = activeGoals(currentUserName()).filter(item => item !== replaces);
+          if (replaces) lead.textContent = `“${goalStatement(replaces)}” will move to your goal history as Changed. ${lead.textContent}`;
+          else if (current.length) lead.textContent = `You're already working on “${goalStatement(current[0])}”${current.length > 1 ? ` and ${pluralize(current.length - 1, "other goal")}` : ""}. Another goal is fine; you'll check in on each one every sprint. ${lead.textContent.replace("It takes", "This takes")}`;
           const list = document.createElement("ol"); list.className = "goal-intro-steps";
           ["What you want to learn", "How you'll know you've got it", "When you're aiming for", "What might get in your way", "Your if-then plan for that", "One first step this sprint"].forEach(text => { const item = document.createElement("li"); item.textContent = text; list.append(item); });
           const privacy = document.createElement("div"); privacy.className = "goal-intro-privacy";
@@ -3174,6 +3243,7 @@
           const kept = document.createElement("p"); kept.innerHTML = "<strong>Only you and your coaches see</strong> everything else: your plan, check-ins, and feedback.";
           privacy.append(shared, kept);
           const tip = document.createElement("p"); tip.className = "goal-example"; tip.textContent = "Tip: pick something you want to learn, not just a result. “Learn how to implement a PID controller” beats “Win League Meet 1.”";
+          title.textContent = replaces ? "Set your new goal" : current.length ? "Add another goal" : title.textContent;
           dialog.replaceChildren(kicker, title, lead, list, privacy, tip, modalButtons(makeButton("Cancel", "goal-button", closeGoalModal), makeButton("Let's go", "goal-button primary", () => { index++; render(); })));
           dialog.querySelector(".primary").focus();
         }
@@ -3318,20 +3388,28 @@
             if (["wish", "evidence", "obstacle", "plan"].some(key => clean(draft[key]) !== goal[key])) changes.push("Updated the goal details");
             Object.assign(goal, { wish: clean(draft.wish), evidence: clean(draft.evidence), by: draft.by, obstacle: clean(draft.obstacle), plan: clean(draft.plan) });
             if (changes.length) goal.events.push(goalEvent({ type: "edit", date: todayIso(), author: me, team: teamProfile.name, change: changes.join(" · ") }));
-            closeGoalModal(); renderGoals(); showToast(changes.length ? "Goal updated" : "No changes");
+            finishGoalStep(); renderGoals(); showToast(changes.length ? "Goal updated" : "No changes");
             return;
           }
           const created = { id: nextGoalId++, student: me, team: teamProfile.name, state: "active", status: "Haven't started", created: todayIso(),
             wish: clean(draft.wish), evidence: clean(draft.evidence), by: draft.by, obstacle: clean(draft.obstacle), plan: clean(draft.plan),
             events: [goalEvent({ type: "created", date: todayIso(), author: me, team: teamProfile.name })] };
           studentGoals.unshift(created);
+          if (replaces) {
+            Object.assign(replaces, { state: "changed", finished: todayIso() });
+            replaces.events.push(goalEvent({ type: "changed", date: todayIso(), author: me, team: teamProfile.name, to: goalStatement(created) }));
+          }
           const addedTask = clean(draft.firstStep) && draft.addTask;
           if (addedTask) addLearningTask(clean(draft.firstStep), currentSprintIndex, created.id);
-          closeGoalModal(); renderGoals();
+          finishGoalStep(); renderGoals();
           showToast(addedTask ? "Goal saved 🎯 Your first step is on the board as a Learning task." : "Goal saved 🎯");
         }
         render();
       }, { label: goal ? "Edit my goal" : "Set my goal" });
+    }
+    function openNewGoal() {
+      if (activeGoals(currentUserName()).length >= maxActiveGoals) { showToast(`You can work on up to ${maxActiveGoals} goals at once. Pause or finish one first.`); return; }
+      openGoalWizard();
     }
     // Learning tasks remember the goal they came from, so check-ins can offer them as evidence first.
     function addLearningTask(title, sprintIndex, goalId) {
@@ -3467,7 +3545,7 @@
           if (answer.status === "Got it") { openReflection(goal); return; }
           const steps = filledSteps();
           steps.forEach(step => addLearningTask(step.title.replace(/\s+/g, " ").trim(), step.sprintIndex, goal.id));
-          closeGoalModal(); renderGoals();
+          finishGoalStep(); renderGoals();
           showToast(steps.length ? `Check-in saved. ${pluralize(steps.length, "Learning task")} added.` : "Check-in saved");
         });
         function filledSteps() { return answer.status === "Got it" ? [] : answer.steps.filter(step => step.title.trim()); }
@@ -3501,8 +3579,11 @@
           openGoalModal(next => {
             const kicker2 = document.createElement("p"); kicker2.className = "goal-kicker"; kicker2.textContent = "Goal finished";
             const done = document.createElement("h2"); done.textContent = "Nice work. It's saved in your goal history.";
-            const ask = document.createElement("p"); ask.className = "goal-lead"; ask.textContent = "Want to set your next goal now? You can also do it later from the Goals tab.";
-            next.replaceChildren(kicker2, done, ask, modalButtons(makeButton("Later", "goal-button", () => { closeGoalModal(); renderGoals(); }), makeButton("Set my next goal", "goal-button primary", () => openGoalWizard())));
+            const others = activeGoals(currentUserName()).length;
+            const ask = document.createElement("p"); ask.className = "goal-lead"; ask.textContent = others ? "Want to add another goal now? You can also do it later from the Goals tab." : "Want to set your next goal now? You can also do it later from the Goals tab.";
+            // Queued steps (another goal's check-in) come before setting a new goal.
+            const queued = goalQueue.length > 0;
+            next.replaceChildren(kicker2, done, ask, modalButtons(makeButton(queued ? "Continue" : "Later", "goal-button", () => { finishGoalStep(); renderGoals(); }), makeButton(others ? "Add a goal" : "Set my next goal", "goal-button primary", () => { goalQueue = []; openNewGoal(); })));
           }, { label: "Goal finished" });
           renderGoals();
         });
@@ -3510,49 +3591,127 @@
       }, { label: "Goal reflection" });
     }
 
-    // ----- arrival prompt: one dialog for a due check-in and/or new coach feedback -----
+    // ----- pause, resume, and "date passed" -----
+    // Paused goals skip check-ins and drop off the team's goal cards until the student resumes them.
+    // Reasons are tap-only so students aren't invited to type personal details.
+    function openPauseGoal(goal) {
+      let reason = null;
+      openGoalModal(dialog => {
+        const kicker = document.createElement("p"); kicker.className = "goal-kicker"; kicker.textContent = "Pause goal";
+        const title = document.createElement("h2"); title.textContent = goalStatement(goal);
+        const lead = document.createElement("p"); lead.className = "goal-lead"; lead.textContent = "Paused goals skip check-ins and your team won't see it for now. Your plan, check-ins, and feedback are kept, and you can pick it back up any time.";
+        const label = document.createElement("p"); label.className = "goal-ideas-label"; label.textContent = "Why are you pausing? (optional)";
+        const row = document.createElement("div"); row.className = "choice-row";
+        pauseReasons.forEach(text => {
+          const choice = makeButton(text, "choice", () => { reason = reason === text ? null : text; row.querySelectorAll(".choice").forEach(button => button.setAttribute("aria-pressed", String(button.textContent === reason))); });
+          choice.setAttribute("aria-pressed", "false"); row.append(choice);
+        });
+        const pause = makeButton("Pause goal", "goal-button primary", () => {
+          Object.assign(goal, { state: "paused", paused: todayIso() });
+          goal.events.push(goalEvent({ type: "paused", date: todayIso(), author: currentUserName(), team: teamProfile.name, reason }));
+          finishGoalStep(); renderGoals(); showToast("Goal paused. Find it under Paused goals.");
+        });
+        dialog.replaceChildren(kicker, title, lead, label, row, modalButtons(makeButton("Cancel", "goal-button", closeGoalModal), pause));
+      }, { label: "Pause goal" });
+    }
+    function resumeGoal(goal) {
+      if (activeGoals(goal.student).length >= maxActiveGoals) { showToast(`You can work on up to ${maxActiveGoals} goals at once. Pause or finish one first.`); return; }
+      Object.assign(goal, { state: "active", paused: undefined });
+      goal.events.push(goalEvent({ type: "resumed", date: todayIso(), author: currentUserName(), team: teamProfile.name }));
+      renderGoals();
+      showToast(datePassed(goal) ? "Goal resumed. Its date has passed, so pick a new one." : "Goal resumed");
+      if (datePassed(goal)) openGoalWizard(goal, { startAt: "by" });
+    }
+    function openDatePassed(goal) {
+      openGoalModal(dialog => {
+        const kicker = document.createElement("p"); kicker.className = "goal-kicker"; kicker.textContent = "Goal date passed";
+        const title = document.createElement("h2"); title.textContent = goalStatement(goal);
+        const lead = document.createElement("p"); lead.className = "goal-lead"; lead.textContent = `You were aiming for ${goalByLabel(goal)}. That's OK. Most goals take longer than planned. What's next?`;
+        const options = document.createElement("div"); options.className = "goal-options";
+        const option = (heading, text, onClick) => {
+          const button = document.createElement("button"); button.type = "button"; button.className = "goal-option";
+          const strong = document.createElement("strong"); strong.textContent = heading;
+          const small = document.createElement("span"); small.textContent = text;
+          button.append(strong, small); button.addEventListener("click", onClick);
+          options.append(button);
+        };
+        option("Keep going", "Pick a new date and keep working on it.", () => openGoalWizard(goal, { startAt: "by" }));
+        option("I got it", "Finish the goal with three quick reflection questions.", () => openReflection(goal));
+        option("Change my goal", "Set a different goal. This one moves to your history.", () => openGoalWizard(null, { replaces: goal }));
+        option("Pause it", "Come back to it later in the season.", () => openPauseGoal(goal));
+        dialog.replaceChildren(kicker, title, lead, options, modalButtons(makeButton("Later", "goal-button", closeGoalModal)));
+      }, { label: "Goal date passed" });
+    }
+
+    // ----- arrival prompt: one dialog listing everything a student's goals need -----
+    // Covers: no active goal (or only paused ones), due check-ins, passed goal dates, and new coach feedback, across every active goal.
+    function goalNeeds(goal) {
+      const due = checkinState(goal);
+      return { goal, due, passed: datePassed(goal), feedback: unreadFeedback(goal) };
+    }
+    function goalNeedSteps(needs) {
+      // Date decisions come before check-ins, so a check-in never asks about a goal the student is about to change.
+      // Each step re-checks at run time: finishing, changing, or pausing a goal skips its queued check-in.
+      return needs.flatMap(({ goal, due, passed }) => [
+        ...(passed ? [() => datePassed(goal) ? openDatePassed(goal) : finishGoalStep()] : []),
+        ...(due ? [() => checkinState(goal) ? openCheckin(goal) : finishGoalStep()] : [])
+      ]);
+    }
+    function snoozeGoalPrompt(me) { try { sessionStorage.setItem(`goalPromptLater:${me}`, "1"); } catch {} closeGoalModal(); }
+    function goToGoalsTab() { document.querySelector('[data-workspace-view="goals"]').click(); }
     function maybePromptGoal() {
       if (!isStudentViewer()) return;
       const me = currentUserName();
-      const goal = activeGoal(me);
-      const due = checkinState(goal);
-      const feedback = unreadFeedback(goal);
       let snoozed = false;
       try { snoozed = sessionStorage.getItem(`goalPromptLater:${me}`) === "1"; } catch {}
       if (snoozed) return;
-      if (!goal) {
+      const goals = activeGoals(me);
+      const later = () => makeButton("Later", "goal-button", () => snoozeGoalPrompt(me));
+      if (!goals.length) {
+        const paused = pausedGoals(me);
         openGoalModal(dialog => {
           const kicker = document.createElement("p"); kicker.className = "goal-kicker"; kicker.textContent = "Your goal";
-          const title = document.createElement("h2"); title.textContent = "Set your learning goal";
+          const title = document.createElement("h2"); title.textContent = paused.length ? "Your goal is paused" : "Set your learning goal";
           const text = document.createElement("p"); text.className = "goal-lead";
-          text.textContent = goalsOf(me).some(item => item.state === "done") ? "Nice work finishing your last goal. Pick what you want to learn next. It takes about 5 minutes." : "Pick one thing you want to learn this season. It takes about 5 minutes, and you'll check in for about a minute at the end of each sprint.";
-          const later = makeButton("Later", "goal-button", () => { try { sessionStorage.setItem(`goalPromptLater:${me}`, "1"); } catch {} closeGoalModal(); });
-          const go = makeButton("Set my goal", "goal-button primary", () => { closeGoalModal(); document.querySelector('[data-workspace-view="goals"]').click(); openGoalWizard(); });
-          dialog.replaceChildren(kicker, title, text, modalButtons(later, go));
+          if (paused.length) text.textContent = `“${goalStatement(paused[0])}”${paused.length > 1 ? ` and ${pluralize(paused.length - 1, "other goal")} are` : " is"} paused. Pick it back up, or set a new goal.`;
+          else text.textContent = goalsOf(me).some(item => item.state === "done") ? "Nice work finishing your last goal. Pick what you want to learn next. It takes about 5 minutes." : "Pick one thing you want to learn this season. It takes about 5 minutes, and you'll check in for about a minute at the end of each sprint.";
+          const go = makeButton(paused.length ? "Set a new goal" : "Set my goal", "goal-button primary", () => { goToGoalsTab(); openNewGoal(); });
+          const resume = paused.length === 1 ? [makeButton("Resume it", "goal-button", () => { closeGoalModal(); goToGoalsTab(); resumeGoal(paused[0]); })]
+            : paused.length ? [makeButton("See paused goals", "goal-button", () => { closeGoalModal(); goToGoalsTab(); })] : [];
+          dialog.replaceChildren(kicker, title, text, modalButtons(later(), ...resume, go));
         }, { label: "Goal reminder" });
         return;
       }
-      if (!due && !feedback.length) return;
+      const needs = goals.map(goalNeeds).filter(need => need.due || need.passed || need.feedback.length);
+      if (!needs.length) return;
+      const steps = goalNeedSteps(needs);
       openGoalModal(dialog => {
-        const kicker = document.createElement("p"); kicker.className = "goal-kicker"; kicker.textContent = "Your goal";
-        const title = document.createElement("h2"); title.textContent = due ? "Time for your goal check-in" : "New feedback on your goal";
-        const statement = document.createElement("p"); statement.className = "goal-prompt-statement"; statement.textContent = goalStatement(goal);
-        const list = document.createElement("ul"); list.className = "goal-prompt-list";
-        if (due) { const item = document.createElement("li"); item.textContent = due.overdue ? `Your ${due.sprint.name} check-in still needs doing. It takes about a minute.` : `${due.sprint.name} ends ${formatEventDate(due.sprint.end)}. It takes about a minute.`; list.append(item); }
-        feedback.forEach(event => { const item = document.createElement("li"); item.textContent = `${event.author} commented on your goal`; list.append(item); });
-        const later = makeButton("Later", "goal-button", () => { try { sessionStorage.setItem(`goalPromptLater:${me}`, "1"); } catch {} closeGoalModal(); });
-        const go = makeButton(due ? "Check in now" : "View feedback", "goal-button primary", () => {
-          closeGoalModal();
-          document.querySelector('[data-workspace-view="goals"]').click();
-          if (due) openCheckin(goal);
+        const kicker = document.createElement("p"); kicker.className = "goal-kicker"; kicker.textContent = goals.length > 1 ? "Your goals" : "Your goal";
+        const title = document.createElement("h2");
+        title.textContent = steps.length ? (needs.some(need => need.due) ? "Time for your goal check-in" : "Your goal date passed") : "New feedback on your goal";
+        if (steps.length && needs.filter(need => need.due).length > 1) title.textContent = "Time for your goal check-ins";
+        const parts = [kicker, title];
+        needs.forEach(({ goal, due, passed, feedback }) => {
+          const statement = document.createElement("p"); statement.className = "goal-prompt-statement"; statement.textContent = goalStatement(goal);
+          const list = document.createElement("ul"); list.className = "goal-prompt-list";
+          const add = text => { const item = document.createElement("li"); item.textContent = text; list.append(item); };
+          if (passed) add(`You were aiming for ${goalByLabel(goal)}. Keep going, finish it, or change it.`);
+          if (due) add(due.overdue ? `Your ${due.sprint.name} check-in still needs doing. It takes about a minute.` : `${due.sprint.name} ends ${formatEventDate(due.sprint.end)}. It takes about a minute.`);
+          feedback.forEach(event => add(`${event.author} commented on this goal`));
+          parts.push(statement, list);
         });
-        dialog.replaceChildren(kicker, title, statement, list, modalButtons(later, go));
+        const go = makeButton(steps.length ? (steps.length > 1 ? `Start (${steps.length} steps)` : needs.some(need => need.due) ? "Check in now" : "Decide now") : "View feedback", "goal-button primary", () => {
+          closeGoalModal();
+          goToGoalsTab();
+          runGoalQueue(steps);
+        });
+        dialog.replaceChildren(...parts, modalButtons(later(), go));
       }, { label: "Goal reminder" });
     }
     function renderGoalsTabDot() {
       const tab = document.querySelector('[data-workspace-view="goals"]');
-      const goal = isStudentViewer() ? activeGoal(currentUserName()) : null;
-      const needs = isStudentViewer() && (!goal || checkinState(goal) || unreadFeedback(goal).length);
+      const goals = isStudentViewer() ? activeGoals(currentUserName()) : [];
+      const needs = isStudentViewer() && (!goals.length || goals.some(goal => checkinState(goal) || datePassed(goal) || unreadFeedback(goal).length));
       tab.classList.toggle("has-dot", Boolean(needs));
     }
 
@@ -3569,6 +3728,9 @@
         if (event.type === "created") body.textContent = `Goal set${event.team !== goal.team ? "" : ""} on ${event.team}`;
         else if (event.type === "edit") body.textContent = event.change;
         else if (event.type === "completed") body.textContent = "🎉 Got it! Goal finished.";
+        else if (event.type === "paused") body.textContent = `⏸ Paused${event.reason ? ` · ${event.reason}` : ""}`;
+        else if (event.type === "resumed") body.textContent = "▶ Picked back up";
+        else if (event.type === "changed") body.textContent = `Changed to a new goal${event.to ? `: “${event.to}”` : ""}`;
         else if (event.type === "checkin") {
           const top = document.createElement("div"); top.className = "goal-event-top";
           const label = document.createElement("strong"); label.textContent = "Check-in";
@@ -3666,7 +3828,7 @@
       page.replaceChildren(...parts);
       if (isStudentViewer()) {
         // Opening the page counts as reading any new coach feedback.
-        unreadFeedback(activeGoal(currentUserName())).forEach(event => { event.unread = false; });
+        activeGoals(currentUserName()).forEach(goal => unreadFeedback(goal).forEach(event => { event.unread = false; }));
         renderGoalsTabDot();
       }
     }
@@ -3677,7 +3839,9 @@
       const by = document.createElement("span"); by.textContent = `By ${goalByLabel(goal)}`;
       const last = lastCheckin(goal);
       const checked = document.createElement("span"); checked.textContent = last ? `Last check-in ${relativeDate(last.date)}` : "No check-ins yet";
-      meta.append(goalStatusPill(goal.status), by, checked);
+      meta.append(goalStatusPill(goal.status), by);
+      if (datePassed(goal)) { const passed = document.createElement("span"); passed.className = "review-flag warn"; passed.textContent = "Date passed"; meta.append(passed); }
+      meta.append(checked);
       card.append(statement, meta);
       if (canSeeGoalDetails(goal)) {
         const details = document.createElement("dl"); details.className = "goal-private";
@@ -3691,47 +3855,102 @@
     }
     function renderMyGoal() {
       const me = currentUserName();
-      const goal = activeGoal(me);
-      const past = goalsOf(me).filter(item => item.state !== "active");
+      const goals = activeGoals(me);
+      const paused = pausedGoals(me);
+      const past = goalsOf(me).filter(item => item.state === "done" || item.state === "changed");
       const section = document.createElement("section"); section.className = "my-goal";
       const head = document.createElement("div"); head.className = "goal-section-head";
-      const title = document.createElement("h3"); title.textContent = "My goal";
+      const title = document.createElement("h3"); title.textContent = goals.length > 1 ? "My goals" : "My goal";
       const actions = document.createElement("div"); actions.className = "goal-actions";
+      if (goals.length && goals.length < maxActiveGoals) actions.append(makeButton("＋ New goal", "goal-button", openNewGoal));
       if (past.length) actions.append(makeButton(`Past goals (${past.length}) →`, "text-button", () => { goalsView = { student: me, history: true }; renderGoals(); }));
       head.append(title, actions);
       section.append(head);
-      if (!goal) {
+      if (!goals.length) {
         const empty = document.createElement("div"); empty.className = "goal-empty";
-        const text = document.createElement("p"); text.textContent = "Pick one thing you want to learn this season. Setting it up takes about 5 minutes, and you'll check in at the end of each sprint.";
-        empty.append(text, makeButton("Set my goal", "goal-button primary", () => openGoalWizard()));
+        const text = document.createElement("p");
+        text.textContent = paused.length ? "You don't have an active goal right now. Pick a paused goal back up, or set a new one." : "Pick one thing you want to learn this season. Setting it up takes about 5 minutes, and you'll check in at the end of each sprint.";
+        empty.append(text, makeButton(paused.length ? "Set a new goal" : "Set my goal", "goal-button primary", openNewGoal));
         section.append(empty);
-        return section;
       }
-      const due = checkinState(goal);
-      if (due) {
-        const banner = document.createElement("div"); banner.className = "checkin-due";
-        const text = document.createElement("span"); text.textContent = due.overdue ? `Your ${due.sprint.name} check-in is waiting.` : `Check in before ${due.sprint.name} ends ${formatEventDate(due.sprint.end)}.`;
-        banner.append(text, makeButton("Check in now", "goal-button primary", () => openCheckin(goal)));
-        section.append(banner);
-      }
-      actions.prepend(makeButton("Edit", "goal-button", () => openGoalWizard(goal)), ...(due ? [] : [makeButton("Check in", "goal-button", () => openCheckin(goal))]));
-      section.append(goalCardBody(goal, { owner: true }), renderGoalTimeline(goal, { compact: true }));
+      goals.forEach(goal => {
+        const block = document.createElement("div"); block.className = "goal-block";
+        const due = checkinState(goal);
+        if (datePassed(goal)) {
+          const banner = document.createElement("div"); banner.className = "checkin-due";
+          const text = document.createElement("span"); text.textContent = `You were aiming for ${goalByLabel(goal)}. What's next?`;
+          banner.append(text, makeButton("Decide", "goal-button primary", () => openDatePassed(goal)));
+          block.append(banner);
+        }
+        if (due) {
+          const banner = document.createElement("div"); banner.className = "checkin-due";
+          const text = document.createElement("span"); text.textContent = due.overdue ? `Your ${due.sprint.name} check-in is waiting.` : `Check in before ${due.sprint.name} ends ${formatEventDate(due.sprint.end)}.`;
+          banner.append(text, makeButton("Check in now", "goal-button primary", () => openCheckin(goal)));
+          block.append(banner);
+        }
+        const goalActions = document.createElement("div"); goalActions.className = "goal-actions goal-block-actions";
+        if (!due) goalActions.append(makeButton("Check in", "goal-button", () => openCheckin(goal)));
+        goalActions.append(makeButton("Edit", "goal-button", () => openGoalWizard(goal)), makeButton("Pause", "goal-button", () => openPauseGoal(goal)));
+        const body = goalCardBody(goal, { owner: true });
+        body.querySelector(".goal-statement").after(goalActions);
+        block.append(body, renderGoalTimeline(goal, { compact: true }));
+        section.append(block);
+      });
+      if (paused.length) section.append(renderPausedGoals(paused, { owner: true }));
       return section;
     }
-    function goalReviewFlags(member) {
-      const goal = activeGoal(member.name);
+    // The paused-goals container: kept out of check-ins and team cards, one tap to pick back up.
+    function renderPausedGoals(paused, { owner }) {
+      const box = document.createElement("details"); box.className = "paused-goals"; box.open = true;
+      const summary = document.createElement("summary"); summary.textContent = `Paused goals (${paused.length})`;
+      box.append(summary);
+      paused.forEach(goal => {
+        const row = document.createElement("div"); row.className = "paused-goal";
+        const text = document.createElement("div");
+        const statement = document.createElement("strong"); statement.textContent = goalStatement(goal);
+        const pauseEvent = [...goal.events].reverse().find(event => event.type === "paused");
+        const meta = document.createElement("p"); meta.className = "history-meta";
+        meta.textContent = `Paused ${formatTaskDue(goal.paused || pauseEvent?.date || todayIso())}${pauseEvent?.reason ? ` · ${pauseEvent.reason}` : ""} · was ${goal.status}`;
+        text.append(statement, meta);
+        row.append(text);
+        if (owner) row.append(makeButton("Resume", "goal-button", () => resumeGoal(goal)));
+        else if (canSeeGoalDetails(goal)) {
+          const toggle = makeButton("Show timeline", "text-button", () => {
+            const open = row.querySelector(".goal-timeline-wrap");
+            if (open) { open.remove(); toggle.textContent = "Show timeline"; } else { row.append(renderGoalTimeline(goal)); toggle.textContent = "Hide timeline"; }
+          });
+          row.append(toggle);
+        }
+        box.append(row);
+      });
+      return box;
+    }
+    // Attention flags for one goal, or for a student with no active goal.
+    function goalFlags(goal, member) {
       const flags = [];
-      if (!goal) { flags.push(["No goal yet", "warn"]); const done = goalsOf(member.name).find(item => item.state === "done" && daysBetween(item.finished, todayIso()) <= 14); if (done) flags.push(["Goal completed 🎉", "good"]); return { goal, flags }; }
+      if (!goal) {
+        if (pausedGoals(member.name).length) flags.push(["Goal paused", "info"]);
+        else flags.push(["No goal yet", "warn"]);
+        const done = goalsOf(member.name).find(item => item.state === "done" && daysBetween(item.finished, todayIso()) <= 14);
+        if (done) flags.push(["Goal completed 🎉", "good"]);
+        return flags;
+      }
       const feedback = goal.events.filter(event => event.type === "feedback");
       if (!feedback.length) flags.push(daysBetween(goal.created, todayIso()) <= 14 ? ["New goal · needs feedback", "info"] : ["No coach feedback yet", "warn"]);
       const due = checkinState(goal);
       if (due) flags.push([due.overdue ? "Check-in overdue" : "Check-in due", due.overdue ? "warn" : "info"]);
+      if (datePassed(goal)) flags.push(["Date passed", "warn"]);
       if (goal.status === "Stuck") flags.push(["Stuck", "alert"]);
       const checkins = goal.events.filter(event => event.type === "checkin");
       if (checkins.length >= 2 && checkins.slice(-2).every(event => event.planResult === "It didn't work")) flags.push(["Plan didn't work twice", "alert"]);
       const latest = checkins.at(-1);
       if (latest && !goal.events.some(event => event.type === "feedback" && event.date >= latest.date)) flags.push(["Check-in needs a response", "info"]);
-      return { goal, flags };
+      return flags;
+    }
+    // One dashboard row per active goal; a student with none gets a single row.
+    function goalReviewRows(member) {
+      const goals = activeGoals(member.name);
+      return goals.length ? goals.map(goal => ({ member, goal, flags: goalFlags(goal, member) })) : [{ member, goal: null, flags: goalFlags(null, member) }];
     }
     function possessive(name) { return name.endsWith("s") ? `${name}'` : `${name}'s`; }
     function teamStudents() { return studentsOf(activeTeamEntry()); }
@@ -3749,23 +3968,23 @@
       head.append(title, note);
       const grid = document.createElement("div"); grid.className = "team-goal-grid";
       teamStudents().forEach(member => {
-        const goal = activeGoal(member.name);
+        const goals = activeGoals(member.name);
         const card = document.createElement(isStudentViewer() ? "article" : "button"); card.className = "team-goal-card";
         if (!isStudentViewer()) { card.type = "button"; card.title = "Open in the Coaches' Dashboard"; card.addEventListener("click", () => openDashboardGoals(member.name)); }
         const top = document.createElement("div"); top.className = "team-goal-top";
         const avatar = document.createElement("span"); avatar.className = "avatar"; avatar.textContent = initials(member.name);
         const name = document.createElement("strong"); name.textContent = member.name + (member.name === currentUserName() ? " (you)" : "");
         top.append(avatar, name);
-        const statement = document.createElement("p"); statement.textContent = goal ? goalStatement(goal) : "No goal yet";
-        statement.className = goal ? "" : "muted";
-        card.append(top, statement);
-        if (goal) {
+        card.append(top);
+        if (!goals.length) { const statement = document.createElement("p"); statement.className = "muted"; statement.textContent = "No goal yet"; card.append(statement); }
+        goals.forEach(goal => {
+          const statement = document.createElement("p"); statement.textContent = goalStatement(goal);
           const meta = document.createElement("div"); meta.className = "goal-meta";
           const last = lastCheckin(goal);
           const checked = document.createElement("span"); checked.textContent = last ? `Checked in ${relativeDate(last.date)}` : "No check-ins yet";
           meta.append(goalStatusPill(goal.status), checked);
-          card.append(meta);
-        }
+          card.append(statement, meta);
+        });
         grid.append(card);
       });
       section.append(head, grid);
@@ -3774,21 +3993,27 @@
     function renderStudentGoalDetail(page, student, onBack = () => { goalsView = { student: null, history: false }; renderGoals(); }, backLabel = "← Back to goals") {
       const back = makeButton(backLabel, "text-button goals-back", onBack);
       const title = document.createElement("h2"); title.className = "goals-detail-title"; title.textContent = `${possessive(student)} goals`;
-      const goal = activeGoal(student);
+      const goals = activeGoals(student);
+      const paused = pausedGoals(student);
       const section = document.createElement("section"); section.className = "my-goal";
       const head = document.createElement("div"); head.className = "goal-section-head";
-      const label = document.createElement("h3"); label.textContent = "Current goal";
+      const label = document.createElement("h3"); label.textContent = goals.length > 1 ? `Current goals (${goals.length})` : "Current goal";
       head.append(label);
       section.append(head);
-      if (goal) {
-        section.append(goalCardBody(goal, { owner: false }), renderGoalTimeline(goal));
+      goals.forEach(goal => {
+        const block = document.createElement("div"); block.className = "goal-block";
+        block.append(goalCardBody(goal, { owner: false }), renderGoalTimeline(goal));
         const general = document.createElement("div"); general.className = "goal-general-feedback";
         general.append(makeButton("＋ Leave feedback on this goal", "goal-button", () => openFeedbackComposer(general, goal)));
-        section.append(general);
-      } else {
-        const empty = document.createElement("p"); empty.className = "goal-more"; empty.textContent = `${student} hasn't set a goal yet. A quick conversation at build night usually helps.`;
+        block.append(general);
+        section.append(block);
+      });
+      if (!goals.length) {
+        const empty = document.createElement("p"); empty.className = "goal-more";
+        empty.textContent = paused.length ? `${student} has paused ${paused.length === 1 ? "their goal" : "their goals"}. A quick conversation at build night can help pick one back up or set a new one.` : `${student} hasn't set a goal yet. A quick conversation at build night usually helps.`;
         section.append(empty);
       }
+      if (paused.length) section.append(renderPausedGoals(paused, { owner: false }));
       const history = renderHistoryList(student, { includeActive: false });
       page.replaceChildren(back, title, section, history);
     }
@@ -3801,7 +4026,8 @@
     }
     function renderHistoryList(student, { includeActive }) {
       const section = document.createElement("section"); section.className = "goal-history";
-      const goals = goalsOf(student).filter(goal => includeActive || goal.state !== "active").sort((left, right) => right.created.localeCompare(left.created));
+      // "Past" means finished or changed; active and paused goals have their own sections unless showing the full timeline.
+      const goals = goalsOf(student).filter(goal => includeActive || goal.state === "done" || goal.state === "changed").sort((left, right) => right.created.localeCompare(left.created));
       const head = document.createElement("div"); head.className = "goal-section-head";
       const title = document.createElement("h3"); title.textContent = includeActive ? "Timeline" : `Past goals (${goals.length})`;
       head.append(title); section.append(head);
@@ -3812,12 +4038,13 @@
         const entry = document.createElement("article"); entry.className = `history-entry h-${goal.state}`;
         const top = document.createElement("div"); top.className = "history-top";
         const statement = document.createElement("strong"); statement.textContent = goalStatement(goal);
-        const outcome = document.createElement("span"); outcome.className = goal.state === "active" ? statusClass(goal.status) : "goal-status s-5";
-        outcome.textContent = goal.state === "active" ? `In progress · ${goal.status}` : goal.state === "done" ? "Got it" : "Changed";
+        const outcome = document.createElement("span");
+        outcome.className = goal.state === "active" ? statusClass(goal.status) : goal.state === "done" ? "goal-status s-5" : "goal-status s-1";
+        outcome.textContent = { active: `In progress · ${goal.status}`, paused: "Paused", done: "Got it", changed: "Changed" }[goal.state];
         top.append(statement, outcome);
         const meta = document.createElement("p"); meta.className = "history-meta";
         const checkins = goal.events.filter(event => event.type === "checkin").length;
-        meta.textContent = `${goal.team} · ${formatTaskDue(goal.created)} – ${goal.finished ? formatTaskDue(goal.finished) : "now"} · ${pluralize(checkins, "check-in")}`;
+        meta.textContent = `${goal.team} · ${formatTaskDue(goal.created)} – ${goal.finished ? formatTaskDue(goal.finished) : goal.state === "paused" ? `paused ${formatTaskDue(goal.paused)}` : "now"} · ${pluralize(checkins, "check-in")}`;
         entry.append(top, meta);
         if (goal.reflection) {
           const reflection = document.createElement("dl"); reflection.className = "goal-private";
@@ -3838,6 +4065,7 @@
       return section;
     }
     function onRoleChanged() {
+      if (boardPage.dataset.view === "mytasks") filterTasks();
       goalsView = { student: null, history: false };
       renderGoals();
       maybePromptGoal();
@@ -3921,9 +4149,12 @@
       overdue: flags => flags.some(([text]) => text.startsWith("Check-in overdue") || text.startsWith("Check-in due")),
       feedback: flags => flags.some(([text]) => text.includes("needs feedback") || text === "No coach feedback yet" || text === "Check-in needs a response"),
       plan: flags => flags.some(([text]) => text === "Plan didn't work twice"),
-      none: flags => flags.some(([text]) => text === "No goal yet")
+      passed: flags => flags.some(([text]) => text === "Date passed"),
+      none: flags => flags.some(([text]) => text === "No goal yet"),
+      paused: flags => flags.some(([text]) => text === "Goal paused")
     };
     function setOrgTab(tab) {
+      clearSelection();
       orgTab = tab;
       document.querySelectorAll("[data-org-tab]").forEach(button => button.classList.toggle("active", button.dataset.orgTab === tab));
       document.getElementById("orgPage").style.display = workspaceMode === "org" && tab === "tasks" ? "block" : "none";
@@ -3961,12 +4192,12 @@
       const groups = document.getElementById("orgGoalGroups");
       let shown = 0, teamsShown = 0;
       const sections = dashboardTeams().filter(team => teamFilter.value === "all" || teamFilter.value === String(orgTeams.indexOf(team))).flatMap(team => {
-        const rows = studentsOf(team).map(member => ({ member, ...goalReviewFlags(member) })).filter(({ member, goal, flags }) =>
+        const rows = studentsOf(team).flatMap(goalReviewRows).filter(({ member, goal, flags }) =>
           (status === "all" || (status === "none" ? !goal : goal?.status === status)) &&
           attention(flags) &&
           (!query || `${member.name} ${goal ? goalStatement(goal) : ""}`.toLowerCase().includes(query)));
         if (filtering && !rows.length) return [];
-        shown += rows.length; if (rows.length) teamsShown++;
+        shown += new Set(rows.map(row => row.member)).size; if (rows.length) teamsShown++;
         const key = team.profile.number;
         const section = document.createElement("details"); section.className = "backlog-section org-team-group";
         section.open = !collapsedGoalTeams.has(key);
@@ -3974,7 +4205,7 @@
           section.open ? collapsedGoalTeams.delete(key) : collapsedGoalTeams.add(key);
           try { localStorage.setItem("collapsedGoalTeams", JSON.stringify([...collapsedGoalTeams])); } catch {}
         });
-        const all = studentsOf(team).map(member => goalReviewFlags(member));
+        const all = studentsOf(team).map(member => ({ goal: activeGoals(member.name)[0] || null, flags: goalReviewRows(member).flatMap(row => row.flags) }));
         const summary = document.createElement("summary");
         const badge = document.createElement("span"); badge.className = "team-mini-badge"; paintTeamBadge(badge, team.profile);
         const name = document.createElement("span"); name.className = "sprint-title"; name.textContent = team.profile.name;
@@ -3990,14 +4221,20 @@
           const table = document.createElement("table"); table.className = "backlog-table org-table goal-table";
           table.append(makeColgroup(columns));
           const body = table.createTBody();
-          rows.forEach(({ member, goal, flags }) => {
+          rows.forEach(({ member, goal, flags }, rowIndex) => {
             const tr = document.createElement("tr"); tr.className = "backlog-task-row goal-row";
             const who = document.createElement("td"); who.className = "task-name-cell";
-            const avatar = document.createElement("span"); avatar.className = "avatar"; avatar.textContent = initials(member.name);
-            const open = document.createElement("button"); open.type = "button"; open.className = "task-title-open"; open.textContent = member.name;
-            open.addEventListener("click", () => { orgGoalStudent = member.name; renderOrgGoals(); });
-            who.append(avatar, open);
-            const statement = document.createElement("td"); statement.textContent = goal ? goalStatement(goal) : "No goal yet"; if (!goal) statement.className = "muted-cell";
+            // A student with several goals gets one row per goal; the name shows on the first.
+            const sameStudent = rows[rowIndex - 1]?.member === member;
+            if (sameStudent) tr.classList.add("goal-row-more");
+            else {
+              const avatar = document.createElement("span"); avatar.className = "avatar"; avatar.textContent = initials(member.name);
+              const open = document.createElement("button"); open.type = "button"; open.className = "task-title-open"; open.textContent = member.name;
+              open.addEventListener("click", () => { orgGoalStudent = member.name; renderOrgGoals(); });
+              who.append(avatar, open);
+            }
+            const paused = goal ? [] : pausedGoals(member.name);
+            const statement = document.createElement("td"); statement.textContent = goal ? goalStatement(goal) : paused.length ? `Paused: ${goalStatement(paused[0])}` : "No goal yet"; if (!goal) statement.className = "muted-cell";
             const state = document.createElement("td"); if (goal) state.append(goalStatusPill(goal.status));
             const last = goal ? lastCheckin(goal) : null;
             const checkin = document.createElement("td"); checkin.textContent = last ? relativeDate(last.date) : goal ? "None yet" : "";
@@ -4515,8 +4752,7 @@
       const name = document.createElement("td"); name.className = "task-name-cell";
       const toggle = document.createElement("button"); toggle.type = "button"; toggle.className = "subtask-toggle"; toggle.textContent = task.subtasks.length ? (task.expanded ? "▾" : "▸") : ""; toggle.disabled = task.subtasks.length === 0; toggle.setAttribute("aria-expanded", String(task.expanded)); toggle.setAttribute("aria-label", `${task.expanded ? "Collapse" : "Expand"} ${task.subtasks.length} subtasks`);
       toggle.addEventListener("click", () => { task.expanded = !task.expanded; renderBacklogTable(section); });
-      const check = document.createElement("button"); check.type = "button"; check.className = `task-check${task.status === "Done" ? " is-done" : ""}`; check.setAttribute("aria-label", `${task.status === "Done" ? "Reopen" : "Complete"} ${task.title}`);
-      check.addEventListener("click", () => { task.status = task.status === "Done" ? "To do" : "Done"; renderBacklogTable(section); });
+      const check = selectButton("backlog", task, task.title);
       const title = document.createElement("button"); title.type = "button"; title.className = "task-title-open"; title.textContent = task.title; title.dataset.openBacklogTask = "true";
       name.append(toggle, check, title);
       const cells = [name];
@@ -4545,7 +4781,7 @@
         task.subtasks.forEach(subtask => {
           const child = document.createElement("tr"); child.className = "list-subtask-row"; child.taskRecord = task; child.subtaskRecord = subtask;
           const childName = document.createElement("td"); childName.className = "list-subtask-name";
-          const childCheck = document.createElement("button"); childCheck.type = "button"; childCheck.className = `task-check${subtask.state === "Done" ? " is-done" : ""}`; childCheck.setAttribute("aria-label", `${subtask.state === "Done" ? "Reopen" : "Complete"} ${subtask.title}`); childCheck.addEventListener("click", () => { subtask.state = subtask.state === "Done" ? "To do" : "Done"; renderBacklogTable(section); });
+          const childCheck = selectButton("backlog", subtask, subtask.title, task);
           const childTitle = document.createElement("button"); childTitle.type = "button"; childTitle.className = "task-title-open"; childTitle.textContent = subtask.title; childTitle.dataset.openBacklogChild = "true"; childTitle.addEventListener("click", () => openSubtaskDetails(task, subtask));
           childName.append(childCheck, childTitle); child.append(childName);
           [subtask.type, subtask.subteam, subtask.assignee, subtask.due ? formatTaskDue(subtask.due) : "—", subtask.state, subtask.priority].forEach((value, offset) => {
@@ -4576,45 +4812,49 @@
         .sort((left, right) => Number(left.dataset.sprintIndex) - Number(right.dataset.sprintIndex));
       return [pool, ...sprints];
     }
-    function moveBacklogTask(task, target) {
-      const from = task.section;
-      if (!target || target === from) return;
-      from.taskRecords.splice(from.taskRecords.indexOf(task), 1);
-      task.section = target;
-      (target.taskRecords ||= []).push(task);
-      renderBacklogTable(from);
-      renderBacklogTable(target);
-      showToast(`Moved to ${backlogSectionLabel(target)}`);
+    function moveBacklogTask(task, target) { moveBacklogTasks([task], target); }
+    function moveBacklogTasks(tasks, target) {
+      const touched = new Set();
+      tasks.forEach(task => {
+        const from = task.section;
+        if (!target || from === target) return;
+        from.taskRecords.splice(from.taskRecords.indexOf(task), 1);
+        task.section = target;
+        (target.taskRecords ||= []).push(task);
+        touched.add(from); touched.add(target);
+      });
+      // Re-render every touched section before syncing, so a selected task isn't dropped while it's between tables.
+      bulk.hold = true;
+      touched.forEach(renderBacklogTable);
+      bulk.hold = false;
+      syncSelection();
+      if (touched.size) showToast(`${tasks.length > 1 ? `Moved ${pluralize(tasks.length, "task")}` : "Moved"} to ${backlogSectionLabel(target)}`);
     }
     function closeMoveMenu() {
       document.querySelector(".move-menu")?.remove();
       document.querySelectorAll('.row-move[aria-expanded="true"]').forEach(button => button.setAttribute("aria-expanded", "false"));
     }
-    function openMoveMenu(anchor, task) {
-      const wasOpen = document.querySelector(".move-menu")?.dataset.for === task.title;
+    // A small anchored menu: items are { label, meta, disabled, run }. Clicking the same anchor again closes it.
+    function openChoiceMenu(anchor, heading, items, key) {
+      const wasOpen = document.querySelector(".move-menu")?.dataset.for === key;
       closeMoveMenu();
       if (wasOpen) return;
-      const menu = document.createElement("div"); menu.className = "move-menu"; menu.setAttribute("role", "menu"); menu.dataset.for = task.title;
-      const heading = document.createElement("p"); heading.textContent = "Move to"; menu.append(heading);
-      moveTargets(task).forEach(section => {
-        const item = document.createElement("button"); item.type = "button"; item.setAttribute("role", "menuitem");
-        const name = document.createElement("span"); name.textContent = backlogSectionLabel(section);
-        const meta = document.createElement("small");
-        if (section.dataset.sprintIndex) {
-          const index = Number(section.dataset.sprintIndex), sprint = sprintSchedule[index];
-          meta.textContent = `${index === currentSprintIndex ? "Current · " : ""}${formatMonthDay(sprint.start)} – ${formatMonthDay(sprint.end)}`;
-        } else meta.textContent = "Unplanned";
-        if (section === task.section) { item.disabled = true; meta.textContent = "Here now"; }
-        item.append(name, meta);
-        item.addEventListener("click", () => { closeMoveMenu(); moveBacklogTask(task, section); });
+      const menu = document.createElement("div"); menu.className = "move-menu"; menu.setAttribute("role", "menu"); menu.dataset.for = key;
+      const title = document.createElement("p"); title.textContent = heading; menu.append(title);
+      items.forEach(({ label, meta = "", disabled = false, run }) => {
+        const item = document.createElement("button"); item.type = "button"; item.setAttribute("role", "menuitem"); item.disabled = disabled;
+        const name = document.createElement("span"); name.textContent = label;
+        const small = document.createElement("small"); small.textContent = meta;
+        item.append(name, small);
+        item.addEventListener("click", () => { closeMoveMenu(); run(); });
         menu.append(item);
       });
       menu.addEventListener("keydown", event => {
-        const items = [...menu.querySelectorAll("button:not(:disabled)")];
-        const index = items.indexOf(document.activeElement);
+        const buttons = [...menu.querySelectorAll("button:not(:disabled)")];
+        const index = buttons.indexOf(document.activeElement);
         if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); closeMoveMenu(); anchor.focus(); }
-        if (event.key === "ArrowDown") { event.preventDefault(); items[(index + 1) % items.length]?.focus(); }
-        if (event.key === "ArrowUp") { event.preventDefault(); items[(index - 1 + items.length) % items.length]?.focus(); }
+        if (event.key === "ArrowDown") { event.preventDefault(); buttons[(index + 1) % buttons.length]?.focus(); }
+        if (event.key === "ArrowUp") { event.preventDefault(); buttons[(index - 1 + buttons.length) % buttons.length]?.focus(); }
       });
       document.body.append(menu);
       anchor.setAttribute("aria-expanded", "true");
@@ -4624,6 +4864,156 @@
       menu.style.left = `${Math.max(8, Math.min(rect.right - menu.offsetWidth, window.innerWidth - menu.offsetWidth - 8)) + window.scrollX}px`;
       menu.querySelector("button:not(:disabled)")?.focus();
     }
+    function sectionMeta(section) {
+      if (!section.dataset.sprintIndex) return "Unplanned";
+      const index = Number(section.dataset.sprintIndex), sprint = sprintSchedule[index];
+      return `${index === currentSprintIndex ? "Current · " : ""}${formatMonthDay(sprint.start)} – ${formatMonthDay(sprint.end)}`;
+    }
+    function openMoveMenu(anchor, task) {
+      openChoiceMenu(anchor, "Move to", moveTargets(task).map(section => ({
+        label: backlogSectionLabel(section),
+        meta: section === task.section ? "Here now" : sectionMeta(section),
+        disabled: section === task.section,
+        run: () => moveBacklogTask(task, section)
+      })), task.title);
+    }
+
+    // ---------- Multi-select in list views (List, Backlog, Coaches' Dashboard tasks) ----------
+    // The circle at the start of a row selects it; tasks are marked done from the Status column or the task panel.
+    // Shift-click selects a range. A bar at the bottom of the screen holds the bulk actions.
+    const bulkContainers = { list: "listRows", backlog: "backlogView", org: "orgGroups" };
+    const chevronSvg = '<svg viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    // Subtask rows pass their parent (board card or backlog task) so bulk edits can re-render it.
+    function selectButton(view, record, label, parent = null) {
+      if (parent) bulkParents.set(record, parent);
+      const button = document.createElement("button"); button.type = "button"; button.className = "row-select";
+      button.selectRecord = record;
+      button.setAttribute("aria-pressed", String(bulk.view === view && bulk.selected.has(record)));
+      button.setAttribute("aria-label", `Select ${label}`);
+      button.addEventListener("click", event => { event.stopPropagation(); toggleSelect(view, record, event.shiftKey); });
+      return button;
+    }
+    function toggleSelect(view, record, range) {
+      if (bulk.view !== view) { bulk.selected.clear(); bulk.view = view; bulk.last = null; }
+      const records = [...document.getElementById(bulkContainers[view]).querySelectorAll(".row-select")].map(button => button.selectRecord);
+      const turnOn = !bulk.selected.has(record);
+      const apply = item => turnOn ? bulk.selected.add(item) : bulk.selected.delete(item);
+      if (range && bulk.last && records.includes(bulk.last)) {
+        const [from, to] = [records.indexOf(bulk.last), records.indexOf(record)].sort((left, right) => left - right);
+        records.slice(from, to + 1).forEach(apply);
+      } else apply(record);
+      bulk.last = record;
+      syncSelection();
+    }
+    function syncSelection() {
+      if (bulk.hold) return;
+      const container = bulk.view && document.getElementById(bulkContainers[bulk.view]);
+      const buttons = container ? [...container.querySelectorAll(".row-select")] : [];
+      // Rows that left the view (filtered out, or another sprint filter) drop out of the selection.
+      const present = new Set(buttons.map(button => button.selectRecord));
+      [...bulk.selected].forEach(record => { if (!present.has(record)) bulk.selected.delete(record); });
+      buttons.forEach(button => {
+        const on = bulk.selected.has(button.selectRecord);
+        button.setAttribute("aria-pressed", String(on));
+        button.closest("tr")?.classList.toggle("is-selected", on);
+      });
+      renderBulkBar();
+    }
+    function clearSelection() {
+      if (!bulk.selected.size && !bulk.view) return;
+      bulk.selected.clear(); bulk.last = null;
+      syncSelection();
+      bulk.view = null;
+    }
+    function renderBulkBar() {
+      let bar = document.getElementById("bulkBar");
+      const count = bulk.selected.size;
+      if (!count) {
+        bar?.remove();
+        if (document.querySelector(".move-menu")?.dataset.for?.startsWith("bulk:")) closeMoveMenu();
+        return;
+      }
+      if (!bar) {
+        bar = document.createElement("div"); bar.id = "bulkBar"; bar.className = "bulk-bar";
+        bar.setAttribute("role", "toolbar"); bar.setAttribute("aria-label", "Bulk actions");
+        document.body.append(bar);
+      }
+      const label = document.createElement("strong"); label.textContent = `${count} selected`;
+      const actions = bulkActions(bulk.view).map(([text, items]) => {
+        const button = document.createElement("button"); button.type = "button"; button.className = "row-move bulk-action";
+        button.innerHTML = `${text}${chevronSvg}`; button.setAttribute("aria-haspopup", "menu");
+        button.addEventListener("click", event => { event.stopPropagation(); openChoiceMenu(button, text, items(), `bulk:${text}`); });
+        return button;
+      });
+      bar.replaceChildren(label, ...actions, makeButton("Clear", "text-button bulk-clear", clearSelection));
+    }
+    // Each list view says which bulk actions it supports and how to apply them to its own records.
+    function bulkActions(view) {
+      const records = () => [...bulk.selected];
+      const count = () => pluralize(bulk.selected.size, records().some(isBulkSubtask) ? "item" : "task");
+      const assignItems = apply => () => [
+        ...fieldOptions.members.map(name => ({ label: name, meta: records().every(record => assigneesOf({ assignee: bulkGet(view, record, "assignee") }).includes(name)) ? "On all" : "", run: () => apply(name) })),
+        { label: "Unassign", meta: "Clear assignees", run: () => apply(null) }
+      ];
+      const choiceItems = (options, field, message) => () => options.map(value => ({
+        label: value, meta: records().every(record => bulkGet(view, record, field) === value) ? "All set" : "",
+        run: () => { bulkSet(view, records(), field, () => value); showToast(message(value)); }
+      }));
+      const status = ["Status", choiceItems(fieldOptions.status, "status", value => `${count()} → ${value}`)];
+      const priority = ["Priority", choiceItems(fieldOptions.priority, "priority", value => `${count()} → ${value} priority`)];
+      const assign = ["Assign", assignItems(name => {
+        bulkSet(view, records(), "assignee", record => name ? assigneeValue([...new Set([...assigneesOf({ assignee: bulkGet(view, record, "assignee") }), name])]) : "Unassigned");
+        showToast(name ? `Added ${name} to ${count()}` : `Unassigned ${count()}`);
+      })];
+      if (view === "list") return [status, priority, assign];
+      if (view === "backlog") return [
+        // Subtasks travel with their parent, so Move to applies to the selected tasks only.
+        ...(records().some(record => !isBulkSubtask(record)) ? [["Move to", () => {
+          const tasks = records().filter(record => !isBulkSubtask(record));
+          const sections = [...document.querySelectorAll("#backlogView .backlog-section")];
+          const targets = [sections.find(section => section.dataset.backlogPool), ...sections.filter(section => section.dataset.sprintIndex && Number(section.dataset.sprintIndex) >= currentSprintIndex)
+            .sort((left, right) => Number(left.dataset.sprintIndex) - Number(right.dataset.sprintIndex))];
+          return targets.map(section => {
+            const allHere = tasks.every(task => task.section === section);
+            return { label: backlogSectionLabel(section), meta: allHere ? "Here now" : sectionMeta(section), disabled: allHere, run: () => { moveBacklogTasks(tasks, section); clearSelection(); } };
+          });
+        }]] : []),
+        status, priority, assign
+      ];
+      // Coaches' Dashboard: tasks span teams with different rosters, so only status and priority are bulk-editable.
+      const refresh = () => { document.querySelectorAll("#backlogView .backlog-section").forEach(renderBacklogTable); filterTasks(); renderOrgList(); };
+      return [
+        ["Status", () => fieldOptions.status.map(value => ({ label: value, meta: records().every(record => orgRowLookup.get(record)?.status === value) ? "All set" : "", run: () => { records().forEach(record => orgRowLookup.get(record)?.setStatus(value)); refresh(); showToast(`${count()} → ${value}`); } }))],
+        ["Priority", () => fieldOptions.priority.map(value => ({ label: value, meta: records().every(record => (record.priority || "Medium") === value) ? "All set" : "", run: () => { records().forEach(record => { record.priority = value; }); refresh(); showToast(`${count()} → ${value} priority`); } }))]
+      ];
+    }
+    // Selected records can be board cards (List), backlog task objects, or subtask objects. Subtasks keep status in "state".
+    function isBulkSubtask(record) { return bulkParents.has(record); }
+    function bulkKey(view, record, field) {
+      if (field !== "status") return field;
+      return isBulkSubtask(record) || view === "list" ? "state" : "status";
+    }
+    function bulkGet(view, record, field) {
+      const source = view === "list" && !isBulkSubtask(record) ? record.dataset : record;
+      return source[bulkKey(view, record, field)] || { status: "To do", priority: "Medium", assignee: "Unassigned" }[field];
+    }
+    function bulkSet(view, records, field, valueFor) {
+      bulk.hold = true;
+      records.forEach(record => {
+        const value = valueFor(record);
+        if (view === "list" && !isBulkSubtask(record)) {
+          if (field === "status") moveTask(record, value, false);
+          else { record.dataset[field] = value; renderCardFields(record); }
+        } else record[bulkKey(view, record, field)] = value;
+      });
+      if (view === "list") { new Set(records.filter(isBulkSubtask).map(record => bulkParents.get(record))).forEach(renderCardSubtasks); filterTasks(); }
+      else new Set(records.map(record => (bulkParents.get(record) || record).section)).forEach(renderBacklogTable);
+      bulk.hold = false;
+      syncSelection();
+    }
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && bulk.selected.size && !document.querySelector(".move-menu, #goalModal, #taskDetailOverlay.open")) clearSelection();
+    });
     function syncDetailSprintField() {
       const show = Boolean(activeBacklogTask?.section) && !activeTaskSubtask && !isCreatingTask;
       const select = document.getElementById("detailSprint");
@@ -4646,6 +5036,7 @@
       const addCell = document.createElement("td"); addCell.colSpan = 8; addCell.className = "table-add"; addCell.textContent = "+ Add task"; addCell.addEventListener("click", () => createBacklogDraftRow(section));
       addRow.append(addCell); body.append(addRow);
       refreshBacklogTaskCount(section);
+      syncSelection();
     }
     function createBacklogDraftRow(section) {
       const body = section.querySelector(".backlog-table tbody");
@@ -4714,6 +5105,7 @@
       const row = cell.closest("tr");
       const card = row.taskCard;
       const field = cell.dataset.field;
+      if (row.subtaskRecord) { makeInlineEditor(cell, row.subtaskRecord.state || "To do", "status", nextValue => { row.subtaskRecord.state = nextValue; renderCardSubtasks(card); renderList(); }); return; }
       if (field === "title") { openTaskDetails(card); return; }
       const value = field === "type" ? card.dataset.type || "Task" : field === "status" ? card.dataset.state : card.dataset[field] || "";
       makeInlineEditor(cell, value, field, nextValue => saveCardField(card, field, nextValue));
@@ -4730,7 +5122,6 @@
         event.preventDefault();
         event.stopPropagation();
         const section = editDates.closest(".backlog-section");
-        section.open = true;
         openSprintDateEditor(section, Number(section.dataset.sprintIndex));
         return;
       }
@@ -4789,7 +5180,11 @@
       document.querySelectorAll(".assignee-menu").forEach(menu => menu.remove());
       document.querySelectorAll("[data-workspace-view]").forEach(tab => tab.classList.toggle("active", tab === button));
       setPage("board");
-      boardView.style.display = view === "board" ? "grid" : "none";
+      const taskViews = ["board", "mytasks", "list", "timeline"];
+      const leavingMine = boardPage.dataset.view === "mytasks";
+      boardPage.dataset.view = view;
+      if (view === "mytasks" || leavingMine) filterTasks();
+      boardView.style.display = view === "board" || view === "mytasks" ? "grid" : "none";
       listView.style.display = view === "list" ? "block" : "none";
       document.getElementById("backlogView").style.display = view === "backlog" ? "block" : "none";
       document.getElementById("timelineView").hidden = view !== "timeline";
@@ -4798,11 +5193,10 @@
       document.getElementById("goalsPage").hidden = view !== "goals";
       if (view === "goals") { goalsView = { student: null, history: false }; renderGoals(); }
       if (view === "settings") renderSettings();
-      document.getElementById("sprintObjectives").hidden = !["board", "list", "timeline"].includes(view);
-      document.getElementById("sprintViewNote").classList.toggle("off-view", !["board", "list", "timeline"].includes(view));
-      document.getElementById("taskToolbar").style.display = ["board", "list", "timeline"].includes(view) ? "flex" : "none";
-      document.querySelector(".board-meta").style.display = ["board", "list"].includes(view) ? "flex" : "none";
-      boardPage.dataset.view = view;
+      document.getElementById("sprintObjectives").hidden = !taskViews.includes(view);
+      document.getElementById("sprintViewNote").classList.toggle("off-view", !taskViews.includes(view));
+      document.getElementById("taskToolbar").style.display = taskViews.includes(view) ? "flex" : "none";
+      document.querySelector(".board-meta").style.display = ["board", "mytasks", "list"].includes(view) ? "flex" : "none";
       if (view === "timeline") { renderTimeline(); scrollTimelineTo(todayIso()); }
     }));
     document.querySelector(".team-menu").addEventListener("click", event => { event.stopPropagation(); openTeamMenu(); });
@@ -4953,18 +5347,24 @@
       renderTaskWorkSections();
       input.focus();
     });
-    document.getElementById("subtaskList").addEventListener("click", event => {
-      const check = event.target.closest("[data-subtask-index]");
-      const remove = event.target.closest("[data-remove-subtask]");
-      const collections = getActiveTaskCollections();
-      if ((!check && !remove) || !collections) return;
-      if (check) {
-        const subtask = collections.subtasks[Number(check.dataset.subtaskIndex)];
-        subtask.state = subtask.state === "Done" ? "To do" : "Done";
-      } else collections.subtasks.splice(Number(remove.dataset.removeSubtask), 1);
+    function refreshAfterSubtaskChange() {
       if (activeTaskCard) { renderCardSubtasks(activeTaskCard); renderList(); }
       if (activeBacklogTask) renderBacklogTable(activeBacklogTask.section);
       renderTaskWorkSections();
+    }
+    document.getElementById("subtaskList").addEventListener("change", event => {
+      const status = event.target.closest("[data-subtask-index]");
+      const collections = getActiveTaskCollections();
+      if (!status || !collections) return;
+      collections.subtasks[Number(status.dataset.subtaskIndex)].state = status.value;
+      refreshAfterSubtaskChange();
+    });
+    document.getElementById("subtaskList").addEventListener("click", event => {
+      const remove = event.target.closest("[data-remove-subtask]");
+      const collections = getActiveTaskCollections();
+      if (!remove || !collections) return;
+      collections.subtasks.splice(Number(remove.dataset.removeSubtask), 1);
+      refreshAfterSubtaskChange();
     });
     document.getElementById("commentForm").addEventListener("submit", event => {
       event.preventDefault();
