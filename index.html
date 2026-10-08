@@ -153,6 +153,7 @@
     .bulk-bar { position: fixed; z-index: 35; bottom: 18px; left: 50%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; max-width: calc(100vw - 32px); padding: 8px 10px 8px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-shadow: var(--shadow); font-size: 13px; transform: translateX(-50%); }
     .bulk-bar strong { margin-right: 4px; white-space: nowrap; }
     .bulk-bar .bulk-clear { margin-left: 4px; font-size: 12px; }
+    .bulk-bar .bulk-archive { margin-left: 6px; }
     .subtask-toggle { width: 22px; height: 26px; flex: 0 0 auto; padding: 0; border: 0; background: transparent; color: #737d86; font-size: 13px; }
     .subtask-toggle[aria-expanded="true"] { color: #356fd1; }
     .subtask-parent-count { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; color: #6e7881; font-size: 12px; font-weight: 500; }
@@ -413,6 +414,33 @@
     .confirm-row select { height: 30px; border: 1px solid var(--line); border-radius: 5px; background: #fff; font-size: 13px; }
     .confirm-actions { display: flex; gap: 6px; margin-left: auto; }
     .confirm-actions button, .settings-form-actions button { height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 5px; background: #fff; font-size: 12px; }
+    .org-team-list { display: grid; margin: 0; padding: 0; list-style: none; }
+    .org-team-row { display: grid; grid-template-columns: 52px minmax(140px, 1fr) minmax(0, 1.4fr) auto auto auto; align-items: center; gap: 12px; min-height: 52px; padding: 8px 6px; border-bottom: 1px solid #edf0f3; }
+    .org-team-row .team-mini-badge { justify-self: start; }
+    .org-team-people { color: #59636d; font-size: 13px; }
+    .org-team-warn { color: #a5560b; font-weight: 600; }
+    .team-form .team-color-row, .team-form .settings-hint { grid-column: 1 / -1; }
+    .team-form label { display: grid; gap: 4px; color: #59636d; font-size: 12px; font-weight: 600; }
+    .default-subteam-tag { justify-self: start; }
+    .org-people-filters { display: flex; gap: 8px; margin: 0 0 6px; }
+    .org-people-filters .select-control, .org-people-filters .search-control { height: 32px; font-size: 13px; }
+    .org-people-filters .search-control { flex: 1; max-width: 280px; }
+    .org-person-row { grid-template-columns: 30px minmax(140px, 1fr) 140px 180px auto !important; min-height: 44px; }
+    .org-person-row select { height: 32px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: #fff; font-size: 13px; }
+    .org-person-row .member-all-teams { color: #8a949c; font-size: 12px; }
+    .org-people-empty { padding: 10px 6px; color: #8a949c; font-size: 13px; }
+    @media (max-width: 680px) {
+      .org-team-row { grid-template-columns: 52px minmax(0, 1fr) auto; }
+      .org-team-people { grid-column: 2 / -1; }
+      .org-person-row { grid-template-columns: 30px minmax(0, 1fr) auto !important; }
+      .org-person-row select { grid-column: 2; }
+    }
+    .archived-list { display: grid; margin: 0; padding: 0; list-style: none; }
+    .archived-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto auto; align-items: center; gap: 12px; min-height: 44px; padding: 6px; border-bottom: 1px solid #edf0f3; }
+    .archived-row > :first-child { justify-self: start; }
+    .archived-when { color: #8a949c; font-size: 12px; white-space: nowrap; }
+    .archived-actions { display: flex; gap: 2px; }
+    .archived-empty { padding: 10px 6px; color: #8a949c; font-size: 13px; }
     .confirm-actions .danger { border-color: #c2483d; background: #c2483d; color: #fff; }
     .subteam-row { position: relative; grid-template-columns: 22px minmax(0, 1fr) auto auto auto; }
     .subteam-swatch { width: 18px; height: 18px; padding: 0; border: 2px solid #fff; border-radius: 50%; box-shadow: 0 0 0 1px #d5dce5; }
@@ -434,6 +462,8 @@
       .member-list.can-edit .row-remove { grid-column: 3; grid-row: 1; }
       .subteam-row { grid-template-columns: 22px minmax(0, 1fr) auto auto; }
       .subteam-counts { display: none; }
+      .archived-row { grid-template-columns: minmax(0, 1fr) auto; }
+      .archived-row:not(.confirm-row) > :first-child, .archived-when { display: none; }
       .settings-form, .subteam-form { grid-template-columns: 1fr; }
     }
     .timeline-view { --label-w: 220px; --lane-h: 34px; border-top: 1px solid var(--line); }
@@ -539,12 +569,19 @@
     .archive-item button { border: 0; background: none; color: #7b827e; font-size: 9px; white-space: nowrap; }
     .toast { position: fixed; right: 20px; bottom: 20px; z-index: 20; padding: 11px 14px; border-radius: 7px; background: #263a34; color: white; box-shadow: var(--shadow); font-size: 11px; opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
     .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.has-action { display: flex; align-items: center; gap: 12px; }
+    .toast.has-action.show { pointer-events: auto; }
+    .toast-action { padding: 2px 6px; border: 0; border-radius: 4px; background: transparent; color: #9fd8ff; font: inherit; font-weight: 700; }
+    .toast-action:hover { background: rgba(255, 255, 255, .12); }
     .detail-overlay { position: fixed; z-index: 35; inset: 0; display: none; justify-content: flex-end; background: rgba(22, 32, 29, .22); }
     .detail-overlay.open { display: flex; }
     .detail-panel { display: flex; flex-direction: column; width: min(620px, 58vw); min-width: 420px; height: 100%; background: #fff; box-shadow: -12px 0 34px rgba(28, 43, 37, .13); animation: panel-in .18s ease-out; }
     @keyframes panel-in { from { transform: translateX(16px); opacity: .8; } to { transform: translateX(0); opacity: 1; } }
     .detail-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 53px; padding: 0 20px; border-bottom: 1px solid var(--line); }
     .detail-toolbar-left, .detail-toolbar-right { display: flex; align-items: center; gap: 8px; }
+    .detail-archive { height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: #5d6870; font-size: 12px; }
+    .detail-archive:hover { border-color: #e2b8b2; background: #fbeeec; color: #a43d34; }
+    .detail-archive[hidden] { display: none; }
     .detail-toolbar .icon-button { width: 30px; min-height: 30px; border-color: transparent; }
     .detail-complete { min-height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 6px; background: white; color: #53615b; font-size: 10px; }
     .detail-content { flex: 1; overflow-y: auto; padding: 22px 26px 30px; }
@@ -1072,6 +1109,7 @@
           <button type="button" class="top-tab" data-workspace-view="goals">Goals</button>
           <button type="button" class="top-tab active" data-org-tab="tasks" hidden>All tasks</button>
           <button type="button" class="top-tab" data-org-tab="goals" hidden>Goals</button>
+          <button type="button" class="top-tab settings-tab" data-org-tab="settings" hidden><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M10.3 3.3a1.7 1.7 0 0 1 3.4 0 1.7 1.7 0 0 0 2.6 1.1 1.7 1.7 0 0 1 2.4 2.4 1.7 1.7 0 0 0 1.1 2.6 1.7 1.7 0 0 1 0 3.4 1.7 1.7 0 0 0-1.1 2.6 1.7 1.7 0 0 1-2.4 2.4 1.7 1.7 0 0 0-2.6 1.1 1.7 1.7 0 0 1-3.4 0 1.7 1.7 0 0 0-2.6-1.1 1.7 1.7 0 0 1-2.4-2.4 1.7 1.7 0 0 0-1.1-2.6 1.7 1.7 0 0 1 0-3.4 1.7 1.7 0 0 0 1.1-2.6 1.7 1.7 0 0 1 2.4-2.4 1.7 1.7 0 0 0 2.6-1.1z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Settings</button>
           <button type="button" class="top-tab settings-tab" data-workspace-view="settings"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M10.3 3.3a1.7 1.7 0 0 1 3.4 0 1.7 1.7 0 0 0 2.6 1.1 1.7 1.7 0 0 1 2.4 2.4 1.7 1.7 0 0 0 1.1 2.6 1.7 1.7 0 0 1 0 3.4 1.7 1.7 0 0 0-1.1 2.6 1.7 1.7 0 0 1-2.4 2.4 1.7 1.7 0 0 0-2.6 1.1 1.7 1.7 0 0 1-3.4 0 1.7 1.7 0 0 0-2.6-1.1 1.7 1.7 0 0 1-2.4-2.4 1.7 1.7 0 0 0-1.1-2.6 1.7 1.7 0 0 1 0-3.4 1.7 1.7 0 0 0 1.1-2.6 1.7 1.7 0 0 1 2.4-2.4 1.7 1.7 0 0 0 2.6-1.1z"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>Settings</button>
         </nav>
       </header>
@@ -1112,6 +1150,10 @@
           <section class="settings-section" aria-labelledby="subteamsHeading">
             <div class="settings-section-head"><div><h3 id="subteamsHeading">Subteams</h3><p>Anyone on the team can rename, recolor, or add subteams. Changes apply to every task and objective.</p></div><button class="quiet-button" id="addSubteamButton" type="button">＋ Add subteam</button></div>
             <ul class="subteam-list" id="subteamList"></ul>
+          </section>
+          <section class="settings-section" aria-labelledby="archivedHeading">
+            <div class="settings-section-head"><div><h3 id="archivedHeading">Archived tasks</h3><p id="archivedNote"></p></div></div>
+            <ul class="archived-list" id="archivedList"></ul>
           </section>
         </section>
         <section class="team-info" id="teamInfo" aria-labelledby="teamInfoHeading" hidden>
@@ -1227,6 +1269,29 @@
         </div>
         <div id="orgGoalDetail" class="goals-view" hidden></div>
       </section>
+      <section class="content org-view" id="orgSettingsPage" aria-labelledby="orgSettingsHeading">
+        <div class="team-settings">
+          <div class="settings-header">
+            <div><h2 id="orgSettingsHeading">Program settings</h2><p>Teams, people, and the defaults new teams start with. Only program coaches see this page.</p></div>
+          </div>
+          <section class="settings-section" aria-labelledby="orgTeamsHeading">
+            <div class="settings-section-head"><div><h3 id="orgTeamsHeading">Teams</h3><p id="orgTeamsNote"></p></div><button class="quiet-button" id="addTeamButton" type="button">＋ New team</button></div>
+            <ul class="org-team-list" id="orgTeamList"></ul>
+          </section>
+          <section class="settings-section" aria-labelledby="defaultSubteamsHeading">
+            <div class="settings-section-head"><div><h3 id="defaultSubteamsHeading">Subteam defaults</h3><p>New teams start with these subteams. Each team can change its own afterward; editing this list doesn't change existing teams.</p></div><button class="quiet-button" id="addDefaultSubteamButton" type="button">＋ Add subteam</button></div>
+            <ul class="subteam-list" id="defaultSubteamList"></ul>
+          </section>
+          <section class="settings-section" aria-labelledby="orgPeopleHeading">
+            <div class="settings-section-head"><div><h3 id="orgPeopleHeading">People</h3><p id="orgPeopleNote"></p></div><button class="quiet-button" id="addPersonButton" type="button">＋ Add person</button></div>
+            <div class="org-people-filters">
+              <select class="select-control" id="orgPeopleTeam" aria-label="Filter people by team"></select>
+              <input class="search-control" id="orgPeopleSearch" type="search" placeholder="⌕  Find a person" aria-label="Find a person">
+            </div>
+            <ul class="member-list org-people-list" id="orgPeopleList"></ul>
+          </section>
+        </div>
+      </section>
       <section class="content archive-view" id="archivePage">
         <div class="archive-head"><div><p class="eyebrow" data-team="label">Circuit Breakers · FTC 418</p><h2>Announcements</h2><p>Team updates, all in one place.</p></div><div class="archive-actions"><button class="quiet-button info-save" type="button" id="newAnnouncementButton">＋ New announcement</button><button class="quiet-button" type="button" id="backToBoard">← Back to team board</button></div></div>
         <form class="announcement-composer" id="announcementComposer" hidden>
@@ -1247,7 +1312,7 @@
     <aside class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detailTaskTitle">
       <header class="detail-toolbar">
         <div class="detail-toolbar-left"><button class="detail-complete" type="button" id="detailComplete">✓ Mark complete</button></div>
-        <div class="detail-toolbar-right"><span class="avatar">JM</span><button class="icon-button" type="button" id="closeTaskDetail" aria-label="Close task details">×</button></div>
+        <div class="detail-toolbar-right"><button class="detail-archive" type="button" id="detailArchive">Archive</button><span class="avatar">JM</span><button class="icon-button" type="button" id="closeTaskDetail" aria-label="Close task details">×</button></div>
       </header>
       <div class="detail-content">
         <div class="detail-private"><span>▣</span>This task is visible to members of this team.</div>
@@ -1431,11 +1496,14 @@
       { name: "Sprint 14", start: "2027-03-17", end: "2027-03-31" }
     ];
 
-    function showToast(message) {
-      toast.textContent = message;
+    // action: optional { label, run }, e.g. Undo after archiving. Toasts with an action stay up longer.
+    function showToast(message, action = null) {
+      toast.replaceChildren(message);
+      toast.classList.toggle("has-action", Boolean(action));
+      if (action) toast.append(makeButton(action.label, "toast-action", () => { toast.classList.remove("show"); action.run(); }));
       toast.classList.add("show");
       clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => toast.classList.remove("show"), 2300);
+      toastTimer = setTimeout(() => toast.classList.remove("show"), action ? 6000 : 2300);
     }
     function toUtcDate(isoDate) {
       const [year, month, day] = isoDate.split("-").map(Number);
@@ -1618,6 +1686,7 @@
       archivePage.style.display = showArchive ? "block" : "none";
       document.getElementById("orgPage").style.display = showOrg && orgTab === "tasks" ? "block" : "none";
       document.getElementById("orgGoalsPage").style.display = showOrg && orgTab === "goals" ? "block" : "none";
+      document.getElementById("orgSettingsPage").style.display = showOrg && orgTab === "settings" ? "block" : "none";
       if (showArchive) renderArchive();
     }
     function renderArchive() {
@@ -1834,6 +1903,7 @@
       renderTaskWorkSections();
       syncDetailDateBounds();
       syncDetailSprintField();
+      document.getElementById("detailArchive").hidden = isCreatingTask;
       taskDetailOverlay.classList.add("open");
       document.getElementById("detailTaskTitle").focus();
     }
@@ -1862,6 +1932,7 @@
       renderTaskWorkSections();
       syncDetailDateBounds();
       syncDetailSprintField();
+      document.getElementById("detailArchive").hidden = isCreatingTask;
       taskDetailOverlay.classList.add("open");
       document.getElementById("detailTaskTitle").focus();
     }
@@ -1889,6 +1960,7 @@
       renderTaskWorkSections();
       syncDetailDateBounds();
       syncDetailSprintField();
+      document.getElementById("detailArchive").hidden = isCreatingTask;
       taskDetailOverlay.classList.add("open");
       document.getElementById("detailTaskTitle").focus();
     }
@@ -1916,6 +1988,7 @@
       renderTaskWorkSections();
       syncDetailDateBounds();
       syncDetailSprintField();
+      document.getElementById("detailArchive").hidden = isCreatingTask;
       taskDetailOverlay.classList.add("open");
       document.getElementById("detailTaskTitle").focus();
     }
@@ -2429,6 +2502,8 @@
       // Board cards expose their fields on dataset, so cards, backlog rows and subtasks share field names.
       document.querySelectorAll(".task-card").forEach(card => { visit(card.dataset); (card.taskSubtasks || []).forEach(visit); });
       document.querySelectorAll("#backlogView .backlog-section").forEach(section => (section.taskRecords || []).forEach(task => { visit(task); (task.subtasks || []).forEach(visit); }));
+      // Archived tasks follow roster and subteam changes too, so they still fit when restored.
+      archivedTasks.filter(entry => entry.kind !== "org").forEach(({ record }) => { visit(taskFields(record)); (record.nodeType ? record.taskSubtasks : record.subtasks)?.forEach(visit); });
     }
     function rerenderTaskViews() {
       document.querySelectorAll(".task-card").forEach(card => { renderCardFields(card); renderCardSubtasks(card); });
@@ -2552,6 +2627,7 @@
       renderTeamProfile();
       renderMemberList();
       renderSubteamList();
+      renderArchivedList();
     }
     function renderMemberList() {
       const canEdit = settingsCanEditMembers();
@@ -2674,13 +2750,13 @@
         return row;
       }));
     }
-    function openColorPicker(anchor, subteam) {
+    function openColorPicker(anchor, subteam, onPick = () => { rerenderTaskViews(); renderSettings(); }) {
       document.querySelector(".color-picker")?.remove();
       const picker = document.createElement("div"); picker.className = "color-picker"; picker.setAttribute("role", "listbox"); picker.setAttribute("aria-label", "Subteam color");
       Object.entries(subteamPalette).forEach(([key, colors]) => {
         const option = document.createElement("button"); option.type = "button"; option.className = "color-option"; option.style.background = colors.fg;
         option.setAttribute("aria-label", key); option.setAttribute("aria-selected", String(key === subteam.color));
-        option.addEventListener("click", () => { subteam.color = key; picker.remove(); rerenderTaskViews(); renderSettings(); });
+        option.addEventListener("click", () => { subteam.color = key; picker.remove(); onPick(); });
         picker.append(option);
       });
       anchor.after(picker);
@@ -2830,7 +2906,7 @@
       dashboardTeams().forEach(team => {
         if (team.live) {
           document.querySelectorAll(".task-card").forEach(card => rows.push({
-            team, sprint: "current", sprintName: sprintSchedule[currentSprintIndex].name, record: card.dataset, status: card.dataset.state,
+            team, sprint: "current", sprintName: sprintSchedule[currentSprintIndex].name, record: card.dataset, target: card, status: card.dataset.state,
             open: () => { openTaskDetails(card); setDetailProject(team.profile); },
             setStatus: value => moveTask(card, value, false)
           }));
@@ -3001,7 +3077,7 @@
     function setWorkspaceChrome(mode) {
       workspaceMode = mode;
       document.querySelectorAll("[data-workspace-view]").forEach(tab => { tab.hidden = mode === "org"; });
-      document.querySelectorAll("[data-org-tab]").forEach(tab => { tab.hidden = mode !== "org"; });
+      document.querySelectorAll("[data-org-tab]").forEach(tab => { tab.hidden = mode !== "org" || (tab.dataset.orgTab === "settings" && !isProgramCoach()); });
     }
     function openOrgView() {
       setWorkspaceChrome("org");
@@ -4081,7 +4157,7 @@
     function activeTeamEntry() { return orgTeams.find(team => team.profile === teamProfile) || orgTeams.find(team => team.live); }
     function teamEntryByName(name) { return orgTeams.find(team => team.profile.name === name) || null; }
     function studentsOf(team) {
-      return team.live ? teamRoster.filter(member => !isAdultRole(member.role)) : team.members.map(name => ({ name, role: "Student", subteams: [] }));
+      return team.roster.filter(member => !isAdultRole(member.role));
     }
     // Sample goals for the sample teams: [member index, wish, status, created days ago, check-ins [days ago, status, plan result], feedback days ago]
     const orgGoalSeeds = {
@@ -4155,11 +4231,15 @@
     };
     function setOrgTab(tab) {
       clearSelection();
+      // Program settings are for program coaches only; mentors manage their team from its own Settings tab.
+      if (tab === "settings" && !isProgramCoach()) tab = "tasks";
       orgTab = tab;
+      setWorkspaceChrome(workspaceMode);
       document.querySelectorAll("[data-org-tab]").forEach(button => button.classList.toggle("active", button.dataset.orgTab === tab));
       document.getElementById("orgPage").style.display = workspaceMode === "org" && tab === "tasks" ? "block" : "none";
       document.getElementById("orgGoalsPage").style.display = workspaceMode === "org" && tab === "goals" ? "block" : "none";
-      if (tab === "tasks") renderOrgList(); else { orgGoalStudent = null; renderOrgGoals(); }
+      document.getElementById("orgSettingsPage").style.display = workspaceMode === "org" && tab === "settings" ? "block" : "none";
+      if (tab === "tasks") renderOrgList(); else if (tab === "settings") renderProgramSettings(); else { orgGoalStudent = null; renderOrgGoals(); }
     }
     // Next check-in follows the goal's own team calendar: overdue, open now (last two days of the sprint), or the next sprint end.
     function nextCheckinDue(goal) {
@@ -4878,6 +4958,451 @@
       })), task.title);
     }
 
+    // ---------- Program settings (Coaches' Dashboard → Settings; program coaches only) ----------
+    // Teams, the subteams new teams start with, and everyone in the program with their team.
+    const subteamDefaults = subteams.map(subteam => ({ ...subteam }));
+    // People in the program without a team (e.g. their team was deleted, or they're waiting to be placed).
+    const unassignedPeople = [];
+    const sampleMentors = { "Gear Grinders": "Mr. Okafor", "Bolt Brigade": "Ms. Chen", "Torque Titans": "Mr. Alvarez", "Servo Squad": "Ms. Novak", "Pixel Pilots": "Mr. Haddad" };
+    function sampleEmail(name) { return `${name.toLowerCase().replace(/[^a-z ]/g, "").trim().replace(/\s+/g, ".")}@${schoolEmailDomain}`; }
+    // Every team gets a roster shaped like the live team's; members stays a list of student names for the task and goal code.
+    function setupTeamRoster(team) {
+      if (team.live) { team.roster = teamRoster; return; }
+      const mentor = sampleMentors[team.profile.name];
+      team.roster = [
+        ...(mentor ? [{ name: mentor, email: sampleEmail(mentor), role: "Team mentor", subteams: [] }] : []),
+        ...(team.members || []).map(name => ({ name, email: sampleEmail(name), role: "Student", subteams: [] }))
+      ];
+      Object.defineProperty(team, "members", { configurable: true, get() { return this.roster.filter(member => !isAdultRole(member.role)).map(member => member.name); } });
+    }
+    function teamByNumber(number) { return orgTeams.find(team => team.profile.number === number) || null; }
+    // Program coaches are org-wide, so they're listed once with no team.
+    function programPeople() {
+      const people = [];
+      orgTeams.forEach(team => team.roster.forEach(member => {
+        if (member.role !== "Program coach") people.push({ member, team });
+        else if (!people.some(person => person.member === member)) people.push({ member, team: null });
+      }));
+      unassignedPeople.forEach(member => people.push({ member, team: null }));
+      return people;
+    }
+    // Goals and goal events store the team's name, so a rename carries through to them.
+    function renameTeamReferences(from, to) {
+      studentGoals.forEach(goal => {
+        if (goal.team === from) goal.team = to;
+        goal.events.forEach(event => { if (event.team === from) event.team = to; });
+      });
+    }
+    function peopleCount(count) { return count === 1 ? "1 person" : `${count} people`; }
+    function eachTeamTask(team, visit) {
+      if (team.live) eachTaskRecord(visit);
+      else team.tasks.forEach(task => { visit(task); task.subtasks.forEach(visit); });
+    }
+    function teamTaskCount(team, name) {
+      let count = 0;
+      eachTeamTask(team, record => { if (assigneesOf(record).includes(name)) count++; });
+      return count;
+    }
+    // Takes a person off every task on a team; returns how many tasks that touched.
+    function unassignFromTeam(team, name) {
+      const count = teamTaskCount(team, name);
+      eachTeamTask(team, record => { const list = assigneesOf(record); if (list.includes(name)) record.assignee = assigneeValue(list.filter(other => other !== name)); });
+      return count;
+    }
+    function detachPerson(member, team) {
+      const list = team ? team.roster : unassignedPeople;
+      list.splice(list.indexOf(member), 1);
+      return team ? unassignFromTeam(team, member.name) : 0;
+    }
+    function movePerson(member, from, to) {
+      const tasks = detachPerson(member, from);
+      // Subteams are per team, so they start fresh on the new team.
+      member.subteams = [];
+      (to ? to.roster : unassignedPeople).push(member);
+      return tasks;
+    }
+    function refreshProgramSettings() {
+      renderProgramSettings();
+      rerenderTaskViews();
+      renderOrgList();
+    }
+    function renderProgramSettings() {
+      renderOrgTeamList();
+      renderDefaultSubteams();
+      renderOrgPeople();
+    }
+    function renderOrgTeamList() {
+      document.getElementById("orgTeamsNote").textContent = `${pluralize(orgTeams.length, "team")}. Each team's mentors, members, and subteams are managed from its own Settings tab too.`;
+      document.getElementById("orgTeamList").replaceChildren(...orgTeams.map(team => {
+        const row = document.createElement("li"); row.className = "org-team-row";
+        const badge = document.createElement("span"); badge.className = "team-mini-badge"; paintTeamBadge(badge, team.profile);
+        const who = document.createElement("span"); who.className = "member-who";
+        const name = document.createElement("strong"); name.textContent = team.profile.name;
+        const meta = document.createElement("small"); meta.textContent = `FTC ${team.profile.number} · ${team.live ? `${sprintSchedule.length} sprints planned` : `${team.sprintDays}-day sprints`}`;
+        who.append(name, meta);
+        const people = document.createElement("span"); people.className = "org-team-people";
+        const mentors = team.roster.filter(member => member.role === "Team mentor").map(member => member.name);
+        const students = team.roster.filter(member => !isAdultRole(member.role)).length;
+        people.append(`${pluralize(students, "student")} · `);
+        if (mentors.length) people.append(`Mentor${mentors.length > 1 ? "s" : ""}: ${mentors.join(", ")}`);
+        else { const warn = document.createElement("span"); warn.className = "org-team-warn"; warn.textContent = "No mentor yet"; people.append(warn); }
+        const open = makeButton("Open →", "row-action", () => selectTeam(team));
+        open.setAttribute("aria-label", `Open ${team.profile.name}`);
+        const edit = makeButton("Edit", "row-action", () => openTeamForm(team));
+        const remove = makeButton("Delete", "row-remove", () => confirmTeamDelete(row, team));
+        // The live team holds the mock-up's real task data, so it stays.
+        if (team.live) { remove.disabled = true; remove.title = `${team.profile.name} is the mock-up's live team, so it can't be deleted here`; }
+        row.append(badge, who, people, open, edit, remove);
+        return row;
+      }));
+    }
+    function openTeamForm(team = null) {
+      renderOrgTeamList();
+      document.querySelector(".team-form")?.remove();
+      const list = document.getElementById("orgTeamList");
+      const draft = { color: team?.profile.color || Object.keys(teamColors).find(key => !orgTeams.some(other => other.profile.color === key)) || "green" };
+      const form = document.createElement("form"); form.className = "settings-form team-form";
+      const field = (text, control) => { const label = document.createElement("label"); label.append(text, control); return label; };
+      const name = document.createElement("input"); name.maxLength = 40; name.required = true; name.value = team?.profile.name || ""; name.autocomplete = "off";
+      const number = document.createElement("input"); number.inputMode = "numeric"; number.maxLength = 5; number.required = true; number.value = team?.profile.number || ""; number.autocomplete = "off";
+      const sprintDays = document.createElement("select");
+      [7, 10, 14, 21].forEach(days => sprintDays.append(new Option(`${days} days`, String(days))));
+      sprintDays.value = String(team?.sprintDays || 14);
+      const colors = document.createElement("div"); colors.className = "team-color-row"; colors.setAttribute("role", "radiogroup"); colors.setAttribute("aria-label", "Team color");
+      const paintColors = () => colors.replaceChildren(...Object.entries(teamColors).map(([key, value]) => {
+        const option = document.createElement("button"); option.type = "button"; option.className = "team-color"; option.style.background = value.bg; option.title = key;
+        option.setAttribute("role", "radio"); option.setAttribute("aria-checked", String(key === draft.color)); option.setAttribute("aria-label", `${key} team color`);
+        option.addEventListener("click", () => { draft.color = key; paintColors(); });
+        return option;
+      }));
+      paintColors();
+      form.append(field("Team name", name), field("FTC team number", number));
+      if (!team?.live) form.append(field("Sprint length", sprintDays));
+      form.append(colors);
+      if (!team) {
+        const hint = document.createElement("p"); hint.className = "settings-hint";
+        hint.textContent = `Starts with the default subteams (${subteamDefaults.map(subteam => subteam.name).join(", ")}) and Sprint 1 today. Add a mentor and students under People.`;
+        form.append(hint);
+      }
+      const actions = document.createElement("div"); actions.className = "settings-form-actions";
+      const save = document.createElement("button"); save.type = "submit"; save.dataset.save = "true"; save.textContent = team ? "Save" : "Create team";
+      actions.append(makeButton("Cancel", "", renderOrgTeamList), save);
+      form.append(actions);
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        const nextName = name.value.replace(/\s+/g, " ").trim();
+        const nextNumber = number.value.trim();
+        if (!nextName) { name.focus(); return; }
+        if (!/^\d{1,5}$/.test(nextNumber) || Number(nextNumber) === 0) { showToast("Team numbers are 1–5 digits"); number.focus(); return; }
+        const cleanNumber = String(Number(nextNumber));
+        if (orgTeams.some(other => other !== team && other.profile.name.toLowerCase() === nextName.toLowerCase())) { showToast("There's already a team with that name"); name.focus(); return; }
+        if (orgTeams.some(other => other !== team && other.profile.number === cleanNumber)) { showToast(`FTC ${cleanNumber} is already in the program`); number.focus(); return; }
+        if (team) {
+          const previous = team.profile.name;
+          Object.assign(team.profile, { name: nextName, number: cleanNumber, color: draft.color });
+          if (!team.live) team.sprintDays = Number(sprintDays.value);
+          if (previous !== nextName) renameTeamReferences(previous, nextName);
+          showToast("Team saved");
+        } else {
+          const created = { profile: { name: nextName, number: cleanNumber, color: draft.color, icon: "" }, seasonStart: todayIso(), sprintDays: Number(sprintDays.value), tasks: [], subteams: subteamDefaults.map(subteam => ({ ...subteam })) };
+          setupTeamRoster(created);
+          orgTeams.push(created);
+          showToast(`${nextName} created`);
+        }
+        refreshProgramSettings();
+      });
+      form.addEventListener("keydown", event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); renderOrgTeamList(); } });
+      if (team) list.children[orgTeams.indexOf(team)].replaceWith(form); else list.before(form);
+      name.focus();
+    }
+    function confirmTeamDelete(row, team) {
+      const people = team.roster.filter(member => member.role !== "Program coach");
+      const confirm = document.createElement("li"); confirm.className = "org-team-row confirm-row";
+      const text = document.createElement("span");
+      const content = team.tasks.length ? `Its ${pluralize(team.tasks.length, "task")}, events, and Team Home` : "Its events and Team Home";
+      text.textContent = `Delete ${team.profile.name}? ${content} are deleted too.${people.length ? ` Its ${peopleCount(people.length)} ${people.length === 1 ? "stays" : "stay"} in the program without a team.` : ""} Students keep their goals.`;
+      const actions = document.createElement("span"); actions.className = "confirm-actions";
+      const go = makeButton("Delete team", "danger", () => {
+        people.forEach(member => { member.subteams = []; unassignedPeople.push(member); });
+        orgTeams.splice(orgTeams.indexOf(team), 1);
+        for (let index = archivedTasks.length - 1; index >= 0; index--) if (archivedTasks[index].record.orgTeam === team) archivedTasks.splice(index, 1);
+        refreshProgramSettings();
+        showToast(`${team.profile.name} deleted`);
+      });
+      actions.append(makeButton("Cancel", "", renderOrgTeamList), go);
+      confirm.append(text, actions);
+      row.replaceWith(confirm); go.focus();
+    }
+    function defaultSubteamTag(subteam) {
+      const tag = document.createElement("span"); tag.className = "tag default-subteam-tag"; tag.textContent = subteam.name;
+      const colors = subteamPalette[subteam.color] || subteamPalette.gray;
+      tag.style.background = colors.bg; tag.style.color = colors.fg;
+      return tag;
+    }
+    function renderDefaultSubteams() {
+      document.getElementById("defaultSubteamList").replaceChildren(...subteamDefaults.map(subteam => {
+        const row = document.createElement("li"); row.className = "subteam-row default-subteam-row";
+        const swatch = document.createElement("button"); swatch.type = "button"; swatch.className = "subteam-swatch";
+        swatch.style.background = subteamPalette[subteam.color].fg; swatch.setAttribute("aria-label", `Change ${subteam.name} color`);
+        swatch.addEventListener("click", () => openColorPicker(swatch, subteam, renderDefaultSubteams));
+        const copy = document.createElement("span"); copy.className = "subteam-copy";
+        const description = document.createElement("small"); description.textContent = subteam.description || "No description";
+        copy.append(defaultSubteamTag(subteam), description);
+        const remove = makeButton("Delete", "row-remove", () => { subteamDefaults.splice(subteamDefaults.indexOf(subteam), 1); renderDefaultSubteams(); showToast(`${subteam.name} removed from the defaults`); });
+        remove.disabled = subteamDefaults.length === 1;
+        row.append(swatch, copy, makeButton("Edit", "row-action", () => openDefaultSubteamForm(subteam)), remove);
+        return row;
+      }));
+    }
+    function openDefaultSubteamForm(subteam = null) {
+      renderDefaultSubteams();
+      const list = document.getElementById("defaultSubteamList");
+      const form = document.createElement("form"); form.className = "settings-form subteam-form";
+      const name = document.createElement("input"); name.maxLength = 24; name.required = true; name.placeholder = "Subteam name"; name.setAttribute("aria-label", "Subteam name"); name.value = subteam?.name || "";
+      const description = document.createElement("input"); description.maxLength = 80; description.placeholder = "One line: what does this subteam own?"; description.setAttribute("aria-label", "Description"); description.value = subteam?.description || "";
+      const actions = document.createElement("div"); actions.className = "settings-form-actions";
+      const save = document.createElement("button"); save.type = "submit"; save.dataset.save = "true"; save.textContent = subteam ? "Save" : "Add subteam";
+      actions.append(makeButton("Cancel", "", renderDefaultSubteams), save);
+      form.append(name, description, actions);
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        const nextName = name.value.replace(/\s+/g, " ").trim();
+        if (!nextName) { name.focus(); return; }
+        if (subteamDefaults.some(other => other !== subteam && other.name.toLowerCase() === nextName.toLowerCase())) { showToast("There's already a default subteam with that name"); name.focus(); return; }
+        if (subteam) Object.assign(subteam, { name: nextName, description: description.value.trim() });
+        else {
+          const used = new Set(subteamDefaults.map(item => item.color));
+          subteamDefaults.push({ name: nextName, description: description.value.trim(), color: Object.keys(subteamPalette).find(key => !used.has(key)) || "gray" });
+        }
+        renderDefaultSubteams();
+        showToast(subteam ? "Default subteam updated" : `${nextName} added to the defaults`);
+      });
+      form.addEventListener("keydown", event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); renderDefaultSubteams(); } });
+      if (subteam) list.children[subteamDefaults.indexOf(subteam)].replaceWith(form); else list.append(form);
+      name.focus();
+    }
+    function teamSelect(selected, label) {
+      const select = document.createElement("select"); select.setAttribute("aria-label", label);
+      select.append(new Option("No team", ""), ...orgTeams.map(team => new Option(team.profile.name, team.profile.number)));
+      select.value = selected ? selected.profile.number : "";
+      return select;
+    }
+    function renderOrgPeople() {
+      const filter = document.getElementById("orgPeopleTeam");
+      const current = filter.value || "all";
+      filter.replaceChildren(new Option("Everyone", "all"), ...orgTeams.map(team => new Option(team.profile.name, team.profile.number)), new Option("No team", "none"));
+      filter.value = [...filter.options].some(option => option.value === current) ? current : "all";
+      const query = document.getElementById("orgPeopleSearch").value.trim().toLowerCase();
+      const all = programPeople();
+      const roleOrder = ["Program coach", "Team mentor", "Team lead", "Student"];
+      const shown = all.filter(({ member, team }) =>
+        (filter.value === "all" || (filter.value === "none" ? !team && member.role !== "Program coach" : team?.profile.number === filter.value)) &&
+        (!query || member.name.toLowerCase().includes(query)))
+        .sort((left, right) => roleOrder.indexOf(left.member.role) - roleOrder.indexOf(right.member.role) || orgTeams.indexOf(left.team) - orgTeams.indexOf(right.team) || left.member.name.localeCompare(right.member.name));
+      const waiting = all.filter(({ member, team }) => !team && member.role !== "Program coach").length;
+      document.getElementById("orgPeopleNote").textContent = `${peopleCount(all.length)}${waiting ? ` · ${waiting} without a team` : ""}. Changing someone's team takes them off their old team's tasks; goals stay with the student. School emails are only used to match sign-ins and aren't shown here.`;
+      const list = document.getElementById("orgPeopleList");
+      if (!shown.length) { const empty = document.createElement("li"); empty.className = "org-people-empty"; empty.textContent = "No one matches."; list.replaceChildren(empty); return; }
+      list.replaceChildren(...shown.map(({ member, team }) => {
+        const row = document.createElement("li"); row.className = "member-row org-person-row";
+        const avatar = document.createElement("span"); avatar.className = "avatar"; avatar.textContent = initials(member.name);
+        const who = document.createElement("span"); who.className = "member-who";
+        const name = document.createElement("strong"); name.textContent = member.name; who.append(name);
+        const isMe = member.name === currentUserName();
+        const role = document.createElement("select"); role.setAttribute("aria-label", `${member.name}'s role`);
+        memberRoles.forEach(option => role.append(new Option(option)));
+        role.value = member.role; role.disabled = isMe;
+        if (isMe) role.title = "You can't change your own role";
+        role.addEventListener("change", () => { member.role = role.value; refreshProgramSettings(); showToast(`${member.name} is now ${role.value === "Team lead" ? "a team lead" : role.value === "Student" ? "a student" : `a ${role.value.toLowerCase()}`}`); });
+        let place;
+        if (member.role === "Program coach") { place = document.createElement("span"); place.className = "member-all-teams"; place.textContent = "All teams"; }
+        else {
+          place = teamSelect(team, `${member.name}'s team`);
+          place.addEventListener("change", () => {
+            const target = teamByNumber(place.value);
+            const tasks = movePerson(member, team, target);
+            refreshProgramSettings();
+            showToast(`${member.name} ${target ? `moved to ${target.profile.name}` : "no longer on a team"}${tasks ? ` · taken off ${pluralize(tasks, "task")}` : ""}`);
+          });
+        }
+        const remove = makeButton("Remove", "row-remove", () => confirmPersonRemoval(row, member, team));
+        remove.disabled = isMe;
+        remove.setAttribute("aria-label", `Remove ${member.name} from the program`);
+        row.append(avatar, who, role, place, remove);
+        return row;
+      }));
+    }
+    function confirmPersonRemoval(row, member, team) {
+      const confirm = document.createElement("li"); confirm.className = "member-row confirm-row";
+      const tasks = team ? teamTaskCount(team, member.name) : 0;
+      const text = document.createElement("span");
+      text.textContent = `Remove ${member.name} from the program?${tasks ? ` They'll be taken off ${pluralize(tasks, "task")}.` : ""} Their goal history is kept until the school's retention rules say otherwise.`;
+      const actions = document.createElement("span"); actions.className = "confirm-actions";
+      const go = makeButton("Remove", "danger", () => {
+        // Program coaches sit on the live roster, so detach them from wherever they're stored.
+        const holder = team || (teamRoster.includes(member) ? orgTeams.find(entry => entry.live) : null);
+        detachPerson(member, holder);
+        refreshProgramSettings();
+        showToast(`${member.name} removed from the program`);
+      });
+      actions.append(makeButton("Cancel", "", renderOrgPeople), go);
+      confirm.append(text, actions);
+      row.replaceWith(confirm); go.focus();
+    }
+    function openPersonForm() {
+      if (document.querySelector(".person-form")) return;
+      const form = document.createElement("form"); form.className = "settings-form member-form person-form";
+      const name = document.createElement("input"); name.maxLength = 40; name.required = true; name.placeholder = "Display name (e.g. Riley T.)"; name.setAttribute("aria-label", "Display name");
+      const email = document.createElement("input"); email.type = "email"; email.required = true; email.placeholder = `School email (…@${schoolEmailDomain})`; email.setAttribute("aria-label", "School email");
+      const role = document.createElement("select"); role.setAttribute("aria-label", "Role");
+      memberRoles.forEach(option => role.append(new Option(option)));
+      role.value = "Student";
+      const filter = document.getElementById("orgPeopleTeam").value;
+      const team = teamSelect(teamByNumber(filter), "Team");
+      const hint = document.createElement("p"); hint.className = "settings-hint"; hint.textContent = "Use first name and last initial. Don't add personal emails, phone numbers, or birthdays.";
+      const actions = document.createElement("div"); actions.className = "settings-form-actions";
+      const save = document.createElement("button"); save.type = "submit"; save.dataset.save = "true"; save.textContent = "Add person";
+      actions.append(makeButton("Cancel", "", () => form.remove()), save);
+      form.append(name, email, role, team, hint, actions);
+      const syncTeam = () => { team.disabled = role.value === "Program coach"; };
+      role.addEventListener("change", syncTeam);
+      form.addEventListener("submit", event => {
+        event.preventDefault();
+        const values = { name: name.value.replace(/[|]/g, "").replace(/\s+/g, " ").trim(), email: email.value.trim().toLowerCase(), role: role.value, subteams: [] };
+        if (!values.name) { name.focus(); return; }
+        if (!values.email.endsWith(`@${schoolEmailDomain}`)) { showToast(`Use a school account ending in @${schoolEmailDomain}`); email.focus(); return; }
+        if (programPeople().some(({ member }) => member.email === values.email || member.name.toLowerCase() === values.name.toLowerCase())) { showToast("That person is already in the program"); name.focus(); return; }
+        // Program coaches are org-wide; in the mock-up they're stored on the live roster.
+        const target = values.role === "Program coach" ? orgTeams.find(entry => entry.live) : teamByNumber(team.value);
+        (target ? target.roster : unassignedPeople).push(values);
+        form.remove(); refreshProgramSettings();
+        showToast(`${values.name} added${values.role === "Program coach" ? " as a program coach" : target ? ` to ${target.profile.name}` : " without a team"}`);
+      });
+      form.addEventListener("keydown", event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); form.remove(); } });
+      document.querySelector(".org-people-filters").before(form);
+      name.focus();
+    }
+
+    // ---------- Archive ----------
+    // Archiving takes a task (with its subtasks and comments) out of every view but keeps it, so it can be restored from Settings.
+    // Anyone on the team can archive or restore; only mentors and coaches can delete an archived task for good.
+    const archivedTasks = [];
+    function taskFields(record) { return record.nodeType ? record.dataset : record; }
+    function subtaskListOf(parent) { return parent.nodeType ? (parent.taskSubtasks ||= []) : (parent.subtasks ||= []); }
+    // items: [{ record, parent }]; parent is set for subtasks. Subtasks whose parent is also being archived travel with it.
+    function archiveTasks(items) {
+      const records = new Set(items.map(item => item.record));
+      const entries = items.filter(item => !item.parent || !records.has(item.parent)).map(({ record, parent }) => {
+        const entry = { record, parent, by: currentUserName(), on: todayIso() };
+        if (parent) {
+          const list = subtaskListOf(parent);
+          entry.kind = "subtask"; entry.index = list.indexOf(record); entry.from = `Subtask of ${taskFields(parent).title}`;
+          list.splice(entry.index, 1);
+        } else if (record.nodeType) {
+          entry.kind = "card"; entry.index = [...record.parentNode.children].indexOf(record); entry.from = sprintSchedule[currentSprintIndex].name;
+          record.remove();
+        } else if (record.orgTeam) {
+          entry.kind = "org"; entry.index = record.orgTeam.tasks.indexOf(record);
+          entry.from = record.sprint === "backlog" ? "Backlog" : teamSprints(record.orgTeam)[record.sprint]?.name || "";
+          record.orgTeam.tasks.splice(entry.index, 1);
+        } else {
+          entry.kind = "backlog"; entry.section = record.section; entry.index = record.section.taskRecords.indexOf(record); entry.from = backlogSectionLabel(record.section);
+          record.section.taskRecords.splice(entry.index, 1);
+        }
+        archivedTasks.unshift(entry);
+        return entry;
+      });
+      if (!entries.length) return;
+      refreshAfterArchive();
+      const label = entries.length === 1 ? `Archived “${taskFields(entries[0].record).title}”` : `Archived ${pluralize(entries.length, entries.some(entry => entry.parent) ? "item" : "task")}`;
+      showToast(label, { label: "Undo", run: () => restoreArchived(entries) });
+    }
+    function restoreArchived(entries) {
+      // Restore in reverse so saved positions line up with the lists they came from.
+      [...entries].reverse().forEach(entry => {
+        if (!archivedTasks.includes(entry)) return;
+        archivedTasks.splice(archivedTasks.indexOf(entry), 1);
+        const putBack = list => list.splice(Math.min(entry.index, list.length), 0, entry.record);
+        if (entry.kind === "subtask") putBack(subtaskListOf(entry.parent));
+        else if (entry.kind === "org") putBack(entry.record.orgTeam.tasks);
+        else if (entry.kind === "backlog") { entry.record.section = entry.section; putBack(entry.section.taskRecords ||= []); }
+        else {
+          const column = [...document.querySelectorAll(".column")].find(candidate => candidate.dataset.state === entry.record.dataset.state.toLowerCase().replace(" ", ""));
+          const list = column.querySelector(".task-list");
+          list.insertBefore(entry.record, list.children[entry.index] || null);
+        }
+      });
+      refreshAfterArchive();
+      const parentArchived = entries.find(entry => entry.parent && archivedTasks.some(other => other.record === entry.parent));
+      showToast(parentArchived ? `Restored inside “${taskFields(parentArchived.parent).title}”, which is still archived` : entries.length === 1 ? `Restored “${taskFields(entries[0].record).title}”` : `Restored ${pluralize(entries.length, "task")}`);
+    }
+    function refreshAfterArchive() {
+      bulk.hold = true;
+      document.querySelectorAll(".task-card").forEach(renderCardSubtasks);
+      document.querySelectorAll("#backlogView .backlog-section").forEach(renderBacklogTable);
+      bulk.hold = false;
+      filterTasks();
+      renderOrgList();
+      renderArchivedList();
+    }
+    function archiveSelection() {
+      const records = [...bulk.selected];
+      // Dashboard rows for board cards select card.dataset, so archive the card itself.
+      const items = records.map(record => ({ record: bulk.view === "org" ? orgRowLookup.get(record)?.target || record : record, parent: bulkParents.get(record) || null }));
+      clearSelection();
+      archiveTasks(items);
+    }
+    function archiveOpenTask() {
+      const record = activeTaskSubtask || activeTaskCard || activeBacklogTask;
+      const parent = activeTaskSubtask ? activeSubtaskParent : null;
+      closeTaskDetails();
+      if (record) archiveTasks([{ record, parent }]);
+    }
+    function renderArchivedList() {
+      const canDelete = isAdultRole(demoRole);
+      document.getElementById("archivedNote").textContent = canDelete
+        ? "Archived tasks are hidden everywhere but keep their subtasks and comments. Anyone on the team can restore them. Deleting one is permanent."
+        : "Archived tasks are hidden everywhere but keep their subtasks and comments. Restore one to put it back where it was.";
+      // This mock-up shows Circuit Breakers' tasks on every team, so live-team archives show on every team too.
+      const entries = archivedTasks.filter(entry => entry.kind !== "org" || entry.record.orgTeam.profile === teamProfile);
+      const list = document.getElementById("archivedList");
+      if (!entries.length) {
+        const empty = document.createElement("li"); empty.className = "archived-empty"; empty.textContent = "No archived tasks.";
+        list.replaceChildren(empty);
+        return;
+      }
+      list.replaceChildren(...entries.map(entry => {
+        const fields = taskFields(entry.record);
+        const row = document.createElement("li"); row.className = "archived-row";
+        const copy = document.createElement("span"); copy.className = "member-who";
+        const title = document.createElement("strong"); title.textContent = fields.title;
+        const meta = document.createElement("small"); meta.textContent = `${fields.type || "Task"} · ${entry.from}`;
+        copy.append(title, meta);
+        const when = document.createElement("small"); when.className = "archived-when"; when.textContent = `Archived by ${entry.by} · ${formatMonthDay(entry.on)}`;
+        const actions = document.createElement("span"); actions.className = "archived-actions";
+        actions.append(makeButton("Restore", "row-action", () => restoreArchived([entry])));
+        if (canDelete) actions.append(makeButton("Delete", "row-remove", () => confirmArchivedDelete(row, entry)));
+        row.append(subteamTag(fields.subteam), copy, when, actions);
+        return row;
+      }));
+    }
+    function confirmArchivedDelete(row, entry) {
+      const fields = taskFields(entry.record);
+      const subtasks = entry.kind === "subtask" ? 0 : subtaskListOf(entry.record).length;
+      const confirm = document.createElement("li"); confirm.className = "archived-row confirm-row";
+      const text = document.createElement("span");
+      text.textContent = `Delete “${fields.title}” for good?${subtasks ? ` Its ${pluralize(subtasks, "subtask")} and comments go too.` : " Its comments go too."} This can't be undone.`;
+      const actions = document.createElement("span"); actions.className = "confirm-actions";
+      const go = makeButton("Delete", "danger", () => {
+        archivedTasks.splice(archivedTasks.indexOf(entry), 1);
+        renderArchivedList();
+        showToast(`Deleted “${fields.title}”`);
+      });
+      actions.append(makeButton("Cancel", "", renderArchivedList), go);
+      confirm.append(text, actions);
+      row.replaceWith(confirm); go.focus();
+    }
+
     // ---------- Multi-select in list views (List, Backlog, Coaches' Dashboard tasks) ----------
     // The circle at the start of a row selects it; tasks are marked done from the Status column or the task panel.
     // Shift-click selects a range. A bar at the bottom of the screen holds the bulk actions.
@@ -4945,7 +5470,7 @@
         button.addEventListener("click", event => { event.stopPropagation(); openChoiceMenu(button, text, items(), `bulk:${text}`); });
         return button;
       });
-      bar.replaceChildren(label, ...actions, makeButton("Clear", "text-button bulk-clear", clearSelection));
+      bar.replaceChildren(label, ...actions, makeButton("Archive", "row-move bulk-action bulk-archive", archiveSelection), makeButton("Clear", "text-button bulk-clear", clearSelection));
     }
     // Each list view says which bulk actions it supports and how to apply them to its own records.
     function bulkActions(view) {
@@ -5230,11 +5755,17 @@
       const number = document.getElementById("teamNumberInput").value.trim();
       if (!name) { document.getElementById("teamNameInput").focus(); return; }
       if (!/^\d{1,5}$/.test(number) || Number(number) === 0) { showToast("Team numbers are 1–5 digits"); document.getElementById("teamNumberInput").focus(); return; }
+      if (name !== teamProfile.name) renameTeamReferences(teamProfile.name, name);
       Object.assign(teamProfile, { name, number: String(Number(number)), color: teamProfileDraft.color, icon: teamProfileDraft.icon });
       renderTeamIdentity(); renderTeamProfile();
       showToast("Team settings saved");
     });
     document.getElementById("addSubteamButton").addEventListener("click", () => openSubteamForm());
+    document.getElementById("addTeamButton").addEventListener("click", () => openTeamForm());
+    document.getElementById("addDefaultSubteamButton").addEventListener("click", () => openDefaultSubteamForm());
+    document.getElementById("addPersonButton").addEventListener("click", openPersonForm);
+    document.getElementById("orgPeopleTeam").addEventListener("change", renderOrgPeople);
+    document.getElementById("orgPeopleSearch").addEventListener("input", renderOrgPeople);
     document.getElementById("addEventButton").addEventListener("click", () => openEventForm(null));
     document.getElementById("togglePastEvents").addEventListener("click", event => {
       const pastList = document.getElementById("pastEventList");
@@ -5263,6 +5794,7 @@
     document.querySelectorAll("[data-add-state]").forEach(button => button.addEventListener("click", () => openTaskCreator(button.dataset.addState)));
     document.getElementById("closeTaskDetail").addEventListener("click", closeTaskDetails);
     document.getElementById("closeTaskDetailFooter").addEventListener("click", closeTaskDetails);
+    document.getElementById("detailArchive").addEventListener("click", archiveOpenTask);
     taskDetailOverlay.addEventListener("click", event => { if (event.target === taskDetailOverlay) closeTaskDetails(); });
     ["detailStart", "detailDue"].forEach(id => document.getElementById(id).addEventListener("input", syncDetailDateBounds));
     // Dates are picked, never typed: block keystrokes in date inputs and open the calendar instead.
@@ -5426,6 +5958,7 @@
     document.getElementById("subtaskAssigneeSlot").append(subtaskAssignees);
     renderTeamAvatars();
     renderTeamIdentity();
+    orgTeams.forEach(setupTeamRoster);
     seedOrgTasks();
     seedOrgGoals();
     renderTeamMenuButton();
