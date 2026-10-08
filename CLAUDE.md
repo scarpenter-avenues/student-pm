@@ -64,7 +64,7 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
   - Backlog: Move to · Status · Priority · Assign (Move to clears the selection afterward).
   - List: Status · Priority · Assign.
   - Dashboard: Status · Priority only (teams have different rosters).
-  - Assign adds a person to each task (or Unassign). **Archive** (a plain button, all three views) archives everything selected; selected subtasks whose parent is also selected travel with it.
+  - Assign adds a person to each task (or Unassign). There's no bulk Delete because there's no single-task delete yet.
   - Subtask rows in List and Backlog are selectable too and can be mixed with tasks (Status · Priority · Assign apply to both). Move to appears only when a task is selected; subtasks travel with their parent.
 - **Timeline:**
   - Grouped by subteam; status shown by bar color plus icon (gray/orange/green = To do/In progress/Done).
@@ -74,11 +74,6 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
   - Multi-assignee picker (chips, type-to-filter; no emails, no invite).
   - Start and due dates are **picker-only** (typing is blocked everywhere).
   - Tiptap description; subtasks; comments.
-- **Archive (instead of delete):**
-  - **Archive** button in the task panel toolbar (hidden while creating a task), plus Archive in the bulk bar. Works on board cards, Planning tasks, the other teams' dashboard tasks, and subtasks.
-  - Archived tasks vanish from every view (Board, List, Timeline, Planning, dashboard) but keep their subtasks and comments. The toast offers **Undo** (6 seconds); restoring puts a task back at its old position.
-  - **Settings → Archived tasks** lists them (subteam tag, title, type, where it was, who archived it and when) with **Restore** for anyone and **Delete** (permanent, with a confirm row) for mentors and coaches only.
-  - Archived tasks still follow roster and subteam changes (`eachTaskRecord` includes them). Store: `archivedTasks` (entries hold the record, kind, origin and index). In Firestore this becomes an `archived` flag plus `archivedBy/archivedAt`, with rules that keep hard delete to adults.
 - **Goals tab (team):**
   - Students see "My goal" plus team goal cards. Teammates see only the statement and status.
   - Adults see the team cards plus a pointer to the Coaches' Dashboard, which is where review happens.
@@ -107,11 +102,6 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
 - **Coaches' Dashboard** (from the ⌄ menu; dark "All" badge):
   - **All tasks:** grouped by team; sprint filter (Previous / Current / Next / All Tasks), relative to each team's own sprints.
   - **Goals:** grouped by team, one row per active goal (student name on the first). Columns: Student · Goal · By · Status · Last check-in · Next check-in · Coach feedback · Attention. Filters, plus student detail with feedback tools.
-- **Program settings** (Coaches' Dashboard → gear tab; **program coaches only**: hidden for mentors, who use their team's Settings):
-  - **Teams:** list (badge, FTC number, sprint length, student count, mentors or a "No mentor yet" warning) with Open →, Edit, Delete. **＋ New team**: name, FTC number (unique), sprint length (7/10/14/21 days; Sprint 1 starts today), color, plus a copy of the subteam defaults. Renaming carries through to goals (`renameTeamReferences`, also used by team Settings). Delete has a confirm row: tasks/events/Team Home go; people move to "No team"; students keep their goals. Circuit Breakers (the live team) can't be deleted.
-  - **Subteam defaults** (`subteamDefaults`): add, edit, recolor, delete. Copied into new teams only.
-  - **People:** everyone in the program, filterable by team ("No team" included) and searchable. Inline role and team selects, Remove (with a confirm row), ＋ Add person (name, school email, role, team). Changing team takes the person off the old team's tasks and resets their subteams; goals follow the student. Program coaches show "All teams". You can't change your own role or remove yourself.
-  - Data: every `orgTeams` entry has a `roster` (live team: `teamRoster`; sample teams get one built from their names, plus a sample mentor; Iron Owls has none). `team.members` is now a getter for student/lead names. `unassignedPeople` holds people without a team.
 - **Settings:**
   - Team name, FTC number, color, and icon (program coach / mentors only; the icon is resized to 128px).
   - Members (name, role, subteams; no emails shown; adding someone requires a school email).
@@ -134,6 +124,7 @@ Tests are ad-hoc scripts injected before `</body>` into a scratch copy of `index
 
 - **Goals:** reminders for coaches (email/notification; needs the approved email method).
 - **Data:** unify board and backlog data; then design the Firestore data model and security rules (the brief's suggested starting point). Assignees become arrays of UIDs (`array-contains` for "My tasks").
-- **Not built yet:** team chat (or link to Google Chat spaces, pending approval), drag-and-drop (planned for the React build; keep Move to and the tap menus for touch and keyboard), a recurring-event option, and a Safari clear button for date fields.
-- Ask admin how long archived tasks are kept (ties into the pending retention rules).
-- Confirm the Onshape spelling ("OnShape" was kept as the user wrote it in the goal ideas) and the qualifier dates against the official FIRST NYC schedule.
+- **Not built yet:** 
+  - drag-and-drop (planned for the React build; keep Move to and the tap menus for touch and keyboard), 
+  - task delete (single and bulk), and 
+  - a Safari clear button for date fields.
