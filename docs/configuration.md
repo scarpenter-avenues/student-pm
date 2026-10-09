@@ -8,8 +8,7 @@ project. Everything specific to that organization lives in two files that are **
 | `program.config.json` | Program name, how people sign in, the first coach, the season, default subteams, starting teams | `program.config.example.json` |
 | `.env.local` | The Firebase web app settings (API key, project ID, …) | `.env.example` (added with the app) |
 
-> **Status:** the app and its setup script are being built. This describes the planned setup; the steps marked
-> *(script)* run once the Vue project is in place.
+> **Status:** the app is still being built. `npm run setup` works today; the step marked *(coming)* doesn't exist yet.
 
 ## `program.config.json`
 
@@ -77,11 +76,19 @@ Colors: subteams use `red`, `green`, `yellow`, `blue`, `purple`, `teal`, `pink`,
    is enough for a program of ~100 people. Ideally, create it under your organization's own Google account.
 2. **Turn on sign-in:** in Authentication → Sign-in method, enable **Google** and/or **Email/Password** to match
    `signIn`. Add your hosting domain under Authorized domains.
-3. **Add a web app** in Project settings and copy its config into `.env.local`.
-4. **Write `program.config.json`:** copy `program.config.example.json` and edit it.
-5. **Seed the database** *(script)*: `npm run setup` creates the program, season, subteam defaults, starting teams, and
-   the first coach's invite in Firestore. It runs once, with admin credentials, and can be re-run safely.
-6. **Deploy** *(script)*: `npm run deploy` publishes the security rules, indexes, and the app to Firebase Hosting.
+3. **Add a web app** in Project settings and copy its config into `.env.local`. Point this repo at your project with
+   `npx firebase use --add`.
+4. **Write `program.config.json`:** copy `program.config.example.json` and edit it. `npm run setup` checks it and lists
+   anything that needs fixing.
+5. **Create your program:** `npm run setup` (or `npm run setup -- --project <your-project-id>`). It creates the program,
+   the season, subteam defaults, starting teams with their sprint calendars, and the first coach's invite.
+   - It needs admin credentials once: run `gcloud auth application-default login`, or set
+     `GOOGLE_APPLICATION_CREDENTIALS` to a service-account key file (keep it out of the repo; `.gitignore` covers
+     `*service-account*.json`).
+   - `--dry-run` shows what it would do without writing anything; `--emulator` tries it against the local emulators.
+   - Safe to re-run: it updates the program's name, sign-in settings, and subteam defaults, leaves existing teams
+     alone, and invites the first coach only while the program has no coach.
+6. **Deploy** *(coming)*: `npm run deploy` will publish the security rules, indexes, and the app to Firebase Hosting.
 7. **Sign in as the first coach** and add mentors and students under Coaches' Dashboard → Settings → People (or import a
    CSV).
 

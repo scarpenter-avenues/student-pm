@@ -12,6 +12,8 @@
     "dev": "vite --mode emulator",
     "emulators": "firebase emulators:start --import=.emulator-data --export-on-exit",
     "start": "run-p emulators dev",
+    "setup": "tsx scripts/setup.ts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
     "build": "run-p type-check \"build-only {@}\" --",
     "build-only": "vite build",
     "preview": "vite preview",
@@ -22,7 +24,7 @@
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/ e2e/ tests/"
+    "format": "prettier --write --experimental-cli src/ e2e/ tests/ scripts/"
   },
   "dependencies": {
     "firebase": "^13.0.0",

@@ -8,7 +8,9 @@
     "playwright.config.*",
     "eslint.config.*",
     "vitest.*.config.*",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "scripts/**/*.ts",
+    "src/model/**/*.ts"
   ],
   "compilerOptions": {
     // Most tools use transpilation instead of Node.js's native type-stripping.

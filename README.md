@@ -35,12 +35,15 @@ Needs Node.js 22.18+ or 24.12+, and Java 21+ (for the Firebase emulators).
 ```sh
 npm install
 npm start            # Firebase emulators + the app at http://localhost:5173
+npm run seed:demo    # in another terminal: load the sample program (7 teams, people, tasks, goals)
 ```
 
 `npm start` runs everything locally against the Firebase emulators; no Firebase account is needed. The emulator UI is at
-http://localhost:4000.
+http://localhost:4000. `seed:demo` replaces whatever is in the emulators with "Example Robotics" and prints the sample
+accounts you can sign in as.
 
-Other scripts: `npm run test:unit`, `npm run test:e2e`, `npm run lint`, `npm run type-check`, `npm run build`.
+Tests: `npm run test:unit`, `npm run test:rules` (security rules, against the emulator), `npm run test:e2e`.
+Other scripts: `npm run lint`, `npm run type-check`, `npm run build`.
 
 ## Deploying for your organization
 
