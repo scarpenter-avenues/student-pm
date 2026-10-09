@@ -1,8 +1,9 @@
 # Firestore data model
 
 Design for the production app (Vue 3 + Vite + TypeScript, Firebase Auth + Firestore + Hosting on the Spark plan).
-It covers every feature in the mock-up (`index.html`, described in `CLAUDE.md`). The draft security rules are in
-`/firestore.rules`; they haven't been run yet and get tested against the Firebase Emulator Suite during project setup.
+It covers every feature in the mock-up (`mockup/index.html`, described in `CLAUDE.md`). The security rules are in
+`/firestore.rules` and are tested against the Firestore emulator by `tests/rules/` (`npm run test:rules`), one or more
+tests per row of the access table below.
 
 ## Principles
 
@@ -353,5 +354,6 @@ Decided:
 
 Still open:
 1. **Team chat** isn't modeled yet (pending Google Chat vs. built-in).
-2. **Announcement queries:** `array-contains-any [team, "all"]` against a rule that checks the audience needs confirming
-   in the emulator. The fallback is two listeners (`array-contains t` and `array-contains "all"`).
+
+Resolved by the rules tests: the single announcements query (`audience array-contains-any [team, "all"]`) is allowed
+under the audience rule, so no two-listener fallback is needed.

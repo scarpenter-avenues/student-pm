@@ -17,11 +17,12 @@
     "preview": "vite preview",
     "type-check": "vue-tsc --build",
     "test:unit": "vitest",
+    "test:rules": "firebase emulators:exec --only firestore --project demo-switchback \"vitest run --config vitest.rules.config.ts\"",
     "test:e2e": "playwright test",
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/ e2e/"
+    "format": "prettier --write --experimental-cli src/ e2e/ tests/"
   },
   "dependencies": {
     "firebase": "^13.0.0",

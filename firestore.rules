@@ -1,7 +1,7 @@
 rules_version = '2';
 
-// DRAFT — not yet run. See docs/data-model.md. These get tested against the Firebase Emulator Suite
-// (with @firebase/rules-unit-testing) when the Vue project is set up.
+// Security rules for the data model in docs/data-model.md. Tested in tests/rules/ against the Firestore emulator:
+// run `npm run test:rules` after any change here.
 //
 // Roles: student, lead (students), mentor (adult, scoped to teamIds), coach (program-wide, teamIds = []).
 // The GitHub sync and other server code use the Admin SDK, which bypasses these rules.
@@ -89,8 +89,12 @@ service cloud.firestore {
 
       match /invites/{email} {
         allow read: if isCoach() || (isAdult() && resource.data.teamIds.hasAny(me().teamIds));
-        allow create, update: if email == request.resource.data.email
+        allow create: if email == request.resource.data.email
           && (isCoach() || mentorCanManage(request.resource.data.teamIds, request.resource.data.role));
+        // Editing checks the invite before and after, so a mentor can't pull another team's invite onto theirs.
+        allow update: if email == request.resource.data.email
+          && (isCoach() || (mentorCanManage(resource.data.teamIds, resource.data.role)
+                            && mentorCanManage(request.resource.data.teamIds, request.resource.data.role)));
         // Coaches/mentors cancel invites; the invited person deletes theirs when claiming it.
         allow delete: if isCoach() || mentorCanManage(resource.data.teamIds, resource.data.role)
           || (signedIn() && email == request.auth.token.email.lower());
@@ -160,12 +164,16 @@ service cloud.firestore {
       }
 
       match /announcements/{announcementId} {
+        // Coaches post anywhere ("all" = program-wide); everyone else only to their own teams.
+        function canPostTo(audience) {
+          return isCoach() || (!('all' in audience) && audience.toSet().difference(me().teamIds.toSet()).size() == 0);
+        }
         allow read: if isCoach() || (isMember() && ('all' in resource.data.audience || resource.data.audience.hasAny(me().teamIds)));
-        allow create: if isMember() && request.resource.data.authorId == uid() && (
-            isCoach()
-            || (!('all' in request.resource.data.audience)
-                && request.resource.data.audience.toSet().difference(me().teamIds.toSet()).size() == 0));
-        allow update, delete: if isCoach() || (isMember() && resource.data.authorId == uid());
+        allow create: if isMember() && request.resource.data.authorId == uid() && canPostTo(request.resource.data.audience);
+        // Edits pass the same audience check, so an author can't re-target a post to other teams.
+        allow update: if isCoach() || (isMember() && resource.data.authorId == uid()
+          && request.resource.data.authorId == uid() && canPostTo(request.resource.data.audience));
+        allow delete: if isCoach() || (isMember() && resource.data.authorId == uid());
       }
 
       match /huddles/{huddleId} {
@@ -180,9 +188,11 @@ service cloud.firestore {
       // ---------- goals ----------
       // Teammates see only the statement and status (this doc). The rest of the goal is in goals/{goalId}.
       match /goalSummaries/{goalId} {
+        function goalAfter() { return getAfter(/databases/$(database)/documents/programs/$(programId)/goals/$(goalId)).data; }
         allow read: if onTeam(resource.data.teamId);
+        // Written with the goal (same batch). Its team always matches the goal's, so it's shown only to that team.
         allow create, update: if (isMember() && request.resource.data.studentId == uid()
-            && getAfter(/databases/$(database)/documents/programs/$(programId)/goals/$(goalId)).data.studentId == uid())
+            && goalAfter().studentId == uid() && request.resource.data.teamId == goalAfter().teamId)
           || isCoach();
         allow delete: if (isMember() && resource.data.studentId == uid()) || isCoach();
       }
