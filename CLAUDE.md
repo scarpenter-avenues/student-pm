@@ -1,8 +1,20 @@
-# Robotics Team Management App — mock-up
+# Switchback
+
+Team boards, sprints, and learning goals for student teams (MIT license, open source).
 
 A UI mock-up for an open-source web app that manages a program of FTC robotics teams (the sample program has 7 teams; students ~13, some under 13). It replaces GitHub Projects, which is clunky for students; schools often can't approve Asana, Monday, or Trello because of student data privacy. Build it for anyone: no school or person is named in code or docs, and each deployment describes itself in `program.config.json` (see `docs/configuration.md`). The current goal is to **finish the UI design before building the real app or connecting data**.
 
-Everything lives in one self-contained file: `index.html` (HTML, CSS, and a classic `<script>`, plus one `<script type="module">` for the Tiptap editor). There is no build step: open the file in Chrome.
+## Repo layout
+
+- `mockup/index.html`: the finished UI mock-up and **the design spec** for the production app. One self-contained file (HTML, CSS, and a classic `<script>`, plus one `<script type="module">` for the Tiptap editor). No build step: open it in Chrome. Most of this file (below) describes the mock-up.
+- The production app (Vue 3 + Vite + TypeScript + Pinia + Vue Router; Vitest, Playwright, ESLint + oxlint, Prettier) lives at the repo root: `src/`, `e2e/`, `index.html` (the Vite entry), `package.json`.
+  - `src/firebase.ts` is the only place that connects to Firebase (Auth + Firestore with the persistent multi-tab offline cache). `npm run dev` uses `--mode emulator` (`.env.emulator`, committed, no secrets, project `demo-switchback`) and connects to the emulators.
+  - `npm start` = Firebase emulators (Auth 9099, Firestore 8080, Hosting 5000, UI 4000; data kept in `.emulator-data/`) + the dev server. No Firebase account needed.
+  - `firebase.json`, `.firebaserc` (default `demo-switchback`), `firestore.rules` (draft), `firestore.indexes.json`.
+  - Deployment-specific files are not committed: `program.config.json` (from `program.config.example.json`), `.env.local` (from `.env.example`).
+  - `package.json` overrides `@grpc/grpc-js` to ^1.14.6 (Firebase 13 pins a vulnerable 1.9.x); runtime `npm audit --omit=dev` is clean. Remaining audit findings are in dev-only tools.
+- `docs/data-model.md` (Firestore design), `docs/configuration.md` (deploying), `README.md`, `LICENSE` (MIT, "Switchback contributors").
+- **Setup plan:** 1 skeleton (done) · 2 rules tests against the emulator (`@firebase/rules-unit-testing`) · 3 `npm run setup` (seed a program from `program.config.json` with `firebase-admin` + `tsx`) and `npm run seed:demo` (the mock-up's sample program) · 4 sign-in, invite claim, route guards, app shell · 5 data layer (types, converters, `useLiveQuery`) · 6 shared components ported from the mock-up · 7 views · 8 CI (GitHub Actions) and CONTRIBUTING.
 
 ## Project brief (summary)
 
@@ -170,7 +182,7 @@ Everything lives in one self-contained file: `index.html` (HTML, CSS, and a clas
 
 ## Testing approach used
 
-Tests are ad-hoc scripts injected before `</body>` into a scratch copy of `index.html`. Each is run with headless Chrome (`--dump-dom`, results written into a `<pre id="results">`) under a `perl -e 'alarm N'` timeout, because headless Chrome sometimes hangs. These scripts are not in the repo. Before testing, extract the main `<script>` and run `node --check` on it; a syntax error stops every function from loading, and tests then fail in confusing ways ("selectTeam is not defined"). Many older ones assumed Program coach as the default role and now need `setDemoRole(...)` first.
+Tests are ad-hoc scripts injected before `</body>` into a scratch copy of `mockup/index.html`. Each is run with headless Chrome (`--dump-dom`, results written into a `<pre id="results">`) under a `perl -e 'alarm N'` timeout, because headless Chrome sometimes hangs. These scripts are not in the repo. Before testing, extract the main `<script>` and run `node --check` on it; a syntax error stops every function from loading, and tests then fail in confusing ways ("selectTeam is not defined"). Many older ones assumed Program coach as the default role and now need `setDemoRole(...)` first.
 “When testing in Chrome, always launch it headless with --no-first-run --no-default-browser-check.”
 Those flags alone didn't stop the macOS prompt, so tests don't launch the installed Google Chrome at all: run `~/.cache/chrome-for-testing/headless-chrome.sh [--timeout=SECONDS] <chrome args>` (e.g. `--dump-dom file://…`, or `--screenshot=… --window-size=…`). It uses Chrome for Testing's `chrome-headless-shell` (headless-only, not registered as a browser) with those flags, a throwaway profile, and the hang timeout. If it's missing: `npx -y @puppeteer/browsers install chrome-headless-shell@stable --path ~/.cache/chrome-for-testing`.
 

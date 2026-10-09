@@ -2,13 +2,42 @@
 program.config.json
 .env.local
 .env.*.local
+*.local
 
 # Firebase service-account keys (used once by the setup script)
 *-service-account.json
 service-account*.json
 
-node_modules/
-dist/
+# Firebase
 .firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+.emulator-data/
+
+# Dependencies and builds
+node_modules
+dist
+dist-ssr
+coverage
+*.tsbuildinfo
+.eslintcache
+*.timestamp-*-*.mjs
+
+# Tests
+test-results/
+playwright-report/
+__screenshots__/
+
+# Logs
+logs
 *.log
+npm-debug.log*
+
+# Editors and OS
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.sw?
 .DS_Store
