@@ -1,13 +1,15 @@
 <script setup lang="ts">
 // The top bar's first row: team badge and name (with the ⌄ switcher for program coaches and multi-team mentors),
-// then Huddle (adults), Announcements, and the profile menu.
-// Still to come with the data layer: unread counts and the next-competition countdown chip.
+// then the next-competition countdown, Huddle (adults, with unread count), Announcements (unread count), and the
+// profile menu.
 import { computed, ref } from 'vue'
 import { useRoute, type RouteLocationRaw } from 'vue-router'
 import { useSession } from '@/stores/session'
 import { useMenu } from '@/composables/useMenu'
 import { ROLE_LABELS, type Team, type WithId } from '@/model/types'
-import { initials } from '@/ui/format'
+import { daysAway, formatEventDate, initials } from '@/ui/format'
+import { useAnnouncements, useHuddles } from '@/composables/useInbox'
+import { useNextCompetition } from '@/composables/useNextCompetition'
 import { DEFAULT_TEAM_TAB } from '@/router/tabs'
 import TeamBadge from './TeamBadge.vue'
 
@@ -41,6 +43,13 @@ const profileRoot = ref<HTMLElement | null>(null)
 const profileButton = ref<HTMLElement | null>(null)
 const profile = useMenu(profileRoot, profileButton)
 const name = computed(() => session.member?.displayName ?? '')
+
+// ---------- counts and countdown ----------
+const feedTeamId = () => (props.onDashboard ? 'all' : (props.team?.id ?? null))
+const announcements = useAnnouncements(feedTeamId)
+const huddles = useHuddles()
+// Hidden on the Coaches' Dashboard.
+const competition = useNextCompetition(() => (props.onDashboard ? null : (props.team?.id ?? null)))
 
 const huddleLink = computed<RouteLocationRaw>(() =>
   session.isCoach ? { name: 'dashboard', params: { tab: 'huddle' } } : { name: 'huddle' },
@@ -107,8 +116,22 @@ const announcementsLink = computed<RouteLocationRaw | null>(() => {
     </div>
 
     <div class="top-actions">
+      <span
+        v-if="competition"
+        class="countdown-chip"
+        :title="`Next competition: ${competition.title}, ${formatEventDate(competition.date)}`"
+      >
+        🏆
+        <span class="countdown-name"
+          >{{ competition.title }} · {{ formatEventDate(competition.date) }} ·
+        </span>
+        <strong>{{ daysAway(competition.days) }}</strong>
+      </span>
       <RouterLink v-if="session.isAdult && !onDashboard" class="quiet-button" :to="huddleLink">
         Huddle
+        <span v-if="huddles.unread.value.length" class="tab-count">{{
+          huddles.unread.value.length
+        }}</span>
       </RouterLink>
       <RouterLink
         v-if="announcementsLink"
@@ -117,6 +140,9 @@ const announcementsLink = computed<RouteLocationRaw | null>(() => {
         aria-label="Announcements"
       >
         <span class="announcement-label">Announcements</span>
+        <span v-if="announcements.unread.value.length" class="tab-count">{{
+          announcements.unread.value.length
+        }}</span>
       </RouterLink>
       <div ref="profileRoot" class="profile" @keydown="profile.onKeydown">
         <button
@@ -212,6 +238,21 @@ h1.can-switch:hover {
   background: var(--team-soft);
   color: var(--team-ink);
 }
+.countdown-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 14px;
+  background: #f1ecfb;
+  color: #5b3fa6;
+  font-size: 12px;
+  font-weight: 650;
+  white-space: pre;
+}
+.countdown-chip strong {
+  font-weight: 800;
+}
 .profile {
   position: relative;
 }
@@ -246,13 +287,26 @@ h1.can-switch:hover {
   .announcement-label {
     display: none;
   }
+  .countdown-name {
+    display: none;
+  }
   .announcements-button {
+    position: relative;
     width: 32px;
     padding: 0;
     font-size: 14px;
   }
   .announcements-button::before {
     content: '◉';
+  }
+  .announcements-button .tab-count {
+    position: absolute;
+    top: -4px;
+    right: -5px;
+    min-width: 14px;
+    padding: 1px 3px;
+    border: 1px solid white;
+    font-size: 8px;
   }
   .profile-button {
     width: 30px;

@@ -7,3 +7,18 @@ export function initials(name: string): string {
     .slice(0, 3)
     .toUpperCase()
 }
+
+/** "2026-11-08" → "Sun, Nov 8" (dates are UTC "YYYY-MM-DD" strings, so no time-zone shift). */
+export function formatEventDate(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
+/** 0 → "Today", 1 → "Tomorrow", n → "n days". */
+export function daysAway(days: number): string {
+  return days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days} days`
+}

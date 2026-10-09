@@ -315,24 +315,28 @@ cost, but setting them needs the Admin SDK (Cloud Functions, so the Blaze plan).
 
 ## Queries the app runs
 
+These live in `src/data/queries.ts`, and `tests/rules/queries.test.ts` runs each one as the roles that use it.
+
 | View | Query (all under `programs/{p}`) |
 |---|---|
 | Board, List, Timeline | `teams/{t}/tasks` where `sprintId == current`, `archived == null`, order by `rank` |
 | My Tasks | the same + `assigneeIds array-contains uid` |
 | Planning | `teams/{t}/tasks` where `archived == null`, order by `rank` (grouped by sprint in the app; one team ≈ dozens of tasks) |
 | Archived tasks | `teams/{t}/tasks` where `archived != null` |
-| Sprints and objectives | `teams/{t}/sprints` order by `index` |
+| Sprints and objectives | `teams/{t}/sprints` where `seasonId == current`, order by `index` |
 | Roster | `members` where `teamIds array-contains t` (+ coaches) |
 | Team Home | `teams/{t}/pages/home`, `teams/{t}/events`, `events` |
 | Announcements | `announcements` where `audience array-contains-any [t, "all"]`, order by `postedAt` |
 | Team goal cards | `goalSummaries` where `teamId == t`, `state == "active"` |
 | My goals | `goals` where `studentId == uid` |
 | Coaches' Dashboard: Tasks / Goals | one listener per team (7 teams), or `goals` where `teamId in [...]` (up to 30 values) |
+| A goal's history | `goals/{g}/events` order by `createdAt`; **mentors add `teamId in [their teams]`**, or the rules refuse the whole query |
 | Huddle | `huddles` order by `postedAt desc`, limit 20 |
 
 **Composite indexes needed** (in `firestore.indexes.json`): tasks (`sprintId`, `archived`, `rank`), tasks
 (`assigneeIds`, `sprintId`, `archived`), tasks (`archived`, `rank`), announcements (`audience`, `postedAt`), goalSummaries
-(`teamId`, `state`).
+(`teamId`, `state`), sprints (`seasonId`, `index`), goal events (`teamId`, `createdAt`). The emulator doesn't check
+indexes, so a query missing one only fails on a real project: add it here when adding a query.
 
 **Free-plan estimate:** opening a team reads ~60 tasks + ~14 sprints + ~10 members + ~10 announcements ≈ 100 docs. At 100
 users × a few sessions a day, that's roughly 20–40k reads/day, under Spark's 50k. The offline cache cuts repeat reads.

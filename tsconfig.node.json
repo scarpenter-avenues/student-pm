@@ -19,6 +19,9 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
 
+    // The rules tests use the app's data layer (src/data), which imports with "@/".
+    "paths": { "@/*": ["./src/*"] },
+
     // Include Node.js types and avoid accidentally including other `@types/*` packages.
     "types": ["node"],
 
