@@ -35,6 +35,16 @@ export const routes: RouteRecordRaw[] = [
       },
     ],
   },
+  // Dev only: the shared components with sample data (not in production builds).
+  ...(import.meta.env.DEV
+    ? [
+        {
+          path: '/dev/components',
+          component: () => import('@/views/dev/ComponentsView.vue'),
+          meta: { dev: true },
+        },
+      ]
+    : []),
   { path: '/:unknown(.*)*', redirect: '/' },
 ]
 

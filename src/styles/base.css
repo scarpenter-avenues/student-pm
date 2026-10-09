@@ -160,3 +160,125 @@ a {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Themed field buttons (stand-ins for <select> and date inputs; see SelectButton and DateButton). */
+.field-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 26px 0 8px;
+  border: 1px solid #d5dce5;
+  border-radius: 5px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a949c' stroke-width='1.6'/%3E%3C/svg%3E")
+    no-repeat right 9px center;
+  color: #2c343b;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+}
+.field-button.empty {
+  color: #8a949c;
+}
+.field-button:hover,
+.field-button[aria-expanded='true'] {
+  border-color: var(--team-line);
+}
+.field-button:disabled {
+  background-image: none;
+  cursor: default;
+}
+
+/* The Open button beside a task title: shown on hover or focus (always on touch screens). */
+.row-open {
+  padding: 1px 7px;
+  border: 1px solid #d5dce5;
+  border-radius: 5px;
+  background: #fff;
+  color: #4d5962;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+  opacity: 0;
+  vertical-align: middle;
+}
+.row-open:hover {
+  border-color: var(--team-line);
+  color: var(--team-ink);
+}
+tr:hover .row-open,
+.task-card:hover .row-open,
+.editable-title:hover .row-open,
+.row-open:focus-visible {
+  opacity: 1;
+}
+@media (hover: none) {
+  .row-open {
+    opacity: 1;
+  }
+}
+
+/* Checklist dropdowns (TeamPicker, MultiFilter). The menu is teleported, so these are global. */
+.check-button {
+  min-width: 120px;
+  height: 33px;
+  padding: 0 26px 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a949c' stroke-width='1.6'/%3E%3C/svg%3E")
+    no-repeat right 9px center;
+  color: #536067;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+}
+.check-button[aria-expanded='true'] {
+  border-color: var(--team-line);
+}
+.check-menu {
+  z-index: 40;
+  display: grid;
+  min-width: 200px;
+  max-height: 280px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.check-menu label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 5px;
+  color: #2c343b;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.check-menu label:hover {
+  background: var(--team-softer);
+}
+.check-menu input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--team-ink);
+}
+.check-menu hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.team-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}

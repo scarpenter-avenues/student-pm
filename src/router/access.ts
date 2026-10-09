@@ -9,6 +9,8 @@ declare module 'vue-router' {
   interface RouteMeta {
     /** Open without signing in (the sign-in page). */
     public?: boolean
+    /** Dev-only pages: open to anyone, signed in or not. */
+    dev?: boolean
     coachOnly?: boolean
     adultOnly?: boolean
   }
@@ -32,6 +34,7 @@ export function decide(
   to: RouteLocationNormalized,
   { phase, member }: Access,
 ): true | RouteLocationRaw {
+  if (to.meta.dev) return true
   if (to.meta.public) {
     if (phase !== 'ready') return true
     const next =

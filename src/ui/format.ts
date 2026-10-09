@@ -22,3 +22,13 @@ export function formatEventDate(iso: string): string {
 export function daysAway(days: number): string {
   return days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `${days} days`
 }
+
+/** "2026-10-06" → "Oct 6"; null → "—". */
+export function formatShortDate(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}
