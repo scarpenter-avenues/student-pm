@@ -1,9 +1,11 @@
 // Reads and checks program.config.json (see docs/configuration.md). Problems are reported all at once, in plain words.
 import { readFileSync } from 'node:fs'
+import { signInMethodFor as methodFor, type SignInMethod } from '../../src/model/signIn'
 import {
   ROLES,
   SUBTEAM_COLORS,
   TEAM_COLOR_PRESETS,
+  type ProgramAuth,
   type Role,
   type SubteamColor,
 } from '../../src/model/types'
@@ -120,17 +122,22 @@ export function checkConfig(raw: unknown): string[] {
   return problems
 }
 
+/** The program's sign-in settings as stored in Firestore (programs/{p}.auth). */
+export function programAuthFrom(config: Pick<ProgramConfig, 'signIn'>): ProgramAuth {
+  const { google, password } = config.signIn
+  return {
+    ...(google ? { google: { domains: google.allowedDomains.map((d) => d.toLowerCase()) } } : {}),
+    ...(password ? { password: { roles: password.roles } } : {}),
+  }
+}
+
 /** How someone with this email and role signs in under the config, or null if they can't. Mirrors the security rules. */
 export function signInMethodFor(
   config: Pick<ProgramConfig, 'signIn'>,
   email: string,
   role: Role,
-): 'google' | 'password' | null {
-  const domain = email.toLowerCase().split('@')[1] ?? ''
-  if (config.signIn.google?.allowedDomains.map((d) => d.toLowerCase()).includes(domain))
-    return 'google'
-  if (config.signIn.password?.roles.includes(role)) return 'password'
-  return null
+): SignInMethod | null {
+  return methodFor(programAuthFrom(config), email, role)
 }
 
 export function loadConfig(path: string): ProgramConfig {

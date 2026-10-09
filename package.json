@@ -24,7 +24,8 @@
     "lint": "run-s \"lint:*\"",
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
-    "format": "prettier --write --experimental-cli src/ e2e/ tests/ scripts/"
+    "format": "prettier --write --experimental-cli src/ e2e/ tests/ scripts/",
+    "test:rules:live": "vitest run --config vitest.rules.config.ts"
   },
   "dependencies": {
     "firebase": "^13.0.0",

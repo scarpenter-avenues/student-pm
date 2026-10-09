@@ -32,6 +32,14 @@ describe('program', () => {
     await assertFails(getDoc(doc(asNewcomer(env, 'stranger', 'stranger@example.edu'), PROGRAM)))
     await assertFails(getDoc(doc(env.unauthenticatedContext().firestore() as never, PROGRAM)))
   })
+  it("anyone can read the sign-in page's public doc; only program coaches change it", async () => {
+    const path = `${PROGRAM}/public/signIn`
+    const anonymous = env.unauthenticatedContext().firestore() as never
+    await assertSucceeds(getDoc(doc(anonymous, path)))
+    await assertSucceeds(updateDoc(doc(as(env, 'coach'), path), { name: 'Renamed' }))
+    await assertFails(updateDoc(doc(as(env, 'mentorA'), path), { name: 'Renamed' }))
+    await assertFails(setDoc(doc(anonymous, path), { name: 'Renamed', auth: {} }))
+  })
   it('only program coaches change program settings', async () => {
     await assertSucceeds(updateDoc(doc(as(env, 'coach'), PROGRAM), { name: 'Renamed' }))
     await assertFails(updateDoc(doc(as(env, 'mentorA'), PROGRAM), { name: 'Renamed' }))
@@ -178,6 +186,13 @@ describe('invites and first sign-in', () => {
         'volunteer@gmail.com',
       ),
     )
+  })
+  it('you can read only your own invite, by its path (what the app does at sign-in)', async () => {
+    const db = asNewcomer(env, 'riley', 'new.student@example.edu')
+    await assertSucceeds(getDoc(doc(db, `${PROGRAM}/invites/new.student@example.edu`)))
+    await assertFails(getDoc(doc(db, `${PROGRAM}/invites/kid@gmail.com`)))
+    const unverified = asNewcomer(env, 'riley', 'new.student@example.edu', { verified: false })
+    await assertFails(getDoc(doc(unverified, `${PROGRAM}/invites/new.student@example.edu`)))
   })
   it('you can find only your own invite (collection-group lookup at sign-in)', async () => {
     const db = asNewcomer(env, 'riley', 'new.student@example.edu')

@@ -26,6 +26,7 @@ tests per row of the access table below.
 ```
 users/{uid}                                   which program a signed-in person belongs to
 programs/{programId}                          program settings
+  public/signIn                               name + sign-in methods, readable before sign-in
   members/{uid}                               people who have signed in (roster)
     private/contact                           email, coach-only
   invites/{emailLower}                        people added but not signed in yet
@@ -88,6 +89,13 @@ interface Contact { email: string }
 - A mentor on several teams is one member doc with several `teamIds` (replaces the mock-up's shared roster objects).
 - "No team" is `teamIds: []` with a non-coach role.
 
+### `public/signIn`: what the sign-in page reads
+```ts
+interface PublicSignIn { name: string; auth: Program["auth"] }   // anyone can read; program coaches write
+```
+Written by `npm run setup` (and kept in step with `program.auth`). It holds nothing personal, so the sign-in page can
+show the program's name and the right sign-in buttons before anyone has signed in.
+
 ### `invites/{emailLower}`: added but not signed in yet
 ```ts
 interface Invite {
@@ -100,9 +108,11 @@ interface Invite {
 email/password (verified), and only if the program allows password sign-in for that person's role. The app checks this
 when adding someone; the rules check it again when the invite is claimed.
 
-**First sign-in:** the app finds the invite with a collection-group query on `invites` where `email ==` the signed-in
-email. It then writes one batch: create `members/{uid}` (the rules check it matches the invite), create `users/{uid}`, and
-delete the invite. No server code is needed. Add person, Add member, and CSV import all write invites; the People list shows
+**First sign-in:** the app reads `invites/{email}` for the signed-in email (the rules allow it only for your own,
+verified email; a collection-group query on `invites` also works if a deployment ever serves several programs). It then
+writes one batch: create `members/{uid}` (the rules check it matches the invite), create `users/{uid}` (unless it exists
+from an earlier membership), and delete the invite. No server code is needed. The display name comes from the invite,
+never from the Google profile. Add person, Add member, and CSV import all write invites; the People list shows
 invites as "hasn't signed in yet".
 
 ### `seasons/{seasonId}`
@@ -285,6 +295,7 @@ interface UserState {
 | Data | Read | Write |
 |---|---|---|
 | Program settings, subteam defaults | members | program coaches |
+| `public/signIn` (name, sign-in methods) | anyone | program coaches |
 | Members (roster) | members | coaches: anyone; mentors: students/leads on their teams; leads: subteams only; the person themself: creating from their invite |
 | Contact email, invites | coaches (mentors: invites for their teams) | coaches; mentors for their teams |
 | Team profile, subteams, GitHub | the team | coaches, the team's mentors |

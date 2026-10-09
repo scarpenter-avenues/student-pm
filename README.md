@@ -42,7 +42,8 @@ npm run seed:demo    # in another terminal: load the sample program (7 teams, pe
 http://localhost:4000. `seed:demo` replaces whatever is in the emulators with "Example Robotics" and prints the sample
 accounts you can sign in as.
 
-Tests: `npm run test:unit`, `npm run test:rules` (security rules, against the emulator), `npm run test:e2e`.
+Tests: `npm run test:unit`, `npm run test:rules` (security rules; starts its own emulator, or `npm run test:rules:live`
+while `npm start` is running), `npm run test:e2e` (needs `npm start` and `npm run seed:demo`).
 Other scripts: `npm run lint`, `npm run type-check`, `npm run build`.
 
 ## Deploying for your organization

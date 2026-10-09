@@ -28,7 +28,7 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
+  reporter: process.env.CI ? 'html' : 'list',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
@@ -40,63 +40,14 @@ export default defineConfig({
     trace: 'on-first-retry',
 
     /* Only on CI systems run the tests headless */
-    headless: !!process.env.CI,
+    headless: true,
   },
 
   /* Configure projects for major browsers */
-  projects: [
-    {
-      name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
-    },
-    {
-      name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-      },
-    },
-    {
-      name: 'webkit',
-      use: {
-        ...devices['Desktop Safari'],
-      },
-    },
+  // Chromium only for now (Chromebooks and Android phones are the main devices).
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: {
-    //     ...devices['Pixel 5'],
-    //   },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: {
-    //     ...devices['iPhone 12'],
-    //   },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: {
-    //     channel: 'msedge',
-    //   },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: {
-    //     channel: 'chrome',
-    //   },
-    // },
-  ],
-
-  /* Folder for test artifacts such as screenshots, videos, traces, etc. */
-  // outputDir: 'test-results/',
-
-  /* Run your local dev server before starting the tests */
+  /* Needs the Firebase emulators with the demo data: `npm start` then `npm run seed:demo`. */
   webServer: {
     /**
      * Use the dev server by default for faster feedback loop.

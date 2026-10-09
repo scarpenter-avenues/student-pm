@@ -13,6 +13,12 @@ export type EventType = 'Competition' | 'Work session' | 'Other'
 
 export const ADULT_ROLES: readonly Role[] = ['mentor', 'coach']
 export const ROLES: readonly Role[] = ['student', 'lead', 'mentor', 'coach']
+export const ROLE_LABELS: Record<Role, string> = {
+  student: 'Student',
+  lead: 'Team lead',
+  mentor: 'Team mentor',
+  coach: 'Program coach',
+}
 export const SUBTEAM_COLORS: readonly SubteamColor[] = [
   'red',
   'green',
@@ -61,6 +67,15 @@ export interface Program {
   subteamDefaults: Subteam[]
   currentSeasonId: string
 }
+
+/** programs/{p}/public/signIn: what the sign-in page needs before anyone has signed in. Anyone can read it. */
+export interface PublicSignIn {
+  name: string
+  auth: ProgramAuth
+}
+
+/** A document's data plus its id. */
+export type WithId<T> = T & { id: string }
 
 /** programs/{p}/members/{uid} */
 export interface Member {

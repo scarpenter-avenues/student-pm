@@ -59,6 +59,12 @@ service cloud.firestore {
       allow read: if isMember();
       allow update: if isCoach();
 
+      // The sign-in page reads this before anyone has signed in: the program's name and sign-in methods only.
+      match /public/{docId} {
+        allow read: if true;
+        allow write: if isCoach();
+      }
+
       // ---------- people ----------
       match /members/{memberId} {
         function inviteMatches(invite) {

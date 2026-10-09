@@ -6,7 +6,13 @@
 import { FieldValue } from 'firebase-admin/firestore'
 import { buildSprints } from '../src/model/sprints'
 import { checkEmulator, connectAdmin, parseArgs } from './lib/admin'
-import { loadConfig, signInMethodFor, slugify, type ProgramConfig } from './lib/config'
+import {
+  loadConfig,
+  programAuthFrom,
+  signInMethodFor,
+  slugify,
+  type ProgramConfig,
+} from './lib/config'
 
 async function main() {
   const { flags, value } = parseArgs(process.argv.slice(2))
@@ -22,12 +28,7 @@ async function main() {
     id: slugify(subteam.name),
     ...subteam,
   }))
-  const auth = {
-    ...(config.signIn.google
-      ? { google: { domains: config.signIn.google.allowedDomains.map((d) => d.toLowerCase()) } }
-      : {}),
-    ...(config.signIn.password ? { password: { roles: config.signIn.password.roles } } : {}),
-  }
+  const auth = programAuthFrom(config)
   const log: string[] = []
   const batch = db.batch()
 
@@ -43,6 +44,8 @@ async function main() {
     },
     { merge: true },
   )
+  // The sign-in page reads this before anyone has signed in, so it holds only the name and sign-in methods.
+  batch.set(programRef.collection('public').doc('signIn'), { name: config.program.name, auth })
   log.push(
     `${existing.exists ? 'Updated' : 'Created'} program "${config.program.name}" (${config.program.id})`,
   )

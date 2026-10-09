@@ -65,7 +65,11 @@ How it plays out:
   separate student passwords altogether.
 
 Nobody can join without an invite: a coach (or a mentor, for their own teams) adds people by email, and the invite is
-claimed the first time that person signs in.
+claimed the first time that person signs in. People with a password account choose their password the first time
+("First time? Create a password" on the sign-in page), then click the link in the verification email.
+
+Signing out clears the app's offline copy of the data from the browser, so a shared Chromebook doesn't keep the last
+person's team data.
 
 Colors: subteams use `red`, `green`, `yellow`, `blue`, `purple`, `teal`, `pink`, `gray`. Teams use a preset name
 (`green`, `teal`, `blue`, `navy`, `purple`, `pink`, `red`, `orange`, `yellow`, `gray`) or any `#rrggbb` color.
@@ -86,6 +90,8 @@ Colors: subteams use `red`, `green`, `yellow`, `blue`, `purple`, `teal`, `pink`,
      `GOOGLE_APPLICATION_CREDENTIALS` to a service-account key file (keep it out of the repo; `.gitignore` covers
      `*service-account*.json`).
    - `--dry-run` shows what it would do without writing anything; `--emulator` tries it against the local emulators.
+   - It also writes `public/signIn`: the program's name and sign-in methods, which the sign-in page reads before anyone
+     has signed in (nothing personal).
    - Safe to re-run: it updates the program's name, sign-in settings, and subteam defaults, leaves existing teams
      alone, and invites the first coach only while the program has no coach.
 6. **Deploy** *(coming)*: `npm run deploy` will publish the security rules, indexes, and the app to Firebase Hosting.

@@ -1,0 +1,162 @@
+/* App-wide tokens and controls, ported from the mock-up (mockup/index.html). The --team-* tints are set per team
+   (src/ui/teamColor.ts → teamAccent). */
+:root {
+  --paper: #ffffff;
+  --ink: #202124;
+  --muted: #70757a;
+  --line: #e4e7eb;
+  --green: #23834f;
+  --green-soft: #e7f5ec;
+  --orange: #d96532;
+  --orange-soft: #fff0e8;
+  --blue: #356fd1;
+  --blue-soft: #edf3ff;
+  --yellow: #c99212;
+  --yellow-soft: #fff5d8;
+  --red: #b3261e;
+  --shadow: 0 16px 42px rgba(32, 45, 61, 0.14);
+  --team-soft: #e3f7eb;
+  --team-softer: #f1fbf5;
+  --team-line: #b5e9c9;
+  --team-wash: #eaf9f0;
+  --team-ink: #2f6b45;
+  --topbar-h: 99px;
+  font-family: 'Avenir Next', Avenir, 'Trebuchet MS', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 16px;
+}
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+button {
+  cursor: pointer;
+}
+a {
+  color: var(--blue);
+}
+
+.icon-button,
+.quiet-button,
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: #526067;
+  font-size: 13px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.icon-button {
+  width: 35px;
+  padding: 0;
+}
+.quiet-button:hover,
+.icon-button:hover {
+  background: #f5f7fa;
+}
+.primary-button {
+  border-color: var(--green);
+  background: var(--green);
+  color: white;
+}
+.primary-button:hover {
+  background: #176c54;
+}
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-size: 13px;
+  font-weight: 600;
+}
+.text-button:hover {
+  text-decoration: underline;
+}
+.tab-count {
+  min-width: 17px;
+  padding: 2px 5px;
+  border-radius: 9px;
+  background: var(--team-soft);
+  color: var(--team-ink);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Menus (team switcher, profile). */
+.menu {
+  position: absolute;
+  z-index: 45;
+  display: grid;
+  min-width: 240px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.menu-label {
+  margin: 2px 8px 6px;
+  color: #737d86;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.menu hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+}
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: #f1f4f8;
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

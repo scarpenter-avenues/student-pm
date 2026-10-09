@@ -33,7 +33,8 @@ export type Uid = keyof typeof people
 
 export function makeEnv(): Promise<RulesTestEnvironment> {
   return initializeTestEnvironment({
-    projectId: 'demo-switchback',
+    // Its own project, so the tests never clear the demo data in a running `npm start`.
+    projectId: 'demo-switchback-rules',
     firestore: { rules: readFileSync('firestore.rules', 'utf8'), host: '127.0.0.1', port: 8080 },
   })
 }
@@ -117,6 +118,10 @@ export async function seed(env: RulesTestEnvironment) {
         auth: { google: { domains: ['example.edu'] }, password: { roles: ['mentor', 'coach'] } },
         subteamDefaults: [],
         currentSeasonId: '2026-27',
+      }),
+      set(`${PROGRAM}/public/signIn`, {
+        name: 'Example Robotics',
+        auth: { google: { domains: ['example.edu'] }, password: { roles: ['mentor', 'coach'] } },
       }),
       set(`${PROGRAM}/seasons/2026-27`, {
         name: '2026–27',

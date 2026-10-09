@@ -179,12 +179,9 @@ export function buildDemo(today: string): { docs: Doc[]; users: DemoUser[] } {
   const reference = today < SEASON.start ? '2026-10-08' : today > SEASON.end ? SEASON.end : today
 
   // ---------- program, seasons, events ----------
-  add(P, {
-    name: 'Example Robotics',
-    auth: { google: { domains: ['example.edu'] }, password: { roles: ['mentor', 'coach'] } },
-    subteamDefaults: SUBTEAMS,
-    currentSeasonId: SEASON.id,
-  })
+  const auth = { google: { domains: ['example.edu'] }, password: { roles: ['mentor', 'coach'] } }
+  add(P, { name: 'Example Robotics', auth, subteamDefaults: SUBTEAMS, currentSeasonId: SEASON.id })
+  add(`${P}/public/signIn`, { name: 'Example Robotics', auth })
   add(`${P}/seasons/${SEASON.id}`, { name: SEASON.name, start: SEASON.start, end: SEASON.end })
   add(`${P}/seasons/${LAST_SEASON.id}`, {
     name: LAST_SEASON.name,
