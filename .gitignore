@@ -1,0 +1,14 @@
+# Each deployment's own settings and Firebase keys stay out of the repo.
+program.config.json
+.env.local
+.env.*.local
+
+# Firebase service-account keys (used once by the setup script)
+*-service-account.json
+service-account*.json
+
+node_modules/
+dist/
+.firebase/
+*.log
+.DS_Store

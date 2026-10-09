@@ -521,6 +521,38 @@
     .confirm-row select { height: 30px; border: 1px solid var(--line); border-radius: 5px; background: #fff; font-size: 13px; }
     .confirm-actions { display: flex; gap: 6px; margin-left: auto; }
     .confirm-actions button, .settings-form-actions button { height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 5px; background: #fff; font-size: 12px; }
+    .season-list { display: grid; margin: 0; padding: 0; list-style: none; }
+    .season-row { display: grid; grid-template-columns: 70px 64px 1fr auto; align-items: center; gap: 10px; min-height: 44px; padding: 6px; border-bottom: 1px solid #edf0f3; font-size: 14px; }
+    .season-row:not(.current) { color: #59636d; }
+    .season-current { justify-self: start; padding: 2px 8px; border-radius: 10px; background: var(--team-soft); color: var(--team-ink); font-size: 12px; font-weight: 650; }
+    .season-current.placeholder { visibility: hidden; }
+    .season-row small { color: #8a949c; font-size: 12px; }
+    .season-dates { color: #59636d; font-size: 13px; }
+    .season-row.current .season-dates { margin-left: -4px; }
+    .inactive-teams { margin-top: 8px; }
+    .inactive-teams summary { padding: 6px; color: #59636d; font-size: 13px; font-weight: 650; cursor: pointer; }
+    .org-team-row.inactive { grid-template-columns: 52px minmax(140px, 1fr) 1fr auto; color: #59636d; }
+    .goal-modal.season-modal { width: min(640px, 100%); }
+    .season-step { display: grid; gap: 10px; }
+    .season-date-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .season-date-fields label { display: grid; gap: 4px; color: #59636d; font-size: 12px; font-weight: 650; }
+    .season-date-fields .panel-field { border-color: #d5dce5; }
+    .season-team-list, .season-people-list, .season-summary { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; }
+    .season-team-row { display: grid; grid-template-columns: 18px 52px 1fr; align-items: center; gap: 10px; padding: 6px 4px; border-radius: 6px; cursor: pointer; }
+    .season-team-row:hover { background: #f5f7fa; }
+    .season-team-row .team-mini-badge { justify-self: start; }
+    .season-people-group + .season-people-group { margin-top: 6px; }
+    .season-people-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .season-people-head h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; }
+    .season-people-list li { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 4px; border-bottom: 1px solid #f0f2f4; }
+    .season-people-list .avatar { width: 26px; height: 26px; font-size: 9px; }
+    .season-people-list .segmented button { height: 26px; padding: 0 9px; font-size: 12px; }
+    .season-counts { margin: 0; color: #59636d; font-size: 13px; font-weight: 600; }
+    .season-choices { display: grid; gap: 10px; }
+    .season-summary li { display: grid; gap: 2px; padding: 8px 10px; border-radius: 8px; background: #f7f8fa; }
+    .season-summary strong { color: #202124; font-size: 14px; }
+    .season-summary small { color: #66717a; font-size: 12px; }
+    @media (max-width: 680px) { .season-row { grid-template-columns: 1fr auto; } .season-people-list li { grid-template-columns: 28px 1fr; } .season-people-list .segmented { grid-column: 2; } }
     .org-team-list { display: grid; margin: 0; padding: 0; list-style: none; }
     .org-team-row { display: grid; grid-template-columns: 52px minmax(140px, 1fr) minmax(0, 1.4fr) auto auto auto; align-items: center; gap: 12px; min-height: 52px; padding: 8px 6px; border-bottom: 1px solid #edf0f3; }
     .org-team-row .team-mini-badge { justify-self: start; }
@@ -1565,9 +1597,14 @@
           <div class="settings-header">
             <div><h2 id="orgSettingsHeading">Program settings</h2></div>
           </div>
+          <section class="settings-section" aria-labelledby="seasonsHeading">
+            <div class="settings-section-head"><div><h3 id="seasonsHeading">Seasons</h3></div><button class="quiet-button" id="newSeasonButton" type="button">Start a new season…</button></div>
+            <ul class="season-list" id="seasonList"></ul>
+          </section>
           <section class="settings-section" aria-labelledby="orgTeamsHeading">
             <div class="settings-section-head"><div><h3 id="orgTeamsHeading">Teams</h3></div><button class="quiet-button" id="addTeamButton" type="button">＋ New team</button></div>
             <ul class="org-team-list" id="orgTeamList"></ul>
+            <details class="inactive-teams" id="inactiveTeams" hidden><summary></summary><ul class="org-team-list" id="inactiveTeamList"></ul></details>
           </section>
           <section class="settings-section" aria-labelledby="defaultSubteamsHeading">
             <div class="settings-section-head"><div><h3 id="defaultSubteamsHeading">Subteam defaults</h3><p>New teams start with these subteams. Each team can change its own afterward; editing this list doesn't change existing teams.</p></div><button class="quiet-button" id="addDefaultSubteamButton" type="button">＋ Add subteam</button></div>
@@ -1671,10 +1708,10 @@
     // 2026–27 season calendar. Program events are shared by every team; each team also gets one fall and one winter qualifier.
     const programEvent = (title, date, time, location, type, extra = {}) => ({ id: nextEventId++, scope: "program", title, date, time, location, type, ...extra });
     const programEvents = [
-      programEvent("Saturday Practice Session", "2026-10-17", "9am–3pm", "Avenues", "Work session"),
-      programEvent("Saturday Build Session + Halloween Party", "2026-10-31", "9am–3pm", "Avenues", "Work session"),
-      programEvent("Saturday Practice Session", "2026-11-14", "9am–3pm", "Avenues", "Work session"),
-      ...["2026-11-23", "2026-11-24"].map(date => programEvent("Parent Conference Day · Robotics shop open", date, "9am–4pm", "Avenues", "Work session")),
+      programEvent("Saturday Practice Session", "2026-10-17", "9am–3pm", "School robotics lab", "Work session"),
+      programEvent("Saturday Build Session + Halloween Party", "2026-10-31", "9am–3pm", "School robotics lab", "Work session"),
+      programEvent("Saturday Practice Session", "2026-11-14", "9am–3pm", "School robotics lab", "Work session"),
+      ...["2026-11-23", "2026-11-24"].map(date => programEvent("Parent Conference Day · Robotics shop open", date, "9am–4pm", "School robotics lab", "Work session")),
       programEvent("Super Qualifier 1", "2027-02-20", "8am–6pm", "John Dewey High School, Gravesend, Brooklyn", "Competition", { conditional: true }),
       programEvent("Super Qualifier 2", "2027-02-21", "8am–6pm", "John Dewey High School, Gravesend, Brooklyn", "Competition", { conditional: true }),
       programEvent("NYC Championship", "2027-03-07", "8am–6pm", "Francis Lewis High School, Fresh Meadows, Queens", "Competition", { conditional: true })
@@ -1827,7 +1864,7 @@
       if (fieldOptions[field] || field === "due") {
         const button = document.createElement("button"); button.type = "button"; button.className = "field-button"; button.dataset.field = field;
         let current = "";
-        const paint = () => { button.replaceChildren(field === "due" ? (current ? formatTaskDue(current) : button.emptyText || "No date") : fieldValueNode(field, current || "—")); button.classList.toggle("empty", !current); };
+        const paint = () => { button.replaceChildren(field === "due" ? (current ? (button.formatDate || formatTaskDue)(current) : button.emptyText || "No date") : fieldValueNode(field, current || "—")); button.classList.toggle("empty", !current); };
         Object.defineProperty(button, "value", { get: () => current, set: next => { current = next || ""; paint(); } });
         // Picks fire input and change like the native controls did, so existing listeners keep working.
         const commit = next => { button.value = next; button.dispatchEvent(new Event("input", { bubbles: true })); button.dispatchEvent(new Event("change", { bubbles: true })); button.focus(); };
@@ -4129,7 +4166,7 @@
       const offset = daysBetween(iso, todayIso());
       return offset === 0 ? "today" : offset === 1 ? "yesterday" : offset < 7 ? `${offset} days ago` : formatTaskDue(iso);
     }
-    function seasonOf(iso) { const year = Number(iso.slice(0, 4)), month = Number(iso.slice(5, 7)); const start = month >= 8 ? year : year - 1; return `${start}–${String(start + 1).slice(2)} season`; }
+    function seasonOf(iso) { const season = seasonForDate(iso); if (season) return `${season.name} season`; const year = Number(iso.slice(0, 4)), month = Number(iso.slice(5, 7)); const start = month >= 8 ? year : year - 1; return `${start}–${String(start + 1).slice(2)} season`; }
     // Team mentors only see coach comments written on their own team; program coaches and the student see everything.
     function canSeeEvent(event) {
       if (!["feedback", "reply"].includes(event.type) || isStudentViewer() || isProgramCoach()) return true;
@@ -5053,8 +5090,8 @@
           const meta = document.createElement("div"); meta.className = "goal-meta";
           const last = lastCheckin(goal);
           meta.append(goalStatusPill(goal.status));
-          // Check-in dates are for team leads, mentors, and coaches; students see just the goal and its status.
-          if (demoRole !== "Student") { const checked = document.createElement("span"); checked.textContent = last ? `Checked in ${relativeDate(last.date)}` : "No check-ins yet"; meta.append(checked); }
+          // Check-in dates are for mentors and coaches; students (leads included) see just the goal and its status.
+          if (isAdultRole(demoRole)) { const checked = document.createElement("span"); checked.textContent = last ? `Checked in ${relativeDate(last.date)}` : "No check-ins yet"; meta.append(checked); }
           card.append(statement, meta);
         });
         // Adults also see what needs attention (students never see each other's flags).
@@ -6465,6 +6502,290 @@
       ];
       Object.defineProperty(team, "members", { configurable: true, get() { return this.roster.filter(member => !isAdultRole(member.role)).map(member => member.name); } });
     }
+    // ---------- Seasons ----------
+    // A season ("2026–27") groups a year's teams, sprints, and goals. Program coaches start a new season in Program
+    // settings: pick the teams that carry over, review who stays on each, and decide what happens to unfinished tasks.
+    // Each carried-over team's Sprint 1 then starts on the new season's first day.
+    const seasons = [
+      { id: "2025-26", name: "2025–26", start: "2025-09-01", end: "2026-03-31" },
+      { id: "2026-27", name: "2026–27", start: "2026-09-01", end: "2027-03-31" }
+    ];
+    let currentSeasonId = "2026-27";
+    function currentSeason() { return seasons.find(season => season.id === currentSeasonId); }
+    function seasonForDate(iso) { return seasons.find(season => iso >= season.start && iso <= season.end) || null; }
+    // Teams not in the current season: kept (with their history) but out of every other view until brought back.
+    const inactiveTeams = [
+      { profile: { name: "Rust Buckets", number: "5512", color: "gray" }, sprintDays: 14, seasonStart: "2025-09-01", seasonIds: ["2025-26"], roster: [], tasks: [], subteams: [] }
+    ];
+    function teamsInSeason(seasonId) { return [...orgTeams, ...inactiveTeams].filter(team => team.seasonIds?.includes(seasonId)); }
+    function nextSeasonName(name) {
+      const match = name.match(/^(\d{4})[–-](\d{2})$/);
+      return match ? `${Number(match[1]) + 1}–${String(Number(match[2]) + 1).padStart(2, "0")}` : `${name} (next)`;
+    }
+    // Seasons cross a new year, so their dates always show the year.
+    function seasonDate(iso) { return toUtcDate(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" }); }
+    function addYear(iso) { return `${Number(iso.slice(0, 4)) + 1}${iso.slice(4)}`; }
+    function renderSeasonList() {
+      const list = document.getElementById("seasonList");
+      list.replaceChildren(...[...seasons].sort((left, right) => right.start.localeCompare(left.start)).map(season => {
+        const current = season.id === currentSeasonId;
+        const row = document.createElement("li"); row.className = `season-row${current ? " current" : ""}`;
+        const name = document.createElement("strong"); name.textContent = season.name;
+        const tag = document.createElement("span"); tag.className = `season-current${current ? "" : " placeholder"}`; tag.textContent = "Current"; tag.setAttribute("aria-hidden", String(!current));
+        const dates = document.createElement("span"); dates.className = "sprint-date-range season-dates";
+        if (current) {
+          // The current season's dates use the same calendar as sprint dates.
+          const edge = which => {
+            const button = document.createElement("button"); button.type = "button"; button.className = "sprint-date-edge";
+            button.textContent = seasonDate(season[which]); button.setAttribute("aria-label", `${season.name} ${which}s ${seasonDate(season[which])}. Change ${which} date`);
+            button.addEventListener("click", () => openDueDatePicker(button, {
+              value: season[which], label: `Choose ${season.name} ${which} date`,
+              start: which === "end" ? shiftIsoDate(season.start, 1) : "", end: which === "start" ? shiftIsoDate(season.end, -1) : "",
+              onSave: next => { if (next) { season[which] = next; renderSeasonList(); showToast(`${season.name} ${which}s ${seasonDate(next)}`); } }
+            }));
+            return button;
+          };
+          dates.append(edge("start"), "–", edge("end"));
+        } else dates.textContent = `${seasonDate(season.start)} – ${seasonDate(season.end)}`;
+        const meta = document.createElement("small"); meta.textContent = pluralize(teamsInSeason(season.id).length, "team");
+        row.append(name, tag, dates, meta);
+        return row;
+      }));
+    }
+    function renderInactiveTeams() {
+      const box = document.getElementById("inactiveTeams");
+      box.hidden = !inactiveTeams.length;
+      box.querySelector("summary").textContent = `Not in this season (${inactiveTeams.length})`;
+      document.getElementById("inactiveTeamList").replaceChildren(...inactiveTeams.map(team => {
+        const row = document.createElement("li"); row.className = "org-team-row inactive";
+        const badge = document.createElement("span"); badge.className = "team-mini-badge"; paintTeamBadge(badge, team.profile);
+        const who = document.createElement("span"); who.className = "member-who";
+        const name = document.createElement("strong"); name.textContent = team.profile.name;
+        const meta = document.createElement("small");
+        const last = seasons.filter(season => team.seasonIds.includes(season.id)).at(-1);
+        meta.textContent = `FTC ${team.profile.number} · Last season ${last ? last.name : "—"}`;
+        who.append(name, meta);
+        const back = makeButton(`Add to ${currentSeason().name}`, "row-action", () => {
+          inactiveTeams.splice(inactiveTeams.indexOf(team), 1);
+          joinCurrentSeason(team);
+          orgTeams.push(team);
+          refreshProgramSettings();
+          showToast(`${team.profile.name} is back for ${currentSeason().name}`);
+        });
+        row.append(badge, who, document.createElement("span"), back);
+        return row;
+      }));
+    }
+    function joinCurrentSeason(team) {
+      if (!team.seasonIds.includes(currentSeasonId)) team.seasonIds.push(currentSeasonId);
+      if (!team.live) team.seasonStart = currentSeason().start;
+      team.roster ||= []; team.tasks ||= [];
+      // Brought-back teams keep their roster; they just need the same student-name lookup other teams have.
+      if (!team.live && !Object.getOwnPropertyDescriptor(team, "members")?.get) {
+        Object.defineProperty(team, "members", { configurable: true, get() { return this.roster.filter(member => !isAdultRole(member.role)).map(member => member.name); } });
+      }
+    }
+    // The "Start a new season" steps. Nothing changes until Start on the last step.
+    function openNewSeason() {
+      const now = currentSeason();
+      const draft = { name: nextSeasonName(now.name), start: addYear(now.start), end: addYear(now.end), carried: new Set(orgTeams), choices: new Map(), tasks: "backlog" };
+      const steps = ["Season", "Teams", "People", "Tasks", "Review"];
+      let step = 0;
+      // Everyone on a team (not program coaches), with their teams and whether any of those carry over.
+      const reviewPeople = () => {
+        const people = [];
+        [...orgTeams, ...inactiveTeams].forEach(team => (team.roster || []).forEach(member => {
+          if (member.role === "Program coach") return;
+          const entry = people.find(person => person.member === member);
+          if (entry) entry.teams.push(team); else people.push({ member, teams: [team] });
+        }));
+        unassignedPeople.forEach(member => people.push({ member, teams: [] }));
+        return people.map(person => ({ ...person, carried: person.teams.filter(team => draft.carried.has(team)) }));
+      };
+      // Default: stay if any of their teams carries over; otherwise move to No team.
+      const choiceOf = person => draft.choices.get(person.member) || (person.carried.length || !person.teams.length ? "stay" : "none");
+      openGoalModal(dialog => {
+        dialog.classList.add("season-modal");
+        const render = () => {
+          const head = document.createElement("div"); head.className = "goal-modal-head";
+          const kicker = document.createElement("p"); kicker.className = "goal-kicker"; kicker.textContent = `New season · ${steps[step]}`;
+          const dots = document.createElement("div"); dots.className = "goal-steps";
+          steps.forEach((label, index) => {
+            const dot = document.createElement("button"); dot.type = "button"; dot.className = `goal-step-dot${index === step ? " current" : index < step ? " done" : ""}`;
+            dot.disabled = index > step; dot.setAttribute("aria-label", `Step ${index + 1}: ${label}`);
+            dot.addEventListener("click", () => { step = index; render(); });
+            dots.append(dot);
+          });
+          head.append(kicker, dots);
+          const title = document.createElement("h2");
+          const body = document.createElement("div"); body.className = "season-step";
+          const back = makeButton("Back", "goal-button", () => { step--; render(); }); back.hidden = step === 0;
+          const next = makeButton(step === steps.length - 1 ? `Start ${draft.name}` : "Next", "goal-button primary", () => {
+            if (step === 0 && (!draft.name.trim() || !draft.start || !draft.end)) { showToast("Give the season a name, a start, and an end"); return; }
+            if (step === steps.length - 1) { startSeason(draft, reviewPeople, choiceOf); return; }
+            step++; render();
+          });
+          const cancel = makeButton("Cancel", "goal-button", closeGoalModal);
+          if (step === 0) {
+            title.textContent = "Name the season and set its dates";
+            const name = document.createElement("input"); name.className = "goal-line"; name.maxLength = 30; name.value = draft.name; name.setAttribute("aria-label", "Season name");
+            name.addEventListener("input", () => { draft.name = name.value; next.textContent = "Next"; });
+            const dates = document.createElement("div"); dates.className = "season-date-fields";
+            const field = (which, label) => {
+              const control = makeFieldControl("due"); control.classList.add("panel-field"); control.setAttribute("aria-label", label); control.emptyText = label; control.formatDate = seasonDate; control.value = draft[which];
+              if (which === "end") control.min = draft.start; else control.max = draft.end;
+              control.addEventListener("change", () => { draft[which] = control.value; render(); });
+              const wrap = document.createElement("label"); wrap.append(label, control); return wrap;
+            };
+            dates.append(field("start", "Starts"), field("end", "Ends"));
+            const hint = document.createElement("p"); hint.className = "goal-example";
+            hint.textContent = `Each team's Sprint 1 starts on this date; sprint lengths stay as they are.${draft.start <= now.end ? ` ${now.name} will end ${seasonDate(shiftIsoDate(draft.start, -1))}.` : ""}`;
+            body.append(name, dates, hint);
+          } else if (step === 1) {
+            title.textContent = "Which teams carry over?";
+            const lead = document.createElement("p"); lead.className = "goal-lead"; lead.textContent = "Teams you don't carry over keep their history and can be brought back later.";
+            const list = document.createElement("ul"); list.className = "season-team-list";
+            [...orgTeams, ...inactiveTeams].forEach(team => {
+              const row = document.createElement("li");
+              const box = document.createElement("input"); box.type = "checkbox"; box.checked = draft.carried.has(team);
+              // The mock-up's live team holds the sample task data, so it always carries over.
+              box.disabled = Boolean(team.live); if (team.live) box.title = `${team.profile.name} is the mock-up's live team`;
+              box.setAttribute("aria-label", `Carry over ${team.profile.name}`);
+              box.addEventListener("change", () => { box.checked ? draft.carried.add(team) : draft.carried.delete(team); });
+              const badge = document.createElement("span"); badge.className = "team-mini-badge"; paintTeamBadge(badge, team.profile);
+              const who = document.createElement("span"); who.className = "member-who";
+              const name = document.createElement("strong"); name.textContent = team.profile.name;
+              const meta = document.createElement("small");
+              const roster = team.roster || [];
+              meta.textContent = inactiveTeams.includes(team) ? `Not in ${now.name}` : `${pluralize(roster.filter(member => !isAdultRole(member.role)).length, "student")} · ${pluralize(roster.filter(member => member.role === "Team mentor").length, "mentor")}`;
+              who.append(name, meta);
+              const label = document.createElement("label"); label.className = "season-team-row"; label.append(box, badge, who);
+              row.append(label); list.append(row);
+            });
+            body.append(lead, list);
+          } else if (step === 2) {
+            title.textContent = "Who's on each team this season?";
+            const lead = document.createElement("p"); lead.className = "goal-lead";
+            lead.textContent = "Keep people on their team, remove them from the team (they stay in the program with no team), or remove them from the program, like graduating students.";
+            const people = reviewPeople();
+            const groups = [
+              ...[...orgTeams, ...inactiveTeams].filter(team => draft.carried.has(team)).map(team => ({ label: team.profile.name, team, people: people.filter(person => person.carried[0] === team) })),
+              { label: "From teams not carried over", people: people.filter(person => person.teams.length && !person.carried.length) },
+              { label: "No team", people: people.filter(person => !person.teams.length) }
+            ].filter(group => group.people.length);
+            const counts = document.createElement("p"); counts.className = "season-counts";
+            const paintCounts = () => {
+              const tally = { stay: 0, none: 0, remove: 0 };
+              people.forEach(person => tally[choiceOf(person)]++);
+              counts.textContent = `${tally.stay} kept · ${tally.none} removed from team · ${tally.remove} removed from program`;
+            };
+            const options = person => person.carried.length ? [["stay", "Keep"], ["none", "Remove from team"], ["remove", "Remove from program"]]
+              : person.teams.length ? [["none", "Remove from team"], ["remove", "Remove from program"]]
+              : [["stay", "Keep"], ["remove", "Remove from program"]];
+            const sections = groups.map(group => {
+              const section = document.createElement("section"); section.className = "season-people-group";
+              const head = document.createElement("div"); head.className = "season-people-head";
+              const name = document.createElement("h3");
+              if (group.team) { const dot = document.createElement("span"); dot.className = "team-dot"; paintTeamChip(dot, group.team.profile.name); name.append(dot); }
+              name.append(group.label);
+              const setAll = document.createElement("button"); setAll.type = "button"; setAll.className = "text-button"; setAll.textContent = "Set everyone…";
+              setAll.addEventListener("click", event => {
+                event.stopPropagation();
+                openChoiceMenu(setAll, null, options(group.people[0]).map(([value, text]) => ({
+                  label: text, run: () => { group.people.forEach(person => { if (options(person).some(([key]) => key === value)) draft.choices.set(person.member, value); }); render(); }
+                })), `season:${group.label}`, { align: "left" });
+              });
+              head.append(name, setAll);
+              const list = document.createElement("ul"); list.className = "season-people-list";
+              group.people.forEach(person => {
+                const row = document.createElement("li");
+                const avatar = document.createElement("span"); avatar.className = "avatar"; avatar.textContent = initials(person.member.name);
+                const who = document.createElement("span"); who.className = "member-who";
+                const name = document.createElement("strong"); name.textContent = person.member.name;
+                const others = person.teams.filter(team => team !== group.team).map(team => team.profile.name);
+                const role = document.createElement("small"); role.textContent = `${person.member.role}${group.team && others.length ? ` · also ${others.join(", ")}` : ""}`;
+                who.append(name, role);
+                const toggle = document.createElement("div"); toggle.className = "segmented"; toggle.setAttribute("role", "group"); toggle.setAttribute("aria-label", `${person.member.name} this season`);
+                options(person).forEach(([value, text]) => {
+                  const button = document.createElement("button"); button.type = "button"; button.textContent = text;
+                  button.setAttribute("aria-pressed", String(choiceOf(person) === value));
+                  button.addEventListener("click", () => {
+                    draft.choices.set(person.member, value);
+                    toggle.querySelectorAll("button").forEach(other => other.setAttribute("aria-pressed", String(other === button)));
+                    paintCounts();
+                  });
+                  toggle.append(button);
+                });
+                row.append(avatar, who, toggle); list.append(row);
+              });
+              section.append(head, list);
+              return section;
+            });
+            paintCounts();
+            body.append(lead, counts, ...sections);
+          } else if (step === 3) {
+            title.textContent = "What about unfinished tasks?";
+            const lead = document.createElement("p"); lead.className = "goal-lead"; lead.textContent = "Finished tasks stay with last season's sprints. Goals stay with each student, and active goals carry on.";
+            const choices = document.createElement("div"); choices.className = "season-choices";
+            [["backlog", "Move them to each team's Backlog", "Teams can plan them into the new season's sprints."], ["archive", "Archive them", "They can be restored from each team's Settings → Archived tasks."]].forEach(([value, text, hint]) => {
+              const label = document.createElement("label"); label.className = "github-option";
+              const radio = document.createElement("input"); radio.type = "radio"; radio.name = "seasonTasks"; radio.checked = draft.tasks === value;
+              radio.addEventListener("change", () => { draft.tasks = value; });
+              const copy = document.createElement("span"); const strong = document.createElement("strong"); strong.textContent = text; const small = document.createElement("small"); small.textContent = hint;
+              copy.append(strong, small); label.append(radio, copy); choices.append(label);
+            });
+            body.append(lead, choices);
+          } else {
+            title.textContent = `Ready to start ${draft.name}?`;
+            const people = reviewPeople();
+            const carried = [...draft.carried], dropped = orgTeams.filter(team => !draft.carried.has(team));
+            const leaving = people.filter(person => choiceOf(person) === "remove"), noTeam = people.filter(person => choiceOf(person) === "none" && person.teams.length);
+            const summary = document.createElement("ul"); summary.className = "season-summary";
+            const item = (text, detail = "") => { const li = document.createElement("li"); const strong = document.createElement("strong"); strong.textContent = text; li.append(strong); if (detail) { const small = document.createElement("small"); small.textContent = detail; li.append(small); } summary.append(li); };
+            item(`${draft.name} · ${seasonDate(draft.start)} – ${seasonDate(draft.end)}`, draft.start <= now.end ? `${now.name} ends ${seasonDate(shiftIsoDate(draft.start, -1))}` : "");
+            item(`${pluralize(carried.length, "team")} carry over`, dropped.length ? `Not carried over: ${dropped.map(team => team.profile.name).join(", ")}` : "");
+            item(noTeam.length ? `${peopleCount(noTeam.length)} removed from their team` : "Everyone keeps their team", noTeam.length ? `${noTeam.map(person => person.member.name).join(", ")}. They stay in the program with no team.` : "");
+            if (leaving.length) item(`${peopleCount(leaving.length)} removed from the program`, `${leaving.map(person => person.member.name).join(", ")}. They're taken off their tasks; goal history is kept per your retention rules.`);
+            item(draft.tasks === "backlog" ? "Unfinished tasks move to each team's Backlog" : "Unfinished tasks are archived");
+            body.append(summary);
+          }
+          dialog.replaceChildren(head, title, body, modalButtons(cancel, back, next));
+          (dialog.querySelector(".season-step input:not([type=checkbox]):not([type=radio])") || next).focus();
+        };
+        render();
+      }, { label: "Start a new season" });
+    }
+    function startSeason(draft, reviewPeople, choiceOf) {
+      const old = currentSeason();
+      if (old.end >= draft.start) old.end = shiftIsoDate(draft.start, -1);
+      const id = draft.name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      seasons.push({ id, name: draft.name.trim(), start: draft.start, end: draft.end });
+      currentSeasonId = id;
+      // People first, while rosters still show who was where.
+      let moved = 0, removed = 0;
+      reviewPeople().forEach(person => {
+        const choice = choiceOf(person);
+        if (choice === "remove") { if (person.teams.length) person.teams.forEach(team => detachPerson(person.member, team)); else detachPerson(person.member, null); removed++; }
+        else if (choice === "none" && person.teams.length) { person.teams.forEach(team => detachPerson(person.member, team)); person.member.subteams = []; unassignedPeople.push(person.member); moved++; }
+      });
+      // Teams: drop the ones not carried over; bring back any that are.
+      [...orgTeams].forEach(team => { if (!draft.carried.has(team)) { orgTeams.splice(orgTeams.indexOf(team), 1); inactiveTeams.push(team); } });
+      [...inactiveTeams].forEach(team => { if (draft.carried.has(team)) { inactiveTeams.splice(inactiveTeams.indexOf(team), 1); orgTeams.push(team); } });
+      const toArchive = [];
+      orgTeams.forEach(team => {
+        joinCurrentSeason(team);
+        if (team.live) return;   // The mock-up keeps the live team's sample sprints and tasks.
+        team.tasks.forEach(task => {
+          if (task.status === "Done") task.sprint = "earlier";
+          else if (draft.tasks === "backlog") task.sprint = "backlog";
+          else toArchive.push({ record: task });
+        });
+      });
+      if (toArchive.length) archiveTasks(toArchive);
+      closeGoalModal();
+      refreshProgramSettings();
+      showToast(`${draft.name} started · ${pluralize(orgTeams.length, "team")}${moved ? ` · ${moved} removed from team` : ""}${removed ? ` · ${removed} removed from program` : ""}`);
+    }
     function teamByNumber(number) { return orgTeams.find(team => team.profile.number === number) || null; }
     // Program coaches are org-wide, so they're listed once with no team.
     // One entry per person. Mentors can be on several teams (the same member object sits in each roster), so
@@ -6594,7 +6915,9 @@
       renderOrgList();
     }
     function renderProgramSettings() {
+      renderSeasonList();
       renderOrgTeamList();
+      renderInactiveTeams();
       renderDefaultSubteams();
       renderOrgPeople();
     }
@@ -6671,7 +6994,7 @@
           if (previous !== nextName) renameTeamReferences(previous, nextName);
           showToast("Team saved");
         } else {
-          const created = { profile: { name: nextName, number: cleanNumber, color: draft.color }, seasonStart: todayIso(), sprintDays: Number(sprintDays.value), tasks: [], subteams: subteamDefaults.map(subteam => ({ ...subteam })) };
+          const created = { seasonIds: [currentSeasonId], profile: { name: nextName, number: cleanNumber, color: draft.color }, seasonStart: todayIso(), sprintDays: Number(sprintDays.value), tasks: [], subteams: subteamDefaults.map(subteam => ({ ...subteam })) };
           setupTeamRoster(created);
           orgTeams.push(created);
           showToast(`${nextName} created`);
@@ -7396,6 +7719,7 @@
     });
     document.getElementById("addSubteamButton").addEventListener("click", () => openSubteamForm());
     document.getElementById("addTeamButton").addEventListener("click", () => openTeamForm());
+    document.getElementById("newSeasonButton").addEventListener("click", openNewSeason);
     document.getElementById("addDefaultSubteamButton").addEventListener("click", () => openDefaultSubteamForm());
     document.getElementById("addPersonButton").addEventListener("click", openPersonForm);
     document.getElementById("importPeopleButton").addEventListener("click", () => openMemberImport({ program: true }));
@@ -7619,8 +7943,10 @@
     renderTeamAvatars();
     renderTeamIdentity();
     orgTeams.forEach(setupTeamRoster);
+    // Every sample team played last season too, except Iron Owls (new this season).
+    orgTeams.forEach(team => { team.seasonIds ||= team.profile.name === "Iron Owls" ? ["2026-27"] : ["2025-26", "2026-27"]; });
     // Sample GitHub repos so every team shows one (the links point at made-up repos).
-    orgTeams.forEach(team => { githubSettingsOf(team.profile).repo ||= `avenues-ftc/${team.profile.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${team.profile.number}`; });
+    orgTeams.forEach(team => { githubSettingsOf(team.profile).repo ||= `example-robotics/${team.profile.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${team.profile.number}`; });
     seedOrgTasks();
     seedOrgGoals();
     renderTeamMenuButton();

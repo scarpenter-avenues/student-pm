@@ -1,0 +1,30 @@
+{
+  "program": {
+    "id": "example-robotics",
+    "name": "Example Robotics"
+  },
+  "signIn": {
+    "google": { "allowedDomains": ["example.edu"] },
+    "password": { "roles": ["mentor", "coach"] }
+  },
+  "firstCoach": {
+    "displayName": "Alex P.",
+    "email": "coach@example.edu"
+  },
+  "season": {
+    "id": "2026-27",
+    "name": "2026–27",
+    "start": "2026-09-01",
+    "end": "2027-03-31"
+  },
+  "subteamDefaults": [
+    { "name": "Mechanical", "color": "red", "description": "Design, CAD, fabrication, and maintenance" },
+    { "name": "Software", "color": "green", "description": "Tele-op, autonomous, and wiring" },
+    { "name": "Outreach", "color": "purple", "description": "Reach and Connect" },
+    { "name": "Competition Ops", "color": "blue", "description": "Pit, judges' interview, scouting, packing, and logistics" },
+    { "name": "Drive Team", "color": "teal", "description": "Driving, strategy, and alliance coordination" }
+  ],
+  "teams": [
+    { "name": "Circuit Breakers", "number": "418", "color": "green", "sprintDays": 14 }
+  ]
+}
