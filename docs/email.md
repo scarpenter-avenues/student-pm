@@ -21,6 +21,8 @@ company, and it works on Firebase's free Spark plan.
 - Emails are plain text with a link back to the app. The formatted text people write in the app is never sent as HTML.
 - Editing a post later doesn't send it again. A post deleted before it's sent is skipped.
 - Addresses come from Firebase Authentication (the email each person signs in with). They aren't copied anywhere.
+- Someone who has been added but hasn't signed in yet isn't emailed: they have no sign-in address until their first
+  sign-in.
 
 ## How it works
 
@@ -53,17 +55,18 @@ build the script.
    | `PROJECT_ID` | Your Firebase project ID |
    | `PROGRAM_ID` | `program.id` from your `program.config.json` |
    | `APP_URL` | Where your app lives, e.g. `https://your-project.web.app` |
-   | `TEST_REDIRECT` | *(while testing)* Your own address: every email goes there instead of to real people |
+   | `TEST_REDIRECT` | *(while testing)* An address of yours other than the sending account: every email goes there instead of to real people |
    | `INCLUDE_STUDENTS` | `true` to email students too; leave it out to email mentors and coaches only |
 
 6. **Check mail works.** In the editor, pick the function `sendTestEmail` and click Run. Approve the permissions it
-   asks for. You should get one email.
+   asks for. One email goes to `TEST_REDIRECT` if you set it, otherwise to you. Use an address other than the sending
+   account for this: Gmail often doesn't show mail you send to yourself in the inbox (look in Sent or All Mail).
 7. **Turn it on.** Run `install`. It starts a trigger that runs `sendPending` every minute, and tells the app that
    email is on: "Also send by email" appears on new announcements, and huddles say they'll be emailed.
 
 ## Test before real people get mail
 
-1. Leave `TEST_REDIRECT` set to your address.
+1. Leave `TEST_REDIRECT` set to an address of yours other than the sending account.
 2. Post an announcement, a huddle, and a quick note in the app.
 3. Within a minute or two (or run `sendPending` yourself) you get each one, with `[TEST]` in the subject and a first line
    saying who it would have gone to.

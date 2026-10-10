@@ -115,16 +115,20 @@ export function uninstall() {
   console.log('Email is off.')
 }
 
-/** Sends one sample email to you, to check that mail and the settings work. */
+/**
+ * Sends one sample email to check that mail and the settings work: to TEST_REDIRECT if it's set, otherwise to you.
+ * (Gmail may not show mail you send to yourself in the inbox, so a different address is the better test.)
+ */
 export function sendTestEmail() {
   const current = settings()
   const program = store().get('')
+  const to = current.redirectTo ?? Session.getEffectiveUser().getEmail()
   io.sendMail({
-    bcc: [Session.getEffectiveUser().getEmail()],
+    bcc: [to],
     fromName: String(program?.data.name ?? 'Switchback'),
     subject: `${String(program?.data.name ?? 'Switchback')}: email is working`,
     text: `This is a test from the Switchback email sender.\n\nOpen the app: ${current.appUrl}`,
     html: `<p>This is a test from the Switchback email sender.</p><p><a href="${current.appUrl}">Open the app</a></p>`,
   })
-  console.log(`Sent. ${io.quota()} recipients left today.`)
+  console.log(`Sent to ${to}. ${io.quota()} recipients left today.`)
 }
