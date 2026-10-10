@@ -5,7 +5,9 @@ import { useRoute } from 'vue-router'
 import { useSession } from '@/stores/session'
 import { teamAccent } from '@/ui/teamColor'
 import { DASHBOARD_TABS, TEAM_TABS } from '@/router/tabs'
+import { createTeamData, provideTeam } from '@/composables/useTeamData'
 import TopBar from './TopBar.vue'
+import TaskPanel from './TaskPanel.vue'
 
 const session = useSession()
 const route = useRoute()
@@ -22,7 +24,12 @@ watch(
   { immediate: true },
 )
 const teamId = computed(() => lastTeamId.value ?? session.member?.teamIds[0] ?? null)
-const team = computed(() => (teamId.value ? (session.teamsById[teamId.value] ?? null) : null))
+// The team's shared data for every team page (not the Coaches' Dashboard, which loads each team itself).
+const teamData = createTeamData(() => (onDashboard.value ? null : teamId.value))
+provideTeam(teamData)
+const team = computed(() =>
+  teamId.value ? (session.teamsById[teamId.value] ?? teamData.team.value ?? null) : null,
+)
 
 const tabs = computed(() => {
   if (onDashboard.value)
@@ -90,6 +97,7 @@ watchEffect(() => {
     <main class="content">
       <RouterView />
     </main>
+    <TaskPanel />
   </div>
 </template>
 

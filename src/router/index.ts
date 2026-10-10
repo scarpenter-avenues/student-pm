@@ -25,7 +25,11 @@ export const routes: RouteRecordRaw[] = [
       { path: 'huddle', name: 'huddle', component: ComingSoon, meta: { adultOnly: true } },
       { path: 't/:teamId', redirect: (to) => `${to.path}/${DEFAULT_TEAM_TAB}` },
       { path: 't/:teamId/announcements', name: 'team-announcements', component: ComingSoon },
-      { path: `t/:teamId/:tab(${tabPattern(TEAM_TABS)})`, name: 'team', component: ComingSoon },
+      {
+        path: `t/:teamId/:tab(${tabPattern(TEAM_TABS)})`,
+        name: 'team',
+        component: () => import('@/views/team/TeamView.vue'),
+      },
       { path: 'dashboard', redirect: '/dashboard/huddle' },
       {
         path: `dashboard/:tab(${tabPattern(DASHBOARD_TABS)})`,

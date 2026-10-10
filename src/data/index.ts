@@ -13,3 +13,4 @@ export const writes = createWrites(refs, () => {
   return uid
 })
 export { useLiveDoc, useLiveQuery, type Live } from './live'
+export type { NewTask, TaskChanges } from './writes'

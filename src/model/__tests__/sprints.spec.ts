@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSprints, sprintIndexOn } from '../sprints'
+import { buildSprints, earliestSprintDate, rescheduleSprint, sprintIndexOn } from '../sprints'
 import { daysBetween, shiftIsoDate } from '../dates'
 
 describe('buildSprints', () => {
@@ -48,5 +48,34 @@ describe('sprintIndexOn', () => {
     expect(sprintIndexOn(sprints, '2026-09-20')).toBe(1)
     expect(sprintIndexOn(sprints, '2026-01-01')).toBe(0)
     expect(sprintIndexOn(sprints, '2027-01-01')).toBe(2)
+  })
+})
+
+describe('rescheduleSprint', () => {
+  const sprints = [
+    { id: 's1', start: '2026-09-01', end: '2026-09-14' },
+    { id: 's2', start: '2026-09-15', end: '2026-09-28' },
+    { id: 's3', start: '2026-09-29', end: '2026-10-12' },
+  ]
+  it('a later end shifts every later sprint by the same days', () => {
+    expect(rescheduleSprint(sprints, 1, { end: '2026-09-30' })).toEqual([
+      { id: 's2', start: '2026-09-15', end: '2026-09-30' },
+      { id: 's3', start: '2026-10-01', end: '2026-10-14' },
+    ])
+  })
+  it('a new start ends the sprint before it the day before', () => {
+    expect(rescheduleSprint(sprints, 1, { start: '2026-09-17' })).toEqual([
+      { id: 's1', start: '2026-09-01', end: '2026-09-16' },
+      { id: 's2', start: '2026-09-17', end: '2026-09-28' },
+    ])
+  })
+  it('keeps sprints at least a week long', () => {
+    expect(rescheduleSprint(sprints, 0, { end: '2026-09-03' })[0]).toEqual({
+      id: 's1',
+      start: '2026-09-01',
+      end: '2026-09-07',
+    })
+    expect(earliestSprintDate(sprints, 1, 'start')).toBe('2026-09-08')
+    expect(earliestSprintDate(sprints, 1, 'end')).toBe('2026-09-21')
   })
 })

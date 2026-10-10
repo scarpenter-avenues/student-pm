@@ -1,0 +1,177 @@
+/* Task tables: List, Planning, and the Coaches' Dashboard's Tasks (rows from TaskRows.vue). Planning and the
+   dashboard add `.dense` (12px text, ~29px rows). */
+.task-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  text-align: left;
+}
+.task-table th {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  color: #77817f;
+  font-size: 13px;
+  font-weight: 600;
+}
+.task-table td {
+  padding: 8px;
+  border-bottom: 1px solid #edf0ee;
+  color: #566269;
+  font-size: 14px;
+  vertical-align: middle;
+}
+.task-table tbody tr:hover > td {
+  background: #fbfcfb;
+}
+.task-table tr.selected > td {
+  background: var(--team-softer);
+}
+.task-table .name-cell {
+  position: relative;
+}
+.task-table .name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.task-table .subtask-name {
+  padding-left: 26px;
+}
+.task-table .handle-space,
+.task-table .toggle-space {
+  flex: 0 0 auto;
+  width: 18px;
+}
+.task-table .subtask-toggle {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #737d86;
+  font-size: 12px;
+}
+.task-table .subtask-toggle[aria-expanded='true'] {
+  color: #356fd1;
+}
+/* Circles select (they fill like a radio button); tasks are marked done through Status. */
+.select-circle {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  margin: 0 6px 0 2px;
+  padding: 0;
+  border: 1.5px solid #b9c1c8;
+  border-radius: 50%;
+  background: #fff;
+}
+.select-circle:hover {
+  border-color: var(--team-ink);
+}
+.select-circle[aria-pressed='true'] {
+  border-color: var(--team-ink);
+  background: radial-gradient(circle, var(--team-ink) 0 4px, #fff 4.5px);
+}
+.task-table .task-title {
+  min-width: 0;
+  color: #202124;
+  font-size: 13px;
+  font-weight: 600;
+}
+.task-table .subtask-row .editable-title {
+  color: #3f474e;
+  font-size: 13px;
+}
+.task-table .subtask-row.done .title-button {
+  color: #828a91;
+  text-decoration: line-through;
+}
+.task-table .subtask-count {
+  flex: 0 0 auto;
+  margin-left: 4px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: #6e7881;
+  font-size: 12px;
+  white-space: nowrap;
+}
+/* Open (and Planning's + Subtask) float over the right end of the name cell on hover; rows never change height. */
+.task-table .row-actions {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  padding-left: 18px;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), #fff 18px);
+  opacity: 0;
+  transform: translateY(-50%);
+}
+.task-table tr:hover .row-actions,
+.task-table tr:focus-within .row-actions {
+  opacity: 1;
+}
+.task-table tr.selected .row-actions {
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), var(--team-softer) 18px);
+}
+.task-table .row-actions .row-open {
+  opacity: 1;
+}
+.task-table .editable-title.editing ~ .row-actions {
+  display: none;
+}
+@media (hover: none) {
+  .task-table .row-actions {
+    opacity: 1;
+  }
+}
+.task-table .add-row td {
+  padding: 4px 8px 6px;
+  border-bottom: 0;
+}
+.task-table .add-button {
+  padding: 3px 0 3px 44px;
+  border: 0;
+  background: transparent;
+  color: #68747e;
+  font-size: 13px;
+}
+.task-table .subtask-add {
+  padding-left: 74px;
+}
+.task-table .add-button:hover {
+  color: var(--team-ink);
+}
+.task-table .subtask-add-row td {
+  background: #fcfdff;
+}
+.task-table .subtask-row > td {
+  background: #fcfdff;
+}
+
+/* Dense planning tables. */
+.task-table.dense th {
+  padding: 8px 6px;
+  font-size: 12px;
+}
+.task-table.dense td {
+  height: 29px;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+.task-table.dense .status-chip,
+.task-table.dense .tag {
+  padding: 1px 6px;
+  font-size: 11px;
+}
+.task-table.dense .avatar {
+  width: 18px;
+  height: 18px;
+  font-size: 7px;
+}
+.task-table.dense .cell-button {
+  min-height: 22px;
+}

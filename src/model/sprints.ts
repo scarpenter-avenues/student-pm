@@ -41,3 +41,49 @@ export function sprintIndexOn(sprints: SprintDates[], date: string): number {
   const found = sprints.findIndex((sprint) => date >= sprint.start && date <= sprint.end)
   return found === -1 ? sprints.length - 1 : found
 }
+
+export interface SprintSpan {
+  id: string
+  start: string
+  end: string
+}
+
+/**
+ * New dates for sprint `index` (ported from the mock-up's saveSprintDateRange). Sprints are at least a week long;
+ * moving the start also ends the sprint before it the day before; moving the end shifts every later sprint by the same
+ * number of days. Returns only the sprints that changed.
+ */
+export function rescheduleSprint(
+  sprints: readonly SprintSpan[],
+  index: number,
+  { start: wantedStart, end: wantedEnd }: { start?: string; end?: string },
+): SprintSpan[] {
+  const list = sprints.map((sprint) => ({ ...sprint }))
+  const sprint = list[index]
+  if (!sprint) return []
+  const previousEnd = sprint.end
+  const start = wantedStart ?? sprint.start
+  let end = wantedEnd ?? sprint.end
+  if (end < shiftIsoDate(start, 6)) end = shiftIsoDate(start, 6)
+  const before = list[index - 1]
+  if (before && start !== sprint.start) before.end = shiftIsoDate(start, -1)
+  sprint.start = start
+  sprint.end = end
+  const delta = daysBetween(previousEnd, end)
+  for (const later of list.slice(index + 1)) {
+    later.start = shiftIsoDate(later.start, delta)
+    later.end = shiftIsoDate(later.end, delta)
+  }
+  return list.filter((next, i) => next.start !== sprints[i]!.start || next.end !== sprints[i]!.end)
+}
+
+/** The earliest day sprint `index` may start or end on (a sprint is at least a week; see rescheduleSprint). */
+export function earliestSprintDate(
+  sprints: readonly SprintSpan[],
+  index: number,
+  edge: 'start' | 'end',
+): string | null {
+  if (edge === 'end') return shiftIsoDate(sprints[index]!.start, 6)
+  const before = sprints[index - 1]
+  return before ? shiftIsoDate(before.start, 7) : null
+}
