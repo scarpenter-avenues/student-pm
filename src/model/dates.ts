@@ -22,3 +22,8 @@ export function daysBetween(from: string, to: string): number {
 export function todayIso(now: Date = new Date()): string {
   return toIsoDate(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())))
 }
+
+/** A moment's calendar date where the person is ("2026-10-09"). */
+export function localIso(moment: Date): string {
+  return todayIso(moment)
+}

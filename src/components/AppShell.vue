@@ -9,6 +9,8 @@ import { createTeamData, provideTeam } from '@/composables/useTeamData'
 import TopBar from './TopBar.vue'
 import TaskPanel from './TaskPanel.vue'
 import HuddlePopup from './huddle/HuddlePopup.vue'
+import GoalFlowHost from './goals/GoalFlowHost.vue'
+import { needsAttention, needsOf, useMyGoals } from '@/composables/useGoals'
 
 const session = useSession()
 const route = useRoute()
@@ -43,6 +45,16 @@ const activeTab = computed(() =>
   route.name === 'team' || route.name === 'dashboard' ? route.params.tab : null,
 )
 
+// Students: a dot on the Goals tab when a goal needs them (or they have none yet).
+const myGoals = useMyGoals()
+const goalsDot = computed(() => {
+  if (session.isAdult || !session.member || myGoals.loading.value) return false
+  const active = myGoals.active.value
+  return (
+    !active.length || active.some((goal) => needsAttention(needsOf(goal, teamData.sprints.value)))
+  )
+})
+
 // Team colors tint the whole app (menus included), so the variables go on the root element.
 watchEffect(() => {
   const vars = teamAccent(team.value?.color)
@@ -69,7 +81,11 @@ watchEffect(() => {
           v-for="tab in tabs.list"
           :key="tab.id"
           class="top-tab"
-          :class="{ active: activeTab === tab.id, 'settings-tab': tab.gear }"
+          :class="{
+            active: activeTab === tab.id,
+            'settings-tab': tab.gear,
+            'has-dot': tab.id === 'goals' && !onDashboard && goalsDot,
+          }"
           :to="tabs.to(tab.id)"
           :aria-current="activeTab === tab.id ? 'page' : undefined"
         >
@@ -100,6 +116,7 @@ watchEffect(() => {
     </main>
     <TaskPanel />
     <HuddlePopup />
+    <GoalFlowHost v-if="!onDashboard" />
   </div>
 </template>
 
@@ -147,6 +164,16 @@ watchEffect(() => {
 }
 .settings-tab {
   margin-left: auto;
+}
+.has-dot::after {
+  position: absolute;
+  top: 9px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #d9534f;
+  content: '';
 }
 .content {
   width: 100%;

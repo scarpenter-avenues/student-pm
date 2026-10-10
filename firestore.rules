@@ -211,7 +211,7 @@ service cloud.firestore {
         allow update: if isMember() && (
             (resource.data.studentId == uid() && request.resource.data.studentId == uid() && !changed().hasAny(['teamId']))
             // Adults only touch the unread-feedback counter (when posting feedback); coaches also move goals between teams.
-            || (adultOn(resource.data.teamId) && changed().hasOnly(['unreadFeedback']))
+            || (adultOn(resource.data.teamId) && changed().hasOnly(['unreadFeedback', 'lastFeedbackAt']))
             || isCoach());
         allow delete: if isCoach();
 
@@ -219,9 +219,11 @@ service cloud.firestore {
           function goal() { return get(/databases/$(database)/documents/programs/$(programId)/goals/$(goalId)).data; }
           // Mentors see only events written while the student was on one of their teams.
           allow read: if isMember() && (goal().studentId == uid() || isCoach() || (adultOn(resource.data.teamId) && adultOn(goal().teamId)));
+          // getAfter: an event can be written in the same batch as its goal (a new goal and its "created" event).
+          function goalAfter() { return getAfter(/databases/$(database)/documents/programs/$(programId)/goals/$(goalId)).data; }
           allow create: if isMember() && request.resource.data.authorId == uid() && (
-              (goal().studentId == uid() && request.resource.data.type in ['created', 'checkin', 'reply', 'paused', 'resumed', 'completed', 'changed', 'edit'])
-              || (adultOn(goal().teamId) && request.resource.data.type == 'feedback' && request.resource.data.teamId == goal().teamId));
+              (goalAfter().studentId == uid() && request.resource.data.type in ['created', 'checkin', 'reply', 'paused', 'resumed', 'completed', 'changed', 'edit'])
+              || (adultOn(goalAfter().teamId) && request.resource.data.type == 'feedback' && request.resource.data.teamId == goalAfter().teamId));
           allow update: if false;   // history is append-only
           allow delete: if isCoach();
         }

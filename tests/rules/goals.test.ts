@@ -130,7 +130,9 @@ describe('writing goals', () => {
     await assertFails(updateDoc(doc(as(env, 'studentA'), goal), { teamId: 'teamB' }))
   })
   it('mentors only touch the unread-feedback count; coaches move goals between teams', async () => {
-    await assertSucceeds(updateDoc(doc(as(env, 'mentorA'), goal), { unreadFeedback: 1 }))
+    await assertSucceeds(
+      updateDoc(doc(as(env, 'mentorA'), goal), { unreadFeedback: 1, lastFeedbackAt: '2026-10-09' }),
+    )
     await assertFails(updateDoc(doc(as(env, 'mentorA'), goal), { plan: 'A better plan' }))
     await assertSucceeds(updateDoc(doc(as(env, 'coach'), goal), { teamId: 'teamB' }))
   })

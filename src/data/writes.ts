@@ -14,15 +14,19 @@ import {
   type FieldValue,
   type UpdateData,
 } from 'firebase/firestore'
-import type {
-  Announcement,
-  CalendarEvent,
-  Comment,
-  Huddle,
-  Sprint,
-  Subtask,
-  Task,
-  Team,
+import {
+  goalStatement,
+  type Announcement,
+  type CalendarEvent,
+  type Comment,
+  type Goal,
+  type GoalEvent,
+  type GoalSummary,
+  type Huddle,
+  type Sprint,
+  type Subtask,
+  type Task,
+  type Team,
 } from '@/model/types'
 import type { Refs } from './refs'
 
@@ -48,6 +52,26 @@ export type TaskChanges = Partial<
     | 'subtasks'
   >
 >
+
+function summaryOf(goal: Goal): GoalSummary {
+  return {
+    studentId: goal.studentId,
+    teamId: goal.teamId,
+    seasonId: goal.seasonId,
+    statement: goalStatement(goal.wish),
+    status: goal.status,
+    state: goal.state,
+  }
+}
+
+function event(
+  authorId: string,
+  teamId: string,
+  date: string,
+  fields: Omit<GoalEvent, 'authorId' | 'teamId' | 'date' | 'createdAt'>,
+): GoalEvent & { id: string } {
+  return { ...fields, id: '', authorId, teamId, date, createdAt: serverTimestamp() as never }
+}
 
 export function createWrites(refs: Refs, currentUid: () => string) {
   return {
@@ -229,6 +253,93 @@ export function createWrites(refs: Refs, currentUid: () => string) {
     },
     deleteHuddle(id: string) {
       return deleteDoc(refs.huddle(id))
+    },
+
+    // ---------- goals ----------
+    // A goal is two docs (the private goal and the team-readable summary) plus its event history. Each change writes
+    // the goal, the summary (when the statement, status, or state changes), and an event in one batch.
+
+    /** A new goal (the student). Returns its id. */
+    createGoal(
+      fields: Pick<Goal, 'teamId' | 'seasonId' | 'wish' | 'evidence' | 'obstacle' | 'plan' | 'by'>,
+      today: string,
+    ) {
+      const uid = currentUid()
+      const ref = doc(refs.goals())
+      const batch = writeBatch(ref.firestore)
+      const goal: Goal & { id: string } = {
+        id: ref.id,
+        ...fields,
+        studentId: uid,
+        createdTeamId: fields.teamId,
+        status: "Haven't started",
+        state: 'active',
+        createdAt: serverTimestamp() as never,
+        finishedAt: null,
+        pausedAt: null,
+        reflection: null,
+        lastCheckinAt: null,
+        lastFeedbackAt: null,
+        unreadFeedback: 0,
+      }
+      batch.set(ref, goal)
+      batch.set(doc(refs.goalSummaries(), ref.id), summaryOf(goal))
+      batch.set(doc(refs.goalEvents(ref.id)), event(uid, fields.teamId, today, { type: 'created' }))
+      return { id: ref.id, written: batch.commit() }
+    },
+
+    /** Changes to a goal plus the event that records them (check-in, pause, resume, edit, completed, changed). */
+    updateGoal(
+      goal: Goal & { id: string },
+      changes: Partial<Omit<Goal, 'studentId' | 'teamId' | 'createdAt'>>,
+      record: Omit<GoalEvent, 'authorId' | 'teamId' | 'date' | 'createdAt'> | null,
+      today: string,
+    ) {
+      const uid = currentUid()
+      const batch = writeBatch(refs.goal(goal.id).firestore)
+      batch.update(refs.goal(goal.id), changes as UpdateData<Goal>)
+      const next = { ...goal, ...changes }
+      if (next.wish !== goal.wish || next.status !== goal.status || next.state !== goal.state)
+        batch.set(doc(refs.goalSummaries(), goal.id), summaryOf(next))
+      if (record) batch.set(doc(refs.goalEvents(goal.id)), event(uid, goal.teamId, today, record))
+      return batch.commit()
+    },
+
+    /** Coach feedback (mentors and coaches): the event, one more unread for the student, and the feedback date. */
+    postFeedback(
+      goal: Goal & { id: string },
+      text: string,
+      today: string,
+      aboutEventId: string | null = null,
+    ) {
+      const uid = currentUid()
+      const batch = writeBatch(refs.goal(goal.id).firestore)
+      batch.set(
+        doc(refs.goalEvents(goal.id)),
+        event(uid, goal.teamId, today, {
+          type: 'feedback',
+          text,
+          ...(aboutEventId ? { aboutEventId } : {}),
+        }),
+      )
+      batch.update(refs.goal(goal.id), {
+        unreadFeedback: goal.unreadFeedback + 1,
+        lastFeedbackAt: today,
+      })
+      return batch.commit()
+    },
+
+    /** The student replies to a coach's feedback. */
+    replyToFeedback(goal: Goal & { id: string }, replyTo: string, text: string, today: string) {
+      return setDoc(
+        doc(refs.goalEvents(goal.id)),
+        event(currentUid(), goal.teamId, today, { type: 'reply', replyTo, text }),
+      )
+    },
+
+    /** The student has seen their new feedback. */
+    markFeedbackRead(goalId: string) {
+      return updateDoc(refs.goal(goalId), { unreadFeedback: 0 })
     },
 
     // ---------- read markers ----------

@@ -63,6 +63,8 @@ export function createQueries(refs: Refs) {
     teamGoalCards: (teamId: string) =>
       query(refs.goalSummaries(), where('teamId', '==', teamId), where('state', '==', 'active')),
     myGoals: (uid: string) => query(refs.goals(), where('studentId', '==', uid)),
+    /** Every goal of one student, across teams and seasons (the student, or program coaches). */
+    studentGoals: (uid: string) => query(refs.goals(), where('studentId', '==', uid)),
     /** Adults: goals of students on these teams (up to 30; mentors pass only their own teams). */
     teamGoals: (teamIds: string[]) => query(refs.goals(), where('teamId', 'in', teamIds)),
     /**

@@ -119,6 +119,73 @@ describe('goal queries', () => {
   })
 })
 
+describe('goal writes', () => {
+  const load = async (uid: Uid, id = 'g1') => {
+    const snap = await getDoc(data(uid).refs.goal(id))
+    return snap.data()!
+  }
+  it('a student sets a goal (goal, summary, and created event in one batch)', async () => {
+    const { writes } = data('studentA')
+    const { id, written } = writes.createGoal(
+      {
+        teamId: 'teamA',
+        seasonId: '2026-27',
+        wish: 'learn Java for FTC',
+        evidence: 'My tele-op works',
+        obstacle: 'I forget syntax',
+        plan: 'If I forget, then I check my notes',
+        by: { label: 'End of Sprint 5', date: '2026-11-15' },
+      },
+      '2026-10-09',
+    )
+    await assertSucceeds(written)
+    // Teammates can't read the goal itself, only its summary.
+    await assertFails(getDoc(data('studentA2').refs.goal(id)))
+    const summary = await getDocs(data('studentA2').q.teamGoalCards('teamA'))
+    expect(summary.docs.map((d) => d.data().statement)).toContain('Learn Java for FTC')
+  })
+  it('a student checks in (event, goal, and summary together); a teammate cannot', async () => {
+    const goal = await load('studentA')
+    await assertSucceeds(
+      data('studentA').writes.updateGoal(
+        goal,
+        { status: 'Almost there', lastCheckinAt: '2026-10-09' },
+        { type: 'checkin', status: 'Almost there', planResult: 'It worked', note: '', taskIds: [] },
+        '2026-10-09',
+      ),
+    )
+    await assertFails(
+      data('studentA2').writes.updateGoal(
+        goal,
+        { status: 'Stuck' },
+        { type: 'checkin', status: 'Stuck' },
+        '2026-10-09',
+      ),
+    )
+  })
+  it('adults post feedback; students reply and clear their unread count', async () => {
+    const goal = await load('mentorA')
+    await assertSucceeds(data('mentorA').writes.postFeedback(goal, 'Nice progress', '2026-10-09'))
+    await assertFails(data('mentorB').writes.postFeedback(goal, 'From another team', '2026-10-09'))
+    expect((await load('studentA')).unreadFeedback).toBe(1)
+    await assertSucceeds(
+      data('studentA').writes.replyToFeedback(goal, 'e2', 'Thanks!', '2026-10-09'),
+    )
+    await assertSucceeds(data('studentA').writes.markFeedbackRead('g1'))
+  })
+  it('a student pauses and finishes their goal', async () => {
+    const goal = await load('studentA')
+    await assertSucceeds(
+      data('studentA').writes.updateGoal(
+        goal,
+        { state: 'paused' },
+        { type: 'paused', reason: 'Focusing on my other goal' },
+        '2026-10-09',
+      ),
+    )
+  })
+})
+
 describe('task writes', () => {
   it('a student adds, edits, archives, and restores a task; only adults delete archived ones', async () => {
     const { refs, writes } = data('studentA')

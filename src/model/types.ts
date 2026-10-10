@@ -284,6 +284,8 @@ export interface Goal {
   reflection: { helped: string; different: string; next: string } | null
   lastCheckinAt: string | null
   unreadFeedback: number
+  /** Date of the latest coach feedback, so coach flags need only the goal doc. */
+  lastFeedbackAt: string | null
 }
 
 /** programs/{p}/goals/{goalId}/events/{eventId} */

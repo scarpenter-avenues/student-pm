@@ -260,6 +260,7 @@ export async function seed(env: RulesTestEnvironment) {
         reflection: null,
         lastCheckinAt: '2026-09-15',
         unreadFeedback: 0,
+        lastFeedbackAt: '2026-08-01',
       }),
       set(`${PROGRAM}/goals/g1/events/e1`, {
         type: 'checkin',

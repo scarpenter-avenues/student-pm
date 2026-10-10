@@ -790,6 +790,7 @@ export function buildDemo(today: string): { docs: Doc[]; users: DemoUser[] } {
       reflection: goal.reflection ?? null,
       lastCheckinAt: checkins.at(-1)?.date ?? null,
       unreadFeedback: unread,
+      lastFeedbackAt: goal.events.filter((e) => e.type === 'feedback').at(-1)?.date ?? null,
     })
     goal.events.forEach((event, i) => {
       const data: Record<string, unknown> = {

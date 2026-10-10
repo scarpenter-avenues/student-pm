@@ -258,6 +258,7 @@ interface Goal {
   reflection: { helped: string; different: string; next: string } | null;
   lastCheckinAt: string | null;
   unreadFeedback: number;                         // drives the Goals tab dot and the arrival pop-up
+  lastFeedbackAt: string | null;                  // date of the latest coach feedback (adults set it with the feedback)
 }
 type GoalStatus = "Haven't started" | "Stuck" | "Making progress" | "Almost there" | "Got it";
 type GoalState = "active" | "paused" | "done" | "changed";
@@ -306,7 +307,7 @@ interface UserState {
 | Announcements | members whose team is in `audience`, or `"all"` | author = self; students: own team only; mentors: their teams; coaches: anything |
 | Huddles | adults | program coaches; adults may add themselves to `readBy` |
 | Goal summaries | the student's team | the student (with the goal); coaches |
-| Goals | the student, mentors of the student's current team, coaches | the student; adults: only `unreadFeedback` |
+| Goals | the student, mentors of the student's current team, coaches | the student; adults: only `unreadFeedback` and `lastFeedbackAt` |
 | Goal events | the student, coaches, mentors when `event.teamId` is one of theirs | student: check-ins, replies, pauses; adults: feedback |
 | `userState` | self | self |
 
