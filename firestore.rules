@@ -114,8 +114,10 @@ service cloud.firestore {
       // ---------- teams ----------
       match /teams/{teamId} {
         allow read: if onTeam(teamId);
-        // Mentors edit their team's look, subteams, and GitHub settings; only program coaches change its seasons.
-        allow update: if isCoach() || (adultOn(teamId) && !changed().hasAny(['seasonIds']));
+        // Mentors and team leads edit their team's name, number, color, subteams, and GitHub settings (leads nothing else);
+        // only program coaches change its seasons.
+        allow update: if isCoach() || (adultOn(teamId) && !changed().hasAny(['seasonIds']))
+          || (leadOn(teamId) && changed().hasOnly(['name', 'number', 'color', 'subteams', 'github']));
         allow create, delete: if isCoach();
 
         match /sprints/{sprintId} {

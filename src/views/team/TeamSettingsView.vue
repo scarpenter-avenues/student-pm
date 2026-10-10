@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// Team Settings: the team's look (program coaches and its mentors), members, subteams, GitHub, and archived tasks.
+// Team Settings: the team's look, subteams, and GitHub (team leads, mentors, coaches), members (mentors and coaches
+// manage the roster; leads assign subteams), and archived tasks.
 import { useTeam } from '@/composables/useTeamData'
 import AnnouncementBanner from '@/components/tasks/AnnouncementBanner.vue'
 import ArchivedSection from '@/components/settings/ArchivedSection.vue'
@@ -19,10 +20,10 @@ const team = useTeam()
       {{ team.team.value.name
       }}<template v-if="team.team.value.number"> · FTC {{ team.team.value.number }}</template>
     </p>
-    <TeamProfileSection v-if="team.can.value.manage" :team="team.team.value" editable />
+    <TeamProfileSection v-if="team.can.value.editTeam" :team="team.team.value" editable />
     <MembersSection :team="team" />
     <SubteamsSection :team="team" />
-    <GithubSection :team="team.team.value" :editable="team.can.value.manage" />
+    <GithubSection :team="team.team.value" :editable="team.can.value.editTeam" />
     <ArchivedSection :team="team" />
   </div>
 </template>

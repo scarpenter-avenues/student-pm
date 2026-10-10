@@ -47,6 +47,21 @@ describe('teams', () => {
     )
     await assertFails(updateDoc(doc(as(env, 'studentA'), teamA), { color: 'red' }))
   })
+  it("team leads edit their team's name, number, color, subteams, and GitHub, and nothing else", async () => {
+    const lead = as(env, 'leadA')
+    await assertSucceeds(
+      updateDoc(doc(lead, teamA), { name: 'Team A', number: '419', color: 'teal' }),
+    )
+    await assertSucceeds(updateDoc(doc(lead, teamA), { subteams: [] }))
+    await assertSucceeds(
+      updateDoc(doc(lead, teamA), {
+        github: { repo: 'example/robot', importIssues: true, closeOnDone: true },
+      }),
+    )
+    await assertFails(updateDoc(doc(lead, teamA), { sprintDays: 7 }))
+    await assertFails(updateDoc(doc(lead, teamA), { seasonIds: [] }))
+    await assertFails(updateDoc(doc(lead, teamB), { color: 'teal' }))
+  })
   it('sprints and objectives: everyone on the team reads; leads and adults edit', async () => {
     const sprint = `${teamA}/sprints/s3`
     await assertSucceeds(getDoc(doc(as(env, 'studentA'), sprint)))

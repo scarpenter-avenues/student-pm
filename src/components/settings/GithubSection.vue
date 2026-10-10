@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Connect the code team's GitHub repo (owner/repo or a github.com URL). Two options: new issues come into the
-// Backlog as GitHub issue tasks; closing an issue marks its task Done. Mentors and coaches edit; others see the
+// Backlog as GitHub issue tasks; closing an issue marks its task Done. Leads, mentors, and coaches edit; others see the
 // repo. Nothing syncs yet: that needs a server (see docs/data-model.md).
 import { computed, ref } from 'vue'
 import { writes } from '@/data'

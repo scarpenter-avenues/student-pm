@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The team's subteams: recolor (click the colored tag), edit the name and description, add, and delete with
-// reassignment (its tasks move to another subteam or none). Mentors and coaches edit (team settings are adults').
+// reassignment (its tasks move to another subteam or none). Team leads, mentors, and coaches edit.
 // Tasks, objectives, and members store subteam ids, so renaming needs no clean-up.
 import { computed, ref } from 'vue'
 import { writes } from '@/data'
@@ -17,7 +17,7 @@ const props = defineProps<{ team: TeamData }>()
 const toast = useToast()
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 const teamId = computed(() => props.team.teamId.value!)
-const editable = computed(() => props.team.can.value.manage)
+const editable = computed(() => props.team.can.value.editTeam)
 const subteams = computed(() => props.team.subteams.value)
 
 function usage(id: string) {

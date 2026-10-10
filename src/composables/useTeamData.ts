@@ -73,7 +73,9 @@ export function createTeamData(teamIdOf: () => string | null) {
     return {
       /** Leads, mentors, coaches: mark objectives met anywhere, edit them in Planning, edit sprint dates. */
       plan: onTeam && (role.value === 'lead' || adult),
-      /** Mentors and coaches: team look, members, GitHub; hard-delete archived tasks. */
+      /** Leads, mentors, coaches: the team's name, number, color, subteams, and GitHub settings. */
+      editTeam: onTeam && (role.value === 'lead' || adult),
+      /** Mentors and coaches: members (adding people by email, roles, removing); hard-delete archived tasks. */
       manage: adult,
       /** Leads also change subteam assignments. */
       assignSubteams: onTeam && (role.value === 'lead' || adult),

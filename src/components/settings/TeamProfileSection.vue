@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// The team's name, FTC number, and color (program coaches and the team's mentors).
+// The team's name, FTC number, and color (team leads, the team's mentors, and program coaches).
 import { computed, ref, watch } from 'vue'
 import { writes } from '@/data'
 import type { Team, WithId } from '@/model/types'

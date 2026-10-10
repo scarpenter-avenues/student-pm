@@ -299,7 +299,7 @@ interface UserState {
 | `public/signIn` (name, sign-in methods) | anyone | program coaches |
 | Members (roster) | members | coaches: anyone; mentors: students/leads on their teams; leads: subteams only; the person themself: creating from their invite |
 | Contact email, invites | coaches (mentors: invites for their teams) | coaches; mentors for their teams |
-| Team profile, subteams, GitHub | the team | coaches, the team's mentors |
+| Team profile, subteams, GitHub | the team | coaches, the team's mentors, its team leads (those fields only) |
 | Sprints, objectives | the team | leads, mentors, coaches (students can't edit objectives) |
 | Tasks, subtasks, comments | the team | anyone on the team; hard delete: adults, archived tasks only; type "GitHub issue" can't be set or changed by users |
 | Team events, Team Home | the team | anyone on the team |
