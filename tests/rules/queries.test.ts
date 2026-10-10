@@ -119,6 +119,41 @@ describe('goal queries', () => {
   })
 })
 
+describe('people', () => {
+  it('mentors list and add invites for their team; coaches for any', async () => {
+    await assertSucceeds(getDocs(data('mentorA').q.teamInvites('teamA')))
+    await assertFails(getDocs(data('mentorA').q.teamInvites('teamB')))
+    await assertSucceeds(getDocs(data('coach').q.allInvites()))
+    await assertSucceeds(
+      data('mentorA').writes.saveInvite({
+        email: 'New.Kid@example.edu',
+        displayName: 'New K.',
+        role: 'student',
+        teamIds: ['teamA'],
+        subteams: {},
+      }),
+    )
+    await assertFails(
+      data('mentorA').writes.saveInvite({
+        email: 'helper@example.edu',
+        displayName: 'Helper',
+        role: 'mentor',
+        teamIds: ['teamA'],
+        subteams: {},
+      }),
+    )
+    await assertSucceeds(data('mentorA').writes.deleteInvite('new.kid@example.edu'))
+  })
+  it('leads change subteams; mentors change roles of students on their team', async () => {
+    await assertSucceeds(
+      data('leadA').writes.updateMember('studentA', { subteams: { teamA: ['mech'] } }),
+    )
+    await assertFails(data('leadA').writes.updateMember('studentA', { role: 'lead' }))
+    await assertSucceeds(data('mentorA').writes.updateMember('studentA', { role: 'lead' }))
+    await assertFails(data('mentorA').writes.updateMember('studentB', { role: 'lead' }))
+  })
+})
+
 describe('goal writes', () => {
   const load = async (uid: Uid, id = 'g1') => {
     const snap = await getDoc(data(uid).refs.goal(id))

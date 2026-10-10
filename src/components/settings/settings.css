@@ -1,0 +1,142 @@
+/* Shared by the Team Settings and Program settings sections. */
+.settings-section {
+  max-width: 980px;
+  padding: 18px 0 22px;
+  border-top: 1px solid var(--line);
+}
+.settings-section > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.settings-section h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.settings-section header p {
+  margin: 4px 0 0;
+  color: #66717a;
+  font-size: 13px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 4px;
+  border-bottom: 1px solid #edf0f2;
+}
+.settings-field {
+  display: grid;
+  gap: 4px;
+  color: #4b5560;
+  font-size: 12px;
+  font-weight: 650;
+}
+.settings-field input,
+.settings-input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #d5dce5;
+  border-radius: 6px;
+  color: #202124;
+  font-size: 14px;
+  font-weight: 500;
+}
+.settings-field input:focus,
+.settings-input:focus {
+  border-color: var(--team-line);
+  outline: 2px solid var(--team-soft);
+}
+.link-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #737d86;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.link-button:hover {
+  color: var(--team-ink);
+}
+.link-button.danger:hover {
+  color: #a43d34;
+}
+.confirm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #fbeeec;
+  color: #7a2e26;
+  font-size: 13px;
+}
+.confirm-row .actions {
+  display: flex;
+  gap: 6px;
+}
+.small-button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  color: #3f474e;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.small-button.primary {
+  border-color: #356fd1;
+  background: #356fd1;
+  color: #fff;
+  font-weight: 650;
+}
+.small-button.danger {
+  border-color: #c4483c;
+  background: #c4483c;
+  color: #fff;
+}
+.small-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.inline-form {
+  display: grid;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 12px;
+  border: 1px solid var(--team-line);
+  border-radius: 8px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.form-error {
+  margin: 0;
+  color: var(--red);
+  font-size: 13px;
+}
+.muted {
+  color: #8a949c;
+  font-size: 13px;
+}
+@media (max-width: 680px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  .settings-row {
+    flex-wrap: wrap;
+  }
+}

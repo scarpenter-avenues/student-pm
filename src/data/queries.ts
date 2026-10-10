@@ -41,6 +41,11 @@ export function createQueries(refs: Refs) {
     coaches: () => query(refs.members(), where('role', '==', 'coach')),
     /** Coaches and mentors (huddle "Seen by N of M"). */
     adults: () => query(refs.members(), where('role', 'in', ['coach', 'mentor'])),
+    /** People added to a team who haven't signed in yet (mentors: their teams; coaches: any). */
+    teamInvites: (teamId: string) =>
+      query(refs.invites(), where('teamIds', 'array-contains', teamId)),
+    /** Every pending invite (program coaches). */
+    allInvites: () => query(refs.invites(), orderBy('displayName')),
     /** Program settings → People (program coaches). */
     allMembers: () => query(refs.members(), orderBy('displayName')),
     teamEvents: (teamId: string) => query(refs.teamEvents(teamId), orderBy('date')),

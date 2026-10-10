@@ -23,6 +23,8 @@ import {
   type GoalEvent,
   type GoalSummary,
   type Huddle,
+  type Invite,
+  type Member,
   type Sprint,
   type Subtask,
   type Task,
@@ -200,6 +202,31 @@ export function createWrites(refs: Refs, currentUid: () => string) {
     },
     deleteEvent(teamId: string | null, eventId: string) {
       return deleteDoc(doc(teamId ? refs.teamEvents(teamId) : refs.programEvents(), eventId))
+    },
+
+    // ---------- people ----------
+    /** Add someone (or change their pending invite). They join when they first sign in with this email. */
+    saveInvite(fields: Pick<Invite, 'email' | 'displayName' | 'role' | 'teamIds' | 'subteams'>) {
+      const email = fields.email.trim().toLowerCase()
+      return setDoc(refs.invite(email), {
+        ...fields,
+        id: email,
+        email,
+        invitedBy: currentUid(),
+        invitedAt: serverTimestamp() as never,
+      })
+    },
+    deleteInvite(email: string) {
+      return deleteDoc(refs.invite(email))
+    },
+    updateMember(
+      uid: string,
+      changes: Partial<Pick<Member, 'role' | 'teamIds' | 'subteams' | 'displayName'>>,
+    ) {
+      return updateDoc(refs.member(uid), changes as UpdateData<Member>)
+    },
+    removeMember(uid: string) {
+      return deleteDoc(refs.member(uid))
     },
 
     // ---------- comments ----------
