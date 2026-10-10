@@ -331,6 +331,8 @@ These live in `src/data/queries.ts`, and `tests/rules/queries.test.ts` runs each
 | Team goal cards | `goalSummaries` where `teamId == t`, `state == "active"` |
 | My goals | `goals` where `studentId == uid` |
 | Coaches' Dashboard: Tasks / Goals | one listener per team (7 teams), or `goals` where `teamId in [...]` (up to 30 values) |
+| A student's goals, all teams (program coaches) | `goals` where `studentId == s` |
+| Program settings | `teams` (all seasons), `members` order by `displayName`, `invites` |
 | A goal's history | `goals/{g}/events` order by `createdAt`; **mentors add `teamId in [their teams]`**, or the rules refuse the whole query |
 | Huddle | `huddles` order by `postedAt desc`, limit 20 |
 

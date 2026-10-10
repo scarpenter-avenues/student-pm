@@ -5,8 +5,8 @@ import { DASHBOARD_TABS, DEFAULT_TEAM_TAB, TEAM_TABS } from './tabs'
 
 const tabPattern = (tabs: readonly { id: string }[]) => tabs.map((tab) => tab.id).join('|')
 
-// The views are placeholders until step 7 ports them from the mock-up.
-const ComingSoon = () => import('@/views/ComingSoonView.vue')
+// "/" always redirects (see access.ts), so it never renders anything.
+const Empty = { render: () => null }
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -20,7 +20,7 @@ export const routes: RouteRecordRaw[] = [
     component: () => import('@/components/AppShell.vue'),
     children: [
       // Redirected by the guard to the person's home page.
-      { path: '', name: 'home', component: ComingSoon },
+      { path: '', name: 'home', component: Empty },
       { path: 'no-team', name: 'no-team', component: () => import('@/views/NoTeamView.vue') },
       {
         path: 'huddle',

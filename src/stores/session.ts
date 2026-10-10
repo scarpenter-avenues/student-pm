@@ -292,9 +292,17 @@ export const useSession = defineStore('session', () => {
   }
 
   async function wipeAndReload() {
-    await terminate(db)
-    // Fails if another tab still has the cache open; that tab clears it when it sees the sign-out.
-    await clearIndexedDbPersistence(db).catch(() => {})
+    const wipe = async () => {
+      await terminate(db)
+      // Fails if another tab still has the cache open; that tab clears it when it sees the sign-out.
+      await clearIndexedDbPersistence(db).catch(() => {})
+    }
+    // Shutting Firestore down can stall (e.g. on writes still waiting for the server); never leave someone stuck on
+    // the page they signed out of.
+    await Promise.race([
+      wipe().catch(() => {}),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ])
     window.location.assign('/sign-in')
   }
 

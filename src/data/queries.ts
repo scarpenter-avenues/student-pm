@@ -35,6 +35,8 @@ export function createQueries(refs: Refs) {
     // ---------- sprints, people, events ----------
     sprints: (teamId: string, seasonId: string) =>
       query(refs.sprints(teamId), where('seasonId', '==', seasonId), orderBy('index')),
+    /** Every team, every season (program coaches). */
+    allTeams: () => query(refs.teams(), orderBy('name')),
     /** A team's roster (program coaches are on every team: add `coaches()`). */
     teamMembers: (teamId: string) =>
       query(refs.members(), where('teamIds', 'array-contains', teamId)),

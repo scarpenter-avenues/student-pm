@@ -10,6 +10,7 @@ import { getDoc, getDocs, type Firestore } from 'firebase/firestore'
 import { createRefs } from '@/data/refs'
 import { createQueries } from '@/data/queries'
 import { createWrites } from '@/data/writes'
+import { createAdmin } from '@/data/admin'
 import { as, makeEnv, seed, type Uid } from './setup'
 
 let env: RulesTestEnvironment
@@ -22,7 +23,12 @@ afterAll(() => env.cleanup())
 function data(uid: Uid) {
   const db: Firestore = as(env, uid)
   const refs = createRefs(db, 'p1')
-  return { refs, q: createQueries(refs), writes: createWrites(refs, () => uid) }
+  return {
+    refs,
+    q: createQueries(refs),
+    writes: createWrites(refs, () => uid),
+    admin: createAdmin(refs, () => uid),
+  }
 }
 
 describe('task queries', () => {
@@ -218,6 +224,51 @@ describe('goal writes', () => {
         '2026-10-09',
       ),
     )
+  })
+})
+
+describe('program admin (program coaches)', () => {
+  const season = { id: '2026-27', name: '2026–27', start: '2026-09-01', end: '2027-03-31' }
+  it('creates a team with sprints; mentors cannot', async () => {
+    const id = await data('coach').admin.createTeam(
+      { name: 'Rust Buckets', number: '5512', color: 'gray', sprintDays: 14 },
+      season,
+      [],
+      '2026-10-09',
+    )
+    const sprints = await getDocs(data('coach').q.sprints(id, '2026-27'))
+    expect(sprints.size).toBeGreaterThan(5)
+    await assertFails(
+      data('mentorA').admin.createTeam(
+        { name: 'Sneaky', number: '1', color: 'gray', sprintDays: 14 },
+        season,
+        [],
+        '2026-10-09',
+      ),
+    )
+  })
+  it('deletes a team: tasks, comments, sprints, events, Team Home; people keep their membership without it', async () => {
+    const coach = data('coach')
+    const members = (await getDocs(coach.q.allMembers())).docs.map((d) => d.data())
+    await assertSucceeds(coach.admin.deleteTeam('teamA', members))
+    expect((await getDoc(coach.refs.team('teamA'))).exists()).toBe(false)
+    expect((await getDoc(coach.refs.member('studentA'))).data()?.teamIds).toEqual([])
+  })
+  it('starts a new season', async () => {
+    const coach = data('coach')
+    const teamA = (await getDoc(coach.refs.team('teamA'))).data()!
+    const studentB = (await getDoc(coach.refs.member('studentB'))).data()!
+    const id = await coach.admin.startSeason({
+      season: { name: '2027–28', start: '2027-09-01', end: '2028-03-31' },
+      old: season,
+      carried: [teamA],
+      people: [{ member: studentB, choice: 'none' }],
+      tasks: 'backlog',
+    })
+    expect(id).toBe('2027-28')
+    expect((await getDoc(coach.refs.program())).data()?.currentSeasonId).toBe(id)
+    expect((await getDoc(coach.refs.task('teamA', 't1'))).data()?.sprintId).toBeNull()
+    expect((await getDoc(coach.refs.member('studentB'))).data()?.teamIds).toEqual([])
   })
 })
 
