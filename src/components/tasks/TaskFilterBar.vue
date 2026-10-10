@@ -9,7 +9,9 @@ import AvatarStack from '@/components/ui/AvatarStack.vue'
 import SelectButton from '@/components/ui/SelectButton.vue'
 import SubteamTags from '@/components/ui/SubteamTags.vue'
 
-const props = defineProps<{ count: number; scope: string; showFilters?: boolean }>()
+const props = withDefaults(defineProps<{ count: number; scope: string; showFilters?: boolean }>(), {
+  showFilters: true,
+})
 
 const team = useTeam()
 const filters = useTaskFilters()
@@ -22,7 +24,7 @@ const assigneeOptions = computed(() => [
   ...team.people.value.map((person) => ({ value: person.id, label: person.displayName })),
 ])
 const roster = computed(() => team.people.value.map((person) => person.displayName))
-const filtersShown = computed(() => props.showFilters !== false)
+const filtersShown = computed(() => props.showFilters)
 </script>
 
 <template>
