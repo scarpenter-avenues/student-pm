@@ -40,6 +40,7 @@ programs/{programId}                          program settings
   events/{eventId}                            program-wide events
   announcements/{announcementId}              team or program-wide posts
   huddles/{huddleId}                          adults-only daily status + quick notes
+  outbox/{kind}-{sourceId}                    posts waiting to be emailed (no addresses, no text)
   goalSummaries/{goalId}                      statement + status (teammates can read)
   goals/{goalId}                              the private part of a goal
     events/{eventId}                          created, check-ins, feedback, replies, pauses…
@@ -73,6 +74,7 @@ interface Program {
   // The plan "Import default" puts in a new huddle (Program settings → Default huddle plan). Missing: the built-in
   // plan in src/model/huddles.ts.
   huddlePlan?: HuddlePlanRow[];
+  email?: { on: boolean };                        // set by the email sender when it's installed (docs/email.md)
 }
 interface Subteam { id: string; name: string; color: SubteamColor; description: string }
 type SubteamColor = "red" | "green" | "yellow" | "blue" | "purple" | "teal" | "pink" | "gray";
@@ -250,6 +252,22 @@ interface HuddlePlanRow {
 `statusHtml` and `notesHtml` can hold @ mentions: `<span data-type="mention" data-id="member:<uid>|team:<teamId>"
 data-label data-kind="student|adult|team" data-team data-color>`. The label is a display name or team name (nothing new
 is stored about anyone), and the plain-text copies hold just the label.
+A huddle edited after posting also has `editedAt`.
+
+### `outbox/{kind}-{sourceId}`: posts waiting to be emailed
+```ts
+interface OutboxItem {
+  kind: "announcement" | "huddle";                // "huddle" covers quick notes
+  sourceId: string;                               // the announcement or huddle
+  createdBy: string; createdAt: Timestamp;
+  state: "pending" | "sending" | "sent" | "skipped" | "failed";   // clients only ever write "pending"
+  sentAt?: Timestamp; recipients?: number; note?: string;        // set by the sender
+}
+```
+Written in the same batch as the post, and only when email is on (`program.email.on`, set by the sender when it's
+installed). It names the post and nothing else: the sender (`scripts/email`, an Apps Script run by the project's owner;
+see [email.md](email.md)) works out who gets it, looks their addresses up in Firebase Authentication, and records what
+happened. The id is one per post, so nothing is emailed twice.
 
 ### Goals: two documents per goal
 Teammates may see a goal's **statement and status** and nothing else. Rules work per document, so:
@@ -321,6 +339,7 @@ interface UserState {
 | Program events | members | program coaches |
 | Announcements | members whose team is in `audience`, or `"all"` | author = self; students: own team only; mentors: their teams; coaches: anything |
 | Huddles | adults | program coaches; adults may add themselves to `readBy` |
+| Outbox | program coaches | create only, as `pending`, for a post you're creating in the same write; never updated or deleted by clients |
 | Goal summaries | the student's team | the student (with the goal); coaches |
 | Goals | the student, mentors of the student's current team, coaches | the student; adults: only `unreadFeedback` and `lastFeedbackAt` |
 | Goal events | the student, coaches, mentors when `event.teamId` is one of theirs | student: check-ins, replies, pauses; adults: feedback |

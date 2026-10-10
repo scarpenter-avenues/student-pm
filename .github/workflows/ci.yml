@@ -38,6 +38,8 @@ jobs:
         run: npx vitest run
       - name: Production build
         run: npm run build-only
+      - name: Email sender builds
+        run: npm run build:email
       - name: Runtime dependencies have no known vulnerabilities
         run: npm audit --omit=dev
 

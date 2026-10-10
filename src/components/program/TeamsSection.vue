@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Teams this season: badge, FTC number, sprint length, students, mentors (or "No mentor yet"). Open, Edit, Delete
+// Teams this season: badge, FTC number, sprint length, students, mentors. Open, Edit, Delete
 // (with a confirm row). ＋ New team: name, FTC number (unique), sprint length, color; it starts with the subteam
 // defaults and Sprint 1 today. Teams from earlier seasons sit under "Not in this season (N)".
 import { computed, ref } from 'vue'
@@ -215,12 +215,11 @@ const SPRINT_LENGTHS = ['7', '10', '14', '21'].map((days) => ({
           <small>FTC {{ team.number }} · {{ team.sprintDays }}-day sprints</small>
         </span>
         <span class="people">
-          {{ plural(studentsOf(team.id), 'student') }} ·
-          <template v-if="mentorsOf(team.id).length"
-            >Mentor{{ mentorsOf(team.id).length > 1 ? 's' : '' }}:
+          {{ plural(studentsOf(team.id), 'student')
+          }}<template v-if="mentorsOf(team.id).length">
+            · Mentor{{ mentorsOf(team.id).length > 1 ? 's' : '' }}:
             {{ mentorsOf(team.id).join(', ') }}</template
           >
-          <span v-else class="warn">No mentor yet</span>
         </span>
         <RouterLink
           class="link-button"
@@ -275,10 +274,6 @@ const SPRINT_LENGTHS = ['7', '10', '14', '21'].map((days) => ({
   flex: 1;
   color: #59636d;
   font-size: 13px;
-}
-.warn {
-  color: #a45c0a;
-  font-weight: 650;
 }
 .toggle {
   margin-top: 10px;

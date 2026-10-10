@@ -1,7 +1,7 @@
 // Firebase Admin for the one-off scripts (setup, demo seed). Admin writes bypass the security rules, so these
 // scripts are the only place that should create programs, seasons, and the first coach's invite.
 import { readFileSync } from 'node:fs'
-import { getApps, initializeApp } from 'firebase-admin/app'
+import { applicationDefault, getApps, initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
 
@@ -39,6 +39,17 @@ export function connectAdmin({ emulator, project }: AdminOptions) {
   // GOOGLE_APPLICATION_CREDENTIALS pointing at a service-account key (never commit it).
   const app = getApps()[0] ?? initializeApp({ projectId })
   return { projectId: projectId!, db: getFirestore(app), auth: getAuth(app) }
+}
+
+/** Fails fast, in plain words, if there are no admin credentials for a real project. */
+export async function checkCredentials(): Promise<void> {
+  try {
+    await applicationDefault().getAccessToken()
+  } catch {
+    throw new Error(
+      "Can't find admin credentials for your Firebase project. Run `gcloud auth application-default login` and sign in with an account that owns the project, or set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file (keep it out of the repo). Then run this again.",
+    )
+  }
 }
 
 /** Fails fast with a clear message if the emulator isn't running. */

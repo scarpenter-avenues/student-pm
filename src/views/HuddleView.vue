@@ -71,24 +71,34 @@ const lastPlan = computed(() => {
 // ---------- posting (program coaches) ----------
 const mode = ref<'huddle' | 'note' | null>(null)
 const note = ref({ html: '', text: '' })
+// Huddles and quick notes are emailed once the program's email sender is installed (see docs/email.md).
+const emailOn = computed(() => !!session.program?.email?.on)
+const reach = computed(() =>
+  emailOn.value
+    ? 'Coaches and mentors get an email, and see it when they sign in.'
+    : 'Coaches and mentors see it when they sign in.',
+)
 function postHuddle(fields: Omit<Huddle, 'kind' | 'authorId' | 'postedAt' | 'readBy'>) {
-  writes.postHuddle({ ...fields, kind: 'huddle' }).catch(fail)
+  writes.postHuddle({ ...fields, kind: 'huddle' }, emailOn.value).catch(fail)
   mode.value = null
-  toast.show('Huddle posted. Coaches and mentors see it when they sign in.')
+  toast.show(`Huddle posted. ${reach.value}`)
 }
 function postNote() {
   if (!note.value.text.trim()) return
   writes
-    .postHuddle({
-      kind: 'note',
-      date: todayIso(),
-      textHtml: note.value.html,
-      text: note.value.text.trim(),
-    })
+    .postHuddle(
+      {
+        kind: 'note',
+        date: todayIso(),
+        textHtml: note.value.html,
+        text: note.value.text.trim(),
+      },
+      emailOn.value,
+    )
     .catch(fail)
   mode.value = null
   note.value = { html: '', text: '' }
-  toast.show('Quick note posted. Coaches and mentors see it when they sign in.')
+  toast.show(`Quick note posted. ${reach.value}`)
 }
 function onNoteKeydown(event: KeyboardEvent) {
   if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {

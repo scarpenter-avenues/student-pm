@@ -70,6 +70,8 @@ export interface Program {
   goalIdeas?: Partial<Record<GoalIdeaKey, string[]>>
   /** The plan "Import default" puts in a new huddle. Missing: the built-in one (src/model/huddles.ts). */
   huddlePlan?: HuddlePlanRow[]
+  /** Set by the email sender when it's installed (scripts/email). Until then the app offers no email. */
+  email?: { on: boolean }
 }
 
 /** The set-a-goal steps that offer tappable ideas. */
@@ -264,6 +266,24 @@ export interface Huddle {
   readBy: string[]
   /** Set when a program coach edits a posted huddle. */
   editedAt?: Timestamp
+}
+
+/**
+ * programs/{p}/outbox/{kind}-{sourceId}: a post waiting to be emailed. It names the post and nothing else (no
+ * addresses, no text); the sender (scripts/email) works out who gets it. One per post, so nothing is sent twice.
+ */
+export interface OutboxItem {
+  kind: 'announcement' | 'huddle'
+  sourceId: string
+  createdBy: string
+  createdAt: Timestamp
+  /** Clients only ever write "pending"; the sender moves it on. */
+  state: 'pending' | 'sending' | 'sent' | 'skipped' | 'failed'
+  sentAt?: Timestamp
+  /** How many people it went to. */
+  recipients?: number
+  /** Why it was skipped or failed. */
+  note?: string
 }
 
 /** programs/{p}/goalSummaries/{goalId}: what teammates may see. */

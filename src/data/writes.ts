@@ -28,6 +28,7 @@ import {
   type HuddlePlanRow,
   type Invite,
   type Member,
+  type OutboxItem,
   type Sprint,
   type Subtask,
   type Task,
@@ -79,6 +80,15 @@ function event(
 }
 
 export function createWrites(refs: Refs, currentUid: () => string) {
+  const outbox = (kind: OutboxItem['kind'], sourceId: string): OutboxItem & { id: string } => ({
+    id: '',
+    kind,
+    sourceId,
+    createdBy: currentUid(),
+    createdAt: serverTimestamp() as never,
+    state: 'pending',
+  })
+
   return {
     // ---------- tasks ----------
     /** Adds a task at `rank` (see src/model/rank.ts). Returns its id right away, and the server write. */
@@ -257,17 +267,24 @@ export function createWrites(refs: Refs, currentUid: () => string) {
     },
 
     // ---------- announcements and huddles ----------
-    /** audience: ["all"] (program coaches) or team ids. `emailed` records the request; sending needs a server. */
+    /**
+     * audience: ["all"] (program coaches) or team ids. With `emailed`, the post also goes in the outbox for the
+     * email sender (scripts/email), in the same write.
+     */
     postAnnouncement(
       fields: Pick<Announcement, 'title' | 'bodyHtml' | 'body' | 'audience' | 'emailed'>,
     ) {
       const ref = doc(refs.announcements())
-      return setDoc(ref, {
+      const batch = writeBatch(ref.firestore)
+      batch.set(ref, {
         ...fields,
         id: ref.id,
         authorId: currentUid(),
         postedAt: serverTimestamp() as never,
       })
+      if (fields.emailed)
+        batch.set(refs.outboxItem('announcement', ref.id), outbox('announcement', ref.id))
+      return batch.commit()
     },
     updateAnnouncement(
       id: string,
@@ -281,16 +298,19 @@ export function createWrites(refs: Refs, currentUid: () => string) {
     restoreAnnouncement(announcement: Announcement & { id: string }) {
       return setDoc(doc(refs.announcements(), announcement.id), announcement)
     },
-    /** A huddle or quick note (program coaches). The author has read it. */
-    postHuddle(fields: Omit<Huddle, 'authorId' | 'postedAt' | 'readBy'>) {
+    /** A huddle or quick note (program coaches). The author has read it. `email` also puts it in the outbox. */
+    postHuddle(fields: Omit<Huddle, 'authorId' | 'postedAt' | 'readBy'>, email = false) {
       const ref = doc(refs.huddles())
-      return setDoc(ref, {
+      const batch = writeBatch(ref.firestore)
+      batch.set(ref, {
         ...fields,
         id: ref.id,
         authorId: currentUid(),
         postedAt: serverTimestamp() as never,
         readBy: [currentUid()],
       })
+      if (email) batch.set(refs.outboxItem('huddle', ref.id), outbox('huddle', ref.id))
+      return batch.commit()
     },
     /** A program coach's changes to a posted huddle. Doesn't re-notify anyone (readBy stays). */
     updateHuddle(

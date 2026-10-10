@@ -194,6 +194,30 @@ service cloud.firestore {
               && request.resource.data.readBy.toSet().difference(resource.data.readBy.toSet()).hasOnly([uid()]));
       }
 
+      // ---------- outbox (email) ----------
+      // A post waiting to be emailed. It names the post and nothing else; the sender (scripts/email, run by the
+      // project's owner outside these rules) works out who gets it and marks it sent. Clients can only add one, as
+      // "pending", for a post they are creating in the same write, so nobody can email someone else's post, email
+      // one twice, or change what happened to it.
+      match /outbox/{itemId} {
+        function announcementPath(id) { return /databases/$(database)/documents/programs/$(programId)/announcements/$(id); }
+        function huddlePath(id) { return /databases/$(database)/documents/programs/$(programId)/huddles/$(id); }
+        function ownNewPost(item) {
+          return (item.kind == 'announcement' && !exists(announcementPath(item.sourceId))
+                  && getAfter(announcementPath(item.sourceId)).data.authorId == uid()
+                  && getAfter(announcementPath(item.sourceId)).data.emailed == true)
+              || (item.kind == 'huddle' && !exists(huddlePath(item.sourceId))
+                  && getAfter(huddlePath(item.sourceId)).data.authorId == uid());
+        }
+        allow read: if isCoach();
+        allow create: if isMember()
+          && request.resource.data.keys().hasOnly(['kind', 'sourceId', 'createdBy', 'createdAt', 'state'])
+          && request.resource.data.createdBy == uid()
+          && request.resource.data.state == 'pending'
+          && itemId == request.resource.data.kind + '-' + request.resource.data.sourceId
+          && ownNewPost(request.resource.data);
+      }
+
       // ---------- goals ----------
       // Teammates see only the statement and status (this doc). The rest of the goal is in goals/{goalId}.
       match /goalSummaries/{goalId} {

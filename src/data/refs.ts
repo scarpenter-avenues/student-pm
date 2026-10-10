@@ -11,6 +11,7 @@ import type {
   Huddle,
   Invite,
   Member,
+  OutboxItem,
   Page,
   Program,
   Season,
@@ -46,6 +47,9 @@ export function createRefs(db: Firestore, programId: string) {
     announcements: () => col<Announcement>('announcements'),
     huddles: () => col<Huddle>('huddles'),
     huddle: (huddleId: string) => doc(refs.huddles(), huddleId),
+    outbox: () => col<OutboxItem>('outbox'),
+    outboxItem: (kind: OutboxItem['kind'], sourceId: string) =>
+      doc(refs.outbox(), `${kind}-${sourceId}`),
     goalSummaries: () => col<GoalSummary>('goalSummaries'),
     goals: () => col<Goal>('goals'),
     goal: (goalId: string) => doc(refs.goals(), goalId),

@@ -46,6 +46,8 @@ const title = ref('')
 const html = ref('')
 const text = ref('')
 const audience = ref<string[]>([])
+// Email is offered only once the program's email sender is installed (see docs/email.md).
+const emailOn = computed(() => !!session.program?.email?.on)
 const email = ref(true)
 const titleInput = ref<HTMLInputElement | null>(null)
 
@@ -88,7 +90,7 @@ function post() {
     writes.updateAnnouncement(editingId.value, fields).catch(fail)
     toast.show('Announcement updated')
   } else {
-    writes.postAnnouncement({ ...fields, emailed: email.value }).catch(fail)
+    writes.postAnnouncement({ ...fields, emailed: emailOn.value && email.value }).catch(fail)
     const names = audience.value.map((id) => teams.value[id]?.name).filter(Boolean)
     toast.show(everyone ? 'Posted to all teams' : `Posted to ${names.join(', ')}`)
   }
@@ -147,7 +149,7 @@ const canManage = (item: Announcement) => session.isCoach || item.authorId === s
             :limited="!session.isCoach"
           />
         </span>
-        <label v-if="!editingId" class="email"
+        <label v-if="!editingId && emailOn" class="email"
           ><input v-model="email" type="checkbox" /> Also send by email</label
         >
       </div>
@@ -159,10 +161,7 @@ const canManage = (item: Announcement) => session.isCoach || item.authorId === s
           @change="text = $event.text"
         />
       </div>
-      <p class="hint">
-        Email delivery isn't set up yet, so nothing is emailed. Keep personal details out of
-        announcements.
-      </p>
+      <p class="hint">Keep personal details out of announcements.</p>
       <div class="composer-actions">
         <button type="button" @click="cancel">Cancel</button>
         <button type="submit" class="save">{{ editingId ? 'Save' : 'Post announcement' }}</button>

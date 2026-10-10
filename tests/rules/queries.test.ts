@@ -6,7 +6,15 @@ import {
   assertSucceeds,
   type RulesTestEnvironment,
 } from '@firebase/rules-unit-testing'
-import { getDoc, getDocs, type Firestore } from 'firebase/firestore'
+import {
+  deleteDoc,
+  getDoc,
+  getDocs,
+  setDoc,
+  Timestamp,
+  updateDoc,
+  type Firestore,
+} from 'firebase/firestore'
 import { createRefs } from '@/data/refs'
 import { createQueries } from '@/data/queries'
 import { createWrites } from '@/data/writes'
@@ -322,6 +330,54 @@ describe('task writes', () => {
   })
   it('comments are added as yourself', async () => {
     await assertSucceeds(data('studentA').writes.addComment('teamA', 't1', 'Looks good'))
+  })
+})
+
+describe('email outbox', () => {
+  const post = { title: 'Hi', bodyHtml: '<p>Hi</p>', body: 'Hi', audience: ['teamA'] }
+  it('posting with email adds one pending outbox item, in the same write', async () => {
+    const { writes } = data('studentA')
+    await assertSucceeds(writes.postAnnouncement({ ...post, emailed: true }))
+    const items = await getDocs(data('coach').refs.outbox())
+    expect(items.docs.map((d) => d.data().state)).toEqual(['pending'])
+    expect(items.docs[0]!.id).toBe(`announcement-${items.docs[0]!.data().sourceId}`)
+    // Without email there's no outbox item.
+    await assertSucceeds(writes.postAnnouncement({ ...post, emailed: false }))
+    expect((await getDocs(data('coach').refs.outbox())).size).toBe(1)
+  })
+  it('huddles and quick notes go in the outbox when email is on', async () => {
+    const coach = data('coach')
+    await assertSucceeds(
+      coach.writes.postHuddle({ kind: 'note', date: '2026-10-10', text: 'Room change' }, true),
+    )
+    expect((await getDocs(coach.refs.outbox())).size).toBe(1)
+  })
+  it("nobody can email a post that exists already, someone else's post, or mark one sent", async () => {
+    const student = data('studentA')
+    // a1 is an existing announcement by someone else.
+    await assertFails(
+      setDoc(student.refs.outboxItem('announcement', 'a1'), {
+        id: '',
+        kind: 'announcement',
+        sourceId: 'a1',
+        createdBy: 'studentA',
+        createdAt: Timestamp.now(),
+        state: 'pending',
+      }),
+    )
+    await assertSucceeds(student.writes.postAnnouncement({ ...post, emailed: true }))
+    const item = (await getDocs(data('coach').refs.outbox())).docs[0]!
+    await assertFails(
+      updateDoc(data('coach').refs.outboxItem('announcement', item.data().sourceId), {
+        state: 'sent',
+      }),
+    )
+    await assertFails(
+      deleteDoc(data('coach').refs.outboxItem('announcement', item.data().sourceId)),
+    )
+    // Only program coaches can look at the outbox.
+    await assertFails(getDocs(student.refs.outbox()))
+    await assertFails(getDocs(data('mentorA').refs.outbox()))
   })
 })
 

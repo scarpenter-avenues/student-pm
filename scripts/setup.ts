@@ -5,7 +5,7 @@
 // Safe to re-run: existing teams are left as they are, and the first coach is invited only if there's no coach yet.
 import { FieldValue } from 'firebase-admin/firestore'
 import { buildSprints } from '../src/model/sprints'
-import { checkEmulator, connectAdmin, parseArgs } from './lib/admin'
+import { checkCredentials, checkEmulator, connectAdmin, parseArgs } from './lib/admin'
 import {
   loadConfig,
   programAuthFrom,
@@ -21,6 +21,7 @@ async function main() {
   const config: ProgramConfig = loadConfig(value('config') ?? 'program.config.json')
   const { db, projectId } = connectAdmin({ emulator, project: value('project') })
   if (emulator) await checkEmulator()
+  else await checkCredentials()
 
   const programRef = db.doc(`programs/${config.program.id}`)
   const existing = await programRef.get()

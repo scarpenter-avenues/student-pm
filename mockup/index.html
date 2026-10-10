@@ -6932,9 +6932,8 @@
         const people = document.createElement("span"); people.className = "org-team-people";
         const mentors = team.roster.filter(member => member.role === "Team mentor").map(member => member.name);
         const students = team.roster.filter(member => !isAdultRole(member.role)).length;
-        people.append(`${pluralize(students, "student")} · `);
-        if (mentors.length) people.append(`Mentor${mentors.length > 1 ? "s" : ""}: ${mentors.join(", ")}`);
-        else { const warn = document.createElement("span"); warn.className = "org-team-warn"; warn.textContent = "No mentor yet"; people.append(warn); }
+        people.append(pluralize(students, "student"));
+        if (mentors.length) people.append(` · Mentor${mentors.length > 1 ? "s" : ""}: ${mentors.join(", ")}`);
         const open = makeButton("Open →", "row-action", () => selectTeam(team));
         open.setAttribute("aria-label", `Open ${team.profile.name}`);
         const edit = makeButton("Edit", "row-action", () => openTeamForm(team));
