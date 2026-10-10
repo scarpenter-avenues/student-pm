@@ -186,9 +186,10 @@ service cloud.firestore {
         allow read: if isAdult();
         allow create, delete: if isCoach();
         allow update: if isCoach()
-          // Any adult can mark a huddle seen: add only their own UID to readBy.
+          // Any adult can mark a huddle seen: add nothing but their own UID to readBy (again is harmless).
           || (isAdult() && changed().hasOnly(['readBy'])
-              && request.resource.data.readBy.toSet().difference(resource.data.readBy.toSet()) == [uid()].toSet());
+              && resource.data.readBy.toSet().difference(request.resource.data.readBy.toSet()).size() == 0
+              && request.resource.data.readBy.toSet().difference(resource.data.readBy.toSet()).hasOnly([uid()]));
       }
 
       // ---------- goals ----------

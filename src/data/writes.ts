@@ -14,7 +14,16 @@ import {
   type FieldValue,
   type UpdateData,
 } from 'firebase/firestore'
-import type { Comment, Sprint, Subtask, Task, Team } from '@/model/types'
+import type {
+  Announcement,
+  CalendarEvent,
+  Comment,
+  Huddle,
+  Sprint,
+  Subtask,
+  Task,
+  Team,
+} from '@/model/types'
 import type { Refs } from './refs'
 
 /** What a new task needs; everything else gets the usual default. */
@@ -150,6 +159,25 @@ export function createWrites(refs: Refs, currentUid: () => string) {
       return updateDoc(refs.team(teamId), changes as UpdateData<Team>)
     },
 
+    // ---------- Team Home and events ----------
+    saveHomePage(teamId: string, html: string) {
+      return setDoc(refs.homePage(teamId), {
+        id: 'home',
+        html,
+        updatedBy: currentUid(),
+        updatedAt: serverTimestamp() as never,
+      })
+    },
+    /** A team's own event (teamId), or a program-wide one (null; program coaches only). */
+    saveEvent(teamId: string | null, eventId: string | null, fields: CalendarEvent) {
+      const collection = teamId ? refs.teamEvents(teamId) : refs.programEvents()
+      const ref = eventId ? doc(collection, eventId) : doc(collection)
+      return setDoc(ref, { ...fields, id: ref.id })
+    },
+    deleteEvent(teamId: string | null, eventId: string) {
+      return deleteDoc(doc(teamId ? refs.teamEvents(teamId) : refs.programEvents(), eventId))
+    },
+
     // ---------- comments ----------
     addComment(teamId: string, taskId: string, text: string, subtaskId: string | null = null) {
       const ref = doc(refs.comments(teamId, taskId))
@@ -161,6 +189,46 @@ export function createWrites(refs: Refs, currentUid: () => string) {
         createdAt: serverTimestamp() as never,
       }
       return setDoc(ref, comment)
+    },
+
+    // ---------- announcements and huddles ----------
+    /** audience: ["all"] (program coaches) or team ids. `emailed` records the request; sending needs a server. */
+    postAnnouncement(
+      fields: Pick<Announcement, 'title' | 'bodyHtml' | 'body' | 'audience' | 'emailed'>,
+    ) {
+      const ref = doc(refs.announcements())
+      return setDoc(ref, {
+        ...fields,
+        id: ref.id,
+        authorId: currentUid(),
+        postedAt: serverTimestamp() as never,
+      })
+    },
+    updateAnnouncement(
+      id: string,
+      fields: Pick<Announcement, 'title' | 'bodyHtml' | 'body' | 'audience'>,
+    ) {
+      return updateDoc(doc(refs.announcements(), id), fields)
+    },
+    deleteAnnouncement(id: string) {
+      return deleteDoc(doc(refs.announcements(), id))
+    },
+    restoreAnnouncement(announcement: Announcement & { id: string }) {
+      return setDoc(doc(refs.announcements(), announcement.id), announcement)
+    },
+    /** A huddle or quick note (program coaches). The author has read it. */
+    postHuddle(fields: Omit<Huddle, 'authorId' | 'postedAt' | 'readBy'>) {
+      const ref = doc(refs.huddles())
+      return setDoc(ref, {
+        ...fields,
+        id: ref.id,
+        authorId: currentUid(),
+        postedAt: serverTimestamp() as never,
+        readBy: [currentUid()],
+      })
+    },
+    deleteHuddle(id: string) {
+      return deleteDoc(refs.huddle(id))
     },
 
     // ---------- read markers ----------

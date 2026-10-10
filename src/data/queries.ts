@@ -39,6 +39,8 @@ export function createQueries(refs: Refs) {
     teamMembers: (teamId: string) =>
       query(refs.members(), where('teamIds', 'array-contains', teamId)),
     coaches: () => query(refs.members(), where('role', '==', 'coach')),
+    /** Coaches and mentors (huddle "Seen by N of M"). */
+    adults: () => query(refs.members(), where('role', 'in', ['coach', 'mentor'])),
     /** Program settings → People (program coaches). */
     allMembers: () => query(refs.members(), orderBy('displayName')),
     teamEvents: (teamId: string) => query(refs.teamEvents(teamId), orderBy('date')),

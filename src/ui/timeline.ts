@@ -57,7 +57,7 @@ export function packLanes<T extends Packable>(
     .map((item, index) => ({ item, index }))
     .sort((a, b) => a.item.packStart.localeCompare(b.item.packStart))
   const ends: string[] = []
-  const lanes: number[] = new Array(items.length).fill(0)
+  const lanes: number[] = Array.from({ length: items.length }, () => 0)
   order.forEach(({ item, index }) => {
     let lane = ends.findIndex((end) => end < item.packStart)
     if (lane === -1) {

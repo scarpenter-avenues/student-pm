@@ -8,6 +8,7 @@ import { DASHBOARD_TABS, TEAM_TABS } from '@/router/tabs'
 import { createTeamData, provideTeam } from '@/composables/useTeamData'
 import TopBar from './TopBar.vue'
 import TaskPanel from './TaskPanel.vue'
+import HuddlePopup from './huddle/HuddlePopup.vue'
 
 const session = useSession()
 const route = useRoute()
@@ -98,6 +99,7 @@ watchEffect(() => {
       <RouterView />
     </main>
     <TaskPanel />
+    <HuddlePopup />
   </div>
 </template>
 

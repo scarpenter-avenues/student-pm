@@ -121,7 +121,13 @@ describe('huddles (adults only)', () => {
     await assertSucceeds(
       updateDoc(doc(as(env, 'mentorA'), huddle), { readBy: arrayUnion('mentorA') }),
     )
+    // Marking it seen again (a second tab) is a harmless no-op.
+    await assertSucceeds(
+      updateDoc(doc(as(env, 'mentorA'), huddle), { readBy: arrayUnion('mentorA') }),
+    )
     await assertFails(updateDoc(doc(as(env, 'mentorA'), huddle), { readBy: arrayUnion('mentorB') }))
+    // Nobody else's mark can be removed.
+    await assertFails(updateDoc(doc(as(env, 'mentorA'), huddle), { readBy: [] }))
     await assertFails(updateDoc(doc(as(env, 'mentorA'), huddle), { status: 'Edited' }))
     await assertFails(
       updateDoc(doc(as(env, 'studentA'), huddle), { readBy: arrayUnion('studentA') }),

@@ -22,9 +22,18 @@ export const routes: RouteRecordRaw[] = [
       // Redirected by the guard to the person's home page.
       { path: '', name: 'home', component: ComingSoon },
       { path: 'no-team', name: 'no-team', component: () => import('@/views/NoTeamView.vue') },
-      { path: 'huddle', name: 'huddle', component: ComingSoon, meta: { adultOnly: true } },
+      {
+        path: 'huddle',
+        name: 'huddle',
+        component: () => import('@/views/HuddleView.vue'),
+        meta: { adultOnly: true },
+      },
       { path: 't/:teamId', redirect: (to) => `${to.path}/${DEFAULT_TEAM_TAB}` },
-      { path: 't/:teamId/announcements', name: 'team-announcements', component: ComingSoon },
+      {
+        path: 't/:teamId/announcements',
+        name: 'team-announcements',
+        component: () => import('@/views/AnnouncementsView.vue'),
+      },
       {
         path: `t/:teamId/:tab(${tabPattern(TEAM_TABS)})`,
         name: 'team',
@@ -34,7 +43,7 @@ export const routes: RouteRecordRaw[] = [
       {
         path: `dashboard/:tab(${tabPattern(DASHBOARD_TABS)})`,
         name: 'dashboard',
-        component: ComingSoon,
+        component: () => import('@/views/dashboard/DashboardView.vue'),
         meta: { coachOnly: true },
       },
     ],

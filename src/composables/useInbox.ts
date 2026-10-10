@@ -27,6 +27,8 @@ export function useAnnouncements(teamId: () => string | null) {
   }
 }
 
+const pending = new Set<string>()
+
 /** Adults only: huddles someone else posted that you haven't seen. */
 export function useHuddles() {
   const session = useSession()
@@ -40,6 +42,11 @@ export function useHuddles() {
   return {
     huddles: feed.data,
     unread,
-    markRead: (ids = unread.value.map((item) => item.id)) => writes.markHuddlesRead(ids),
+    markRead: (ids = unread.value.map((item) => item.id)) => {
+      // Skip ones already on their way, so two quick calls don't send the same write twice.
+      const fresh = ids.filter((id) => !pending.has(id))
+      fresh.forEach((id) => pending.add(id))
+      return writes.markHuddlesRead(fresh).finally(() => fresh.forEach((id) => pending.delete(id)))
+    },
   }
 }
