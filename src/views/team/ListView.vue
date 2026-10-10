@@ -1,7 +1,11 @@
 <script setup lang="ts">
-// List: the sprint's tasks grouped by status. Columns: Name · Status · Due date · Assignee · Subteam · Type.
+// List: the sprint's tasks grouped by status. Columns: Name · Status · Due date · Assignee · Subteam · Type. Drag rows
+// to reorder them or into another status group.
 import { computed, ref } from 'vue'
+import { useTaskEdits } from '@/composables/useTaskEdits'
 import { useTaskView } from '@/composables/useTaskView'
+import type { Status } from '@/model/types'
+import { vDragSort, type TaskDrop } from '@/ui/dragSort'
 import { subtaskKey, useSelection } from '@/composables/useSelection'
 import { STATUSES } from '@/ui/options'
 import AnnouncementBanner from '@/components/tasks/AnnouncementBanner.vue'
@@ -14,6 +18,8 @@ import type { TaskField } from '@/components/tasks/TaskFieldCell.vue'
 const { team, sprint, visible, filtered } = useTaskView(() => false)
 const COLUMNS: TaskField[] = ['status', 'due', 'assignee', 'subteam', 'type']
 const collapsed = ref<Set<string>>(new Set())
+const edits = useTaskEdits(team)
+const onDrop = (drop: TaskDrop) => edits.drop(drop, { status: drop.to as Status })
 
 const groups = computed(() =>
   STATUSES.map((status) => ({
@@ -67,7 +73,11 @@ function toggleGroup(status: string) {
           <th>Type</th>
         </tr>
       </thead>
-      <tbody v-for="group in groups" :key="group.status">
+      <tbody
+        v-for="group in groups"
+        :key="group.status"
+        v-drag-sort="{ group: 'list', key: group.status, draggable: 'tr.task-row', onDrop }"
+      >
         <tr class="group-row">
           <td colspan="6">
             <button

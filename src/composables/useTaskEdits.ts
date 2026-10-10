@@ -2,7 +2,8 @@
 // updates listeners) and report failures in a toast. Archiving offers Undo.
 import { Timestamp } from 'firebase/firestore'
 import { writes, type NewTask } from '@/data'
-import { rankForMove } from '@/model/rank'
+import { rankBetween, rankForMove } from '@/model/rank'
+import type { TaskDrop } from '@/ui/dragSort'
 import { addSubtask, moveSubtask, updateSubtask, type NewSubtask } from '@/model/subtasks'
 import type { Subtask, Task, WithId } from '@/model/types'
 import type { TaskChanges } from '@/data/writes'
@@ -76,6 +77,20 @@ export function useTaskEdits(team: TeamData) {
     })
   }
 
+  /** A drag-and-drop move (see v-drag-sort): between its new neighbors, plus any status or sprint change. */
+  function drop(move: TaskDrop, changes: Pick<TaskChanges, 'status' | 'sprintId'> = {}) {
+    const task = team.tasks.value.find((item) => item.id === move.id)
+    if (!task) return
+    const rankOf = (id: string | null) =>
+      (id && team.tasks.value.find((item) => item.id === id)?.rank) || null
+    const rank = rankBetween(rankOf(move.beforeId), rankOf(move.afterId))
+    const changed = Object.fromEntries(
+      Object.entries(changes).filter(([key, value]) => task[key as keyof Task] !== value),
+    )
+    save(task, null, { ...changed, rank })
+    return task
+  }
+
   function moveSub(task: WithId<Task>, visible: readonly Subtask[], from: number, to: number) {
     const all = latest(task).subtasks
     const fromIndex = all.findIndex((item) => item.id === visible[from]?.id)
@@ -96,5 +111,5 @@ export function useTaskEdits(team: TeamData) {
     return save(task, null, { subtasks: addSubtask(latest(task).subtasks, fields) })
   }
 
-  return { save, archive, restore, move, moveSub, add, addSub, fail }
+  return { save, archive, restore, move, drop, moveSub, add, addSub, fail }
 }

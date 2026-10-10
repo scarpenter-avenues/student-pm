@@ -6,8 +6,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { daysBetween, todayIso } from '@/model/dates'
 import {
   GOAL_STEPS,
-  STEP_IDEAS,
-  WISH_IDEAS,
+  goalIdeasFor,
   cleanText,
   hasBlanks,
   planCondition,
@@ -19,9 +18,10 @@ import { useGoalActions, type GoalDraft } from '@/composables/useGoalActions'
 import type { GoalDoc } from '@/composables/useGoals'
 import { useTeam } from '@/composables/useTeamData'
 import { useGoalFlow } from '@/stores/goalFlow'
+import { useSession } from '@/stores/session'
 import { useToast } from '@/stores/toast'
 import { formatEventDate, formatShortDate, plural } from '@/ui/format'
-import DateButton from '@/components/ui/DateButton.vue'
+import CalendarPopover from '@/components/ui/CalendarPopover.vue'
 import GoalStatusPill from './GoalStatusPill.vue'
 
 const props = defineProps<{
@@ -33,6 +33,7 @@ const props = defineProps<{
 }>()
 
 const flow = useGoalFlow()
+const session = useSession()
 const toast = useToast()
 const team = useTeam()
 const actions = useGoalActions()
@@ -86,7 +87,7 @@ const { events } = useEvents(() => team.teamId.value)
 const byOptions = computed(() => {
   const today = todayIso()
   const fromEvents = events.value
-    .filter((event) => event.date >= today)
+    .filter((event) => event.date >= today && event.type === 'Competition')
     .map((event) => ({
       label: event.title,
       date: event.date,
@@ -108,17 +109,19 @@ const customBy = ref(
   !!draft.by &&
     !byOptions.value.some((o) => o.date === draft.by?.date && o.label === draft.by?.label),
 )
-function pickBy(option: { label: string; date: string } | 'custom') {
-  if (option === 'custom') {
-    customBy.value = true
-    draft.by = null
-  } else {
-    customBy.value = false
-    draft.by = { label: option.label, date: option.date }
-  }
+function pickBy(option: { label: string; date: string }) {
+  customBy.value = false
+  draft.by = { label: option.label, date: option.date }
 }
-function pickCustomDate(iso: string | null) {
-  draft.by = iso ? { label: formatEventDate(iso), date: iso } : null
+/** "Pick a date…" opens the calendar right on the button. */
+const calendarAnchor = ref<HTMLElement | null>(null)
+async function pickCustomDate(iso: string) {
+  const row = calendarAnchor.value
+  customBy.value = true
+  draft.by = { label: formatEventDate(iso), date: iso }
+  calendarAnchor.value = null
+  await nextTick()
+  row?.scrollIntoView({ block: 'nearest' })
 }
 
 // ---------- text questions ----------
@@ -171,10 +174,7 @@ function onKeydown(event: KeyboardEvent) {
 }
 const ideas = computed(() => {
   const k = question.value
-  if (k === 'wish') return WISH_IDEAS
-  if (k === 'evidence' || k === 'obstacle' || k === 'plan' || k === 'firstStep')
-    return STEP_IDEAS[k]
-  return []
+  return k === 'by' ? [] : goalIdeasFor(session.program, k)
 })
 const ideasLabel = computed(() =>
   question.value === 'plan'
@@ -240,7 +240,7 @@ function save() {
             : "Let's set your learning goal"
       }}
     </h2>
-    <p class="goal-lead">
+    <p v-if="replaces || others.length" class="goal-lead">
       <template v-if="replaces"
         >“{{ goalStatement(replaces.wish) }}” will move to your goal history as Changed.
       </template>
@@ -251,6 +251,8 @@ function save() {
           and {{ plural(others.length - 1, 'other goal') }}</template
         >. Another goal is fine; you'll check in on each one every sprint.
       </template>
+    </p>
+    <p class="goal-lead">
       It takes about 5 minutes. After that, you'll check in for about a minute at the end of each
       sprint.
     </p>
@@ -270,8 +272,8 @@ function save() {
       </p>
     </div>
     <p class="goal-example tip">
-      Tip: pick something you want to learn, not just a result. “Learn how to implement a PID
-      controller” beats “Win League Meet 1.”
+      Tip: pick something you want to learn, not just a result. “Learn to explain my design choices”
+      beats “Win our next competition.”
     </p>
     <div class="goal-modal-actions">
       <button type="button" class="goal-button" @click="flow.close()">Cancel</button>
@@ -297,9 +299,12 @@ function save() {
     <h2>{{ editing ? 'Change any part of your goal' : 'Look it over' }}</h2>
     <section class="review-block shared">
       <p class="review-label">👀 Your team will see</p>
-      <p class="review-statement">{{ goalStatement(cleanText(draft.wish)) }}</p>
-      <div class="goal-meta">
-        <GoalStatusPill :status="goal?.status ?? `Haven't started`" />
+      <div class="review-title">
+        <p class="review-statement">{{ goalStatement(cleanText(draft.wish)) }}</p>
+        <button type="button" class="text-button" @click="jump('wish')">Edit</button>
+      </div>
+      <div v-if="goal" class="goal-meta">
+        <GoalStatusPill :status="goal.status" />
       </div>
     </section>
     <section class="review-block">
@@ -307,12 +312,11 @@ function save() {
       <dl class="review-rows">
         <div
           v-for="row in [
-            ['My goal', goalStatement(cleanText(draft.wish)), 'wish'],
             [`I'll know I've got it when`, cleanText(draft.evidence), 'evidence'],
             [
               'By',
               draft.by
-                ? `${draft.by.label}${draft.by.date ? ` · ${formatEventDate(draft.by.date)}` : ''}`
+                ? `${draft.by.label}${draft.by.date && draft.by.label !== formatEventDate(draft.by.date) ? ` · ${formatEventDate(draft.by.date)}` : ''}`
                 : '',
               'by',
             ],
@@ -404,19 +408,25 @@ function save() {
             class="by-option"
             role="radio"
             :aria-checked="customBy"
-            @click="pickBy('custom')"
+            aria-haspopup="dialog"
+            @click="calendarAnchor = calendarAnchor ? null : ($event.currentTarget as HTMLElement)"
           >
-            <span>Pick a date…</span>
+            <span>{{
+              customBy && draft.by?.date ? `📅 ${formatEventDate(draft.by.date)}` : 'Pick a date…'
+            }}</span>
+            <small v-if="customBy && draft.by?.date"
+              >in {{ daysBetween(todayIso(), draft.by.date) }} days</small
+            >
           </button>
         </div>
-        <DateButton
-          v-if="customBy"
-          :model-value="draft.by?.date ?? null"
+        <CalendarPopover
+          v-if="calendarAnchor"
+          :anchor="calendarAnchor"
           label="Goal date"
-          placeholder="Choose a date"
+          :selected="customBy ? (draft.by?.date ?? null) : null"
           :min="todayIso()"
-          :clearable="false"
-          @update:model-value="pickCustomDate"
+          @pick="pickCustomDate"
+          @close="calendarAnchor = null"
         />
         <p class="goal-example">Most goals take 2 to 4 sprints. Competitions make good targets.</p>
       </template>
@@ -427,15 +437,13 @@ function save() {
           class="goal-text"
           rows="2"
           maxlength="160"
-          :placeholder="info(question).starter ?? info(question).example"
+          :placeholder="info(question).starter"
           :aria-label="info(question).title"
           @keydown="onKeydown"
         />
         <p class="goal-hint">{{ info(question).hint?.(draft[textKey]) }}</p>
-        <p v-if="question === 'wish'" class="preview">
-          Your goal will read: “{{
-            cleanText(draft.wish) ? goalStatement(cleanText(draft.wish)) : '…'
-          }}”
+        <p v-if="question === 'wish' && cleanText(draft.wish)" class="preview">
+          Your goal will read: “{{ goalStatement(cleanText(draft.wish)) }}”
         </p>
         <template v-if="ideas.length">
           <p class="goal-ideas-label">{{ ideasLabel }}</p>
@@ -451,9 +459,6 @@ function save() {
             </button>
           </div>
         </template>
-        <p v-if="question !== 'wish' && info(question).example" class="goal-example">
-          Example: {{ info(question).example }}
-        </p>
       </template>
     </div>
     <div class="goal-modal-actions">
@@ -578,6 +583,18 @@ function save() {
   color: #202124;
   font-size: 17px;
   font-weight: 700;
+}
+.review-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.review-title .review-statement {
+  margin-bottom: 0;
+}
+.review-title + .goal-meta {
+  margin-top: 6px;
 }
 .review-rows {
   display: grid;

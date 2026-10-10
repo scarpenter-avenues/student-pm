@@ -3391,8 +3391,9 @@
     function renderMemberList() {
       const canEdit = settingsCanEditMembers();
       const canAssignSubteams = canEdit || demoRole === "Team lead";
+      document.getElementById("membersNote").hidden = canEdit;
       document.getElementById("membersNote").textContent = canEdit
-        ? "Mentors and coaches manage the roster. Emails are only used to match sign-ins and aren't shown here."
+        ? ""
         : canAssignSubteams
           ? "Team leads can change subteam assignments. Only mentors and coaches can add or remove members or change roles."
           : "Only mentors, coaches, and team leads can change membership. Ask one of them if something looks wrong.";
@@ -4204,17 +4205,17 @@
     }
     // Tappable starting points so students never face a blank box. Wish ideas come from the student's own subteams first.
     const goalWishIdeas = [
-      "Design 3D printed parts in OnShape",
-      "Create assemblies in OnShape",
+      "Design 3D printed parts in Onshape",
+      "Create assemblies in Onshape",
       "Learn Java for FTC",
       "Learn how to implement a PID controller",
-      "Use the iLab machines safely",
+      "Use the shop tools safely",
       "Design a portfolio",
       "Lead by supporting my teammates' progress"
     ];
     const goalStepIdeas = {
       evidence: ["I can do it without help", "I can teach it to a teammate", "The code works on the robot in testing"],
-      obstacle: ["I get distracted at Robotics", "I give up when something gets confusing", "I'm not sure where to start", "I run out of time", "I'm nervous to ask for help"],
+      obstacle: ["I get distracted", "I give up when something gets confusing", "I'm not sure where to start", "I run out of time", "I'm nervous to ask for help"],
       plan: ["ask a teammate for 10 minutes of help", "do some research", "break it into one small next piece", "write down where I'm stuck and ask a mentor", "set a 15-minute timer and focus"],
       // Fill-in-the-blank starters nudge students toward specific, doable tasks.
       firstStep: ["Watch a tutorial on ___", "Ask ___ to teach me how to ___", "Build a cardboard prototype of ___"]
@@ -4503,7 +4504,6 @@
           if (task.fromGoal) answer.tasks.add(task.title);
           box.addEventListener("change", () => { box.checked ? answer.tasks.add(task.title) : answer.tasks.delete(task.title); });
           label.append(box, ` ${task.title}`);
-          if (task.fromGoal) { const badge = document.createElement("span"); badge.className = "from-goal"; badge.textContent = "From your goal"; label.append(badge); }
           taskList.append(label);
         });
         const note = document.createElement("input"); note.className = "goal-line"; note.maxLength = 140; note.placeholder = "Anything else? (optional)";

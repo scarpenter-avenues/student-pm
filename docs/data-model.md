@@ -67,6 +67,12 @@ interface Program {
   };
   subteamDefaults: Subteam[];                     // copied into new teams
   currentSeasonId: string;
+  // Tappable ideas in the set-a-goal steps (Program settings → Goal ideas). A missing list uses the built-in defaults
+  // (src/model/goals.ts); an empty list shows none. Up to 12 per step, 80 characters each.
+  goalIdeas?: { wish?: string[]; evidence?: string[]; obstacle?: string[]; plan?: string[]; firstStep?: string[] };
+  // The plan "Import default" puts in a new huddle (Program settings → Default huddle plan). Missing: the built-in
+  // plan in src/model/huddles.ts.
+  huddlePlan?: HuddlePlanRow[];
 }
 interface Subteam { id: string; name: string; color: SubteamColor; description: string }
 type SubteamColor = "red" | "green" | "yellow" | "blue" | "purple" | "teal" | "pink" | "gray";
@@ -229,12 +235,21 @@ interface Huddle {
   kind: "huddle" | "note";
   date: string; authorId: string; postedAt: Timestamp;
   statusHtml?: string; status?: string;           // "Where things stand"
-  plan?: { time: string; text: string; audience: string[] }[];   // ["all"], ["adults"], or team ids
+  plan?: HuddlePlanRow[];
+
   notesHtml?: string; notes?: string;             // "Heads-ups and needs"
   textHtml?: string; text?: string;               // quick notes
   readBy: string[];                               // adult UIDs; "seen by N of M"
 }
+interface HuddlePlanRow {
+  time: string; text: string;
+  audience: string[];                             // ["all"], ["adults"], or team ids
+  runBy?: string;                                 // optional: the coach or mentor running it (member uid)
+}
 ```
+`statusHtml` and `notesHtml` can hold @ mentions: `<span data-type="mention" data-id="member:<uid>|team:<teamId>"
+data-label data-kind="student|adult|team" data-team data-color>`. The label is a display name or team name (nothing new
+is stored about anyone), and the plain-text copies hold just the label.
 
 ### Goals: two documents per goal
 Teammates may see a goal's **statement and status** and nothing else. Rules work per document, so:

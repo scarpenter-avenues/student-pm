@@ -11,6 +11,8 @@ import { useTeam } from '@/composables/useTeamData'
 import { useSession } from '@/stores/session'
 import { useToast } from '@/stores/toast'
 import { todayIso } from '@/model/dates'
+import { defaultHuddlePlan } from '@/model/huddles'
+import { mentionSearch } from '@/ui/mentions'
 import HuddleCard from '@/components/huddle/HuddleCard.vue'
 import HuddleComposer from '@/components/huddle/HuddleComposer.vue'
 import RichEditor from '@/components/ui/RichEditor.vue'
@@ -47,6 +49,18 @@ function toggle(item: WithId<Huddle>) {
   else next.add(item.id)
   opened.value = next
 }
+// @ mentions (program coaches write huddles, and they can read every member).
+const members = useLiveQuery(() => session.isCoach && queries.allMembers())
+const mentions = mentionSearch(() => ({
+  students: members.data.value
+    .filter((m) => m.role === 'student' || m.role === 'lead')
+    .map((m) => ({ id: m.id, displayName: m.displayName, teamId: m.teamIds[0] ?? null })),
+  adults: members.data.value.filter((m) => m.role === 'coach' || m.role === 'mentor'),
+  teams: session.teams,
+}))
+const adultNames = computed(() =>
+  Object.fromEntries(adults.data.value.map((adult) => [adult.id, adult.displayName])),
+)
 const seenBy = (item: Huddle) =>
   item.readBy.filter((uid) => adults.data.value.some((adult) => adult.id === uid)).length
 const lastPlan = computed(() => {
@@ -85,6 +99,12 @@ function onNoteKeydown(event: KeyboardEvent) {
     mode.value = null
   }
 }
+const editing = ref<string | null>(null)
+function saveEdit(id: string, fields: Parameters<typeof writes.updateHuddle>[1]) {
+  writes.updateHuddle(id, fields).catch(fail)
+  editing.value = null
+  toast.show('Huddle updated')
+}
 function remove(item: WithId<Huddle>) {
   writes.deleteHuddle(item.id).catch(fail)
   toast.show(item.kind === 'note' ? 'Quick note deleted' : 'Huddle deleted')
@@ -103,14 +123,17 @@ watch(mode, async (value) => {
     <h2>Huddle</h2>
     <div v-if="session.isCoach && !mode" class="post-actions">
       <button class="primary-button post" type="button" @click="mode = 'huddle'">
-        ＋ Post today's huddle
+        ＋ New huddle
       </button>
-      <button class="quiet-button" type="button" @click="mode = 'note'">Quick note</button>
+      <button class="quiet-button" type="button" @click="mode = 'note'">＋ Quick note</button>
     </div>
     <HuddleComposer
       v-if="mode === 'huddle'"
       :teams="teamList"
       :last-plan="lastPlan"
+      :adults="adults.data.value"
+      :mentions="mentions"
+      :default-plan="() => defaultHuddlePlan(session.program)"
       @post="postHuddle"
       @cancel="mode = null"
     />
@@ -126,6 +149,7 @@ watch(mode, async (value) => {
           v-model="note.html"
           placeholder="A quick note for every coach and mentor…"
           label="Quick note"
+          :mentions="mentions"
           @change="note = $event"
         />
       </div>
@@ -137,19 +161,33 @@ watch(mode, async (value) => {
     </form>
 
     <div class="feed">
-      <HuddleCard
-        v-for="item in huddles"
-        :key="item.id"
-        :huddle="item"
-        :open="isOpen(item)"
-        :author-name="nameOf(item.authorId)"
-        :seen-by="seenBy(item)"
-        :adults="adults.data.value.length"
-        :teams="teams"
-        :can-delete="session.isCoach"
-        @toggle="toggle(item)"
-        @delete="remove(item)"
-      />
+      <template v-for="item in huddles" :key="item.id">
+        <HuddleComposer
+          v-if="item.id === editing"
+          :huddle="item"
+          :teams="teamList"
+          :last-plan="lastPlan"
+          :adults="adults.data.value"
+          :mentions="mentions"
+          :default-plan="() => defaultHuddlePlan(session.program)"
+          @post="saveEdit(item.id, $event)"
+          @cancel="editing = null"
+        />
+        <HuddleCard
+          v-else
+          :huddle="item"
+          :open="isOpen(item)"
+          :author-name="nameOf(item.authorId)"
+          :seen-by="seenBy(item)"
+          :adults="adults.data.value.length"
+          :teams="teams"
+          :names="adultNames"
+          :can-delete="session.isCoach"
+          @toggle="toggle(item)"
+          @edit="editing = item.id"
+          @delete="remove(item)"
+        />
+      </template>
       <p v-if="!huddles.length" class="empty">No huddles yet.</p>
     </div>
   </section>

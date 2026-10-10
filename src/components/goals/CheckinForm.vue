@@ -4,14 +4,7 @@
 // work), 4. next steps (each becomes a Learning task in the sprint you pick). "Got it" goes on to the wrap-up.
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { todayIso } from '@/model/dates'
-import {
-  GOAL_STATUSES,
-  PLAN_RESULTS,
-  STEP_IDEAS,
-  checkinWindow,
-  cleanText,
-  hasBlanks,
-} from '@/model/goals'
+import { GOAL_STATUSES, PLAN_RESULTS, checkinWindow, cleanText } from '@/model/goals'
 import { goalStatement, type GoalStatus, type PlanResult } from '@/model/types'
 import { useGoalActions } from '@/composables/useGoalActions'
 import { needsOf, type GoalDoc } from '@/composables/useGoals'
@@ -90,8 +83,8 @@ const sprintChoices = computed(() =>
   ),
 )
 const stepInputs = ref<HTMLInputElement[]>([])
-async function addStep(title = '') {
-  answer.steps.push({ title, sprintId: defaultSprintId.value })
+async function addStep() {
+  answer.steps.push({ title: '', sprintId: defaultSprintId.value })
   await nextTick()
   stepInputs.value.at(-1)?.focus()
 }
@@ -99,39 +92,18 @@ function removeStep(index: number) {
   answer.steps.splice(index, 1)
   if (!answer.steps.length) void addStep()
 }
-async function useStarter(starter: string) {
-  let index = answer.steps.findIndex((step) => !step.title.trim())
-  if (index < 0) {
-    await addStep()
-    index = answer.steps.length - 1
-  }
-  answer.steps[index]!.title = starter
-  await nextTick()
-  const el = stepInputs.value[index]
-  if (!el) return
-  el.focus()
-  const at = el.value.search(/_{2,}/)
-  if (at >= 0) el.setSelectionRange(at, at + (el.value.slice(at).match(/_+/)?.[0].length ?? 0))
-}
-function onStepKeydown(event: KeyboardEvent, index: number) {
-  const el = event.target as HTMLInputElement
+function onStepKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter') {
     event.preventDefault()
     void addStep()
-  } else if (event.key === 'Tab' && !event.shiftKey && /_{2,}/.test(el.value)) {
-    event.preventDefault()
-    const at = el.value.search(/_{2,}/)
-    el.setSelectionRange(at, at + (el.value.slice(at).match(/_+/)?.[0].length ?? 0))
   }
-  void index
 }
 
 const gotIt = computed(() => answer.status === 'Got it')
 const filledSteps = computed(() =>
   gotIt.value ? [] : answer.steps.filter((step) => step.title.trim()),
 )
-const blanks = computed(() => !gotIt.value && answer.steps.some((step) => hasBlanks(step.title)))
-const ready = computed(() => !!answer.status && !!answer.planResult && !blanks.value)
+const ready = computed(() => !!answer.status && !!answer.planResult)
 
 function save() {
   if (!ready.value || !answer.status || !answer.planResult) return
@@ -168,7 +140,7 @@ function save() {
   <h2>{{ goalStatement(goal.wish) }}</h2>
   <div class="checkin-form">
     <fieldset class="checkin-question">
-      <legend>1. Where are you?</legend>
+      <legend><span class="question-number">1.</span>Where are you?</legend>
       <div class="choice-row">
         <button
           v-for="(status, i) in GOAL_STATUSES"
@@ -184,14 +156,10 @@ function save() {
     </fieldset>
 
     <fieldset class="checkin-question">
-      <legend>2. What did you do?</legend>
+      <legend><span class="question-number">2.</span>What did you do?</legend>
       <div class="tasks">
-        <p class="goal-example">
-          {{
-            tasks.length
-              ? `Your finished tasks in ${covered?.name}:`
-              : `No finished tasks in ${covered?.name} yet. Add a quick note instead.`
-          }}
+        <p v-if="!tasks.length" class="goal-example">
+          No finished tasks in {{ covered?.name }} yet. Add a quick note instead.
         </p>
         <label v-for="task in tasks" :key="task.id">
           <input
@@ -200,7 +168,6 @@ function save() {
             @change="toggleTask(task.id, ($event.target as HTMLInputElement).checked)"
           />
           {{ task.title }}
-          <span v-if="task.fromGoal" class="from-goal">From your goal</span>
         </label>
       </div>
       <input
@@ -213,8 +180,8 @@ function save() {
     </fieldset>
 
     <fieldset class="checkin-question">
-      <legend>3. Did your if-then plan come up?</legend>
-      <p class="goal-example">Your plan: {{ goal.plan }}</p>
+      <legend><span class="question-number">3.</span>Did your if-then plan come up?</legend>
+      <p class="goal-example my-plan">{{ goal.plan }}</p>
       <div class="choice-row">
         <button
           v-for="result in PLAN_RESULTS"
@@ -228,7 +195,9 @@ function save() {
         </button>
       </div>
       <template v-if="answer.planResult === `It didn't work`">
-        <p class="goal-hint">Plans often need a tweak. Rewrite it so it works better next time:</p>
+        <p class="goal-example">
+          Plans often need a tweak. Rewrite it so it works better next time:
+        </p>
         <textarea
           v-model="answer.newPlan"
           class="goal-text"
@@ -240,7 +209,7 @@ function save() {
     </fieldset>
 
     <fieldset v-if="!gotIt" class="checkin-question">
-      <legend>4. What are your next steps?</legend>
+      <legend><span class="question-number">4.</span>What are your next steps?</legend>
       <p class="goal-example">Each step becomes a Learning task for you in the sprint you pick.</p>
       <div class="next-steps">
         <div v-for="(step, i) in answer.steps" :key="i" class="next-step-row">
@@ -251,7 +220,7 @@ function save() {
             maxlength="90"
             placeholder="My next step is…"
             aria-label="Next step"
-            @keydown="onStepKeydown($event, i)"
+            @keydown="onStepKeydown"
           />
           <SelectButton
             v-model="step.sprintId"
@@ -273,21 +242,9 @@ function save() {
           </button>
         </div>
       </div>
-      <div class="goal-ideas">
-        <button
-          v-for="starter in STEP_IDEAS.firstStep"
-          :key="starter"
-          type="button"
-          class="goal-idea"
-          @click="useStarter(starter)"
-        >
-          {{ starter }}
-        </button>
-      </div>
       <button type="button" class="text-button add-step" @click="addStep()">
         ＋ Add another step
       </button>
-      <p class="goal-hint">{{ blanks ? 'Fill in the blanks to make each step specific.' : '' }}</p>
     </fieldset>
   </div>
   <div class="goal-modal-actions">
@@ -299,6 +256,9 @@ function save() {
 </template>
 
 <style scoped>
+.my-plan {
+  font-style: italic;
+}
 .tasks {
   display: grid;
   gap: 4px;
@@ -308,15 +268,6 @@ function save() {
   display: flex;
   align-items: center;
   gap: 6px;
-}
-.from-goal {
-  margin-left: 4px;
-  padding: 1px 7px;
-  border-radius: 10px;
-  background: var(--team-soft);
-  color: var(--team-ink);
-  font-size: 11px;
-  font-weight: 700;
 }
 .next-steps {
   display: grid;

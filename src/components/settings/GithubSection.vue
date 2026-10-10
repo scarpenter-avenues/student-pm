@@ -46,6 +46,9 @@ function connect() {
           when their issue is closed.
         </p>
       </div>
+      <span v-if="!editable" class="edit-note"
+        >🔒 Team leads, mentors, and coaches can change this</span
+      >
     </header>
     <template v-if="github.repo">
       <div class="repo">

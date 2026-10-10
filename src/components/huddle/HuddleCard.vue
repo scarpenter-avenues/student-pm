@@ -15,9 +15,11 @@ const props = defineProps<{
   seenBy: number
   adults: number
   teams: Readonly<Record<string, { name: string; color: string }>>
+  /** Coach and mentor names, for "run by". */
+  names: Readonly<Record<string, string>>
   canDelete: boolean
 }>()
-const emit = defineEmits<{ toggle: []; delete: [] }>()
+const emit = defineEmits<{ toggle: []; edit: []; delete: [] }>()
 
 function dayLabel(iso: string) {
   const offset = daysBetween(iso, todayIso())
@@ -29,7 +31,8 @@ const posted = computed(() =>
     .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
 )
 const meta = computed(
-  () => `${props.authorName} · ${posted.value} · Seen by ${props.seenBy} of ${props.adults}`,
+  () =>
+    `${props.authorName} · ${posted.value}${props.huddle.editedAt ? ' · Edited' : ''} · Seen by ${props.seenBy} of ${props.adults}`,
 )
 function time(hhmm: string) {
   const [h = 0, m = 0] = hhmm.split(':').map(Number)
@@ -67,7 +70,12 @@ const summary = computed(() => props.huddle.status ?? props.huddle.text ?? '')
       <ul class="plan">
         <li v-for="(row, i) in huddle.plan" :key="i">
           <span class="time">{{ time(row.time) }}</span>
-          <span class="what">{{ row.text }}</span>
+          <span class="what"
+            >{{ row.text
+            }}<span v-if="row.runBy && names[row.runBy]" class="run-by">
+              · {{ names[row.runBy] }}</span
+            ></span
+          >
           <span class="who">
             <span v-if="row.audience.includes('adults')" class="adults">Coaches &amp; mentors</span>
             <template v-for="id in row.audience" :key="id">
@@ -84,6 +92,7 @@ const summary = computed(() => props.huddle.status ?? props.huddle.text ?? '')
     </template>
     <div class="card-foot">
       <button type="button" class="collapse" @click="emit('toggle')">Collapse</button>
+      <button v-if="canDelete" type="button" class="collapse" @click="emit('edit')">Edit</button>
       <button v-if="canDelete" type="button" class="delete" @click="emit('delete')">Delete</button>
     </div>
   </article>
@@ -156,6 +165,9 @@ p {
   padding: 10px 16px;
   border-left: 3px solid #9db8e8;
 }
+.run-by {
+  color: #66717a;
+}
 .plan {
   margin: 0;
   padding: 0;
@@ -195,6 +207,9 @@ p {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+.collapse:hover {
+  color: #3f474e;
 }
 .collapse,
 .delete {

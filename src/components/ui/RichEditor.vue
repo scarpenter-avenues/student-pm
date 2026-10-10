@@ -1,13 +1,16 @@
 <script setup lang="ts">
 // Rich text (Team Home, announcements, task descriptions, huddles), ported from the mock-up's createRichEditor.
 // Tiptap is bundled from npm: no third-party requests. Select text for the formatting bubble; ⌘/Ctrl+K adds a link.
-// Links must be http(s) and open in a new tab without passing on who sent the visitor.
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+// Links must be http(s) and open in a new tab without passing on who sent the visitor. Editors given `mentions` (a
+// search) offer @ mentions; every editor shows saved ones (see src/ui/mentions.ts).
+import { nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { EditorContent, useEditor } from '@tiptap/vue-3'
 import { BubbleMenu } from '@tiptap/vue-3/menus'
 import StarterKit from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extensions'
 import { useToast } from '@/stores/toast'
+import { teamAccent, teamColorOf } from '@/ui/teamColor'
+import { MentionNode, type MentionItem, type MentionSearch } from '@/ui/mentions'
 
 const props = withDefaults(
   defineProps<{
@@ -15,8 +18,10 @@ const props = withDefaults(
     editable?: boolean
     placeholder?: string
     label?: string
+    /** Turns on @ mentions: what to offer for a query. */
+    mentions?: MentionSearch | null
   }>(),
-  { editable: true, placeholder: 'Write something…', label: 'Text' },
+  { editable: true, placeholder: 'Write something…', label: 'Text', mentions: null },
 )
 const emit = defineEmits<{
   'update:modelValue': [html: string]
@@ -36,6 +41,48 @@ function normalizeUrl(value: string): string | null {
   }
 }
 
+// ---------- @ mentions ----------
+const mention = reactive({
+  open: false,
+  items: [] as MentionItem[],
+  index: 0,
+  left: 0,
+  top: 0,
+  command: null as ((item: MentionItem) => void) | null,
+})
+function showMentions(props: {
+  items: MentionItem[]
+  command: (item: MentionItem) => void
+  clientRect?: (() => DOMRect | null) | null
+}) {
+  const rect = props.clientRect?.()
+  Object.assign(mention, {
+    open: true,
+    items: props.items,
+    index: Math.min(mention.index, Math.max(0, props.items.length - 1)),
+    command: props.command,
+    ...(rect ? { left: rect.left, top: rect.bottom + 4 } : {}),
+  })
+}
+function pickMention(item: MentionItem | undefined) {
+  if (!item || !mention.command) return
+  const { id, label, kind, teamId, color } = item
+  mention.command({ id, label, kind, teamId, color } as MentionItem)
+  mention.open = false
+}
+function onMentionKey(event: KeyboardEvent): boolean {
+  if (!mention.open || !mention.items.length) return false
+  const count = mention.items.length
+  if (event.key === 'ArrowDown') mention.index = (mention.index + 1) % count
+  else if (event.key === 'ArrowUp') mention.index = (mention.index - 1 + count) % count
+  else if (event.key === 'Enter' || event.key === 'Tab') pickMention(mention.items[mention.index])
+  else if (event.key === 'Escape') mention.open = false
+  else return false
+  // Esc and Enter stay with the menu (not the form around the editor).
+  event.stopPropagation()
+  return true
+}
+
 const editor = useEditor({
   content: props.modelValue,
   editable: props.editable,
@@ -51,6 +98,24 @@ const editor = useEditor({
       },
     }),
     Placeholder.configure({ placeholder: () => props.placeholder }),
+    MentionNode.configure({
+      suggestion: {
+        char: '@',
+        allow: () => !!props.mentions,
+        items: ({ query }) => props.mentions?.(query) ?? [],
+        render: () => ({
+          onStart: (state) => {
+            mention.index = 0
+            showMentions(state as never)
+          },
+          onUpdate: (state) => showMentions(state as never),
+          onKeyDown: ({ event }) => onMentionKey(event),
+          onExit: () => {
+            mention.open = false
+          },
+        }),
+      },
+    }),
   ],
   editorProps: { attributes: { 'aria-label': props.label, class: 'rich-content' } },
   onUpdate: ({ editor: current }) => {
@@ -152,6 +217,18 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
+function chipStyle(item: MentionItem) {
+  if (item.kind === 'team') {
+    const { bg, fg } = teamColorOf(item.color ?? undefined)
+    return { background: bg, color: fg }
+  }
+  if (item.kind === 'student') {
+    const accent = teamAccent(item.color ?? undefined)
+    return { background: accent['--team-soft'], color: accent['--team-ink'] }
+  }
+  return {}
+}
+
 defineExpose({ focus: () => editor.value?.commands.focus('end'), editor })
 onBeforeUnmount(() => editor.value?.destroy())
 </script>
@@ -204,6 +281,29 @@ onBeforeUnmount(() => editor.value?.destroy())
       </form>
     </BubbleMenu>
     <EditorContent :editor="editor" />
+    <Teleport to="body">
+      <ul
+        v-if="mention.open && mention.items.length"
+        class="mention-menu"
+        role="listbox"
+        aria-label="Mention someone"
+        :style="{ left: `${mention.left}px`, top: `${mention.top}px` }"
+      >
+        <li
+          v-for="(item, i) in mention.items"
+          :key="item.id"
+          role="option"
+          :aria-selected="i === mention.index"
+          @mousedown.prevent="pickMention(item)"
+          @mouseenter="mention.index = i"
+        >
+          <span class="mention" :class="`mention-${item.kind}`" :style="chipStyle(item)">{{
+            item.label
+          }}</span>
+          <small>{{ item.detail }}</small>
+        </li>
+      </ul>
+    </Teleport>
   </div>
 </template>
 
@@ -290,6 +390,52 @@ onBeforeUnmount(() => editor.value?.destroy())
   color: #a3abb2;
   content: attr(data-placeholder);
   pointer-events: none;
+}
+/* Mentions: a chip without the "@" (colors come from the node; coaches and mentors are gray). Inline-block keeps a
+   name on one line (ProseMirror resets white-space on non-editable nodes). */
+.rich-content .mention,
+.mention-menu .mention {
+  display: inline-block;
+  line-height: 1.35;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: #eceff2;
+  color: #3f474e;
+  font-size: 0.92em;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.mention-menu {
+  position: fixed;
+  z-index: 55;
+  display: grid;
+  min-width: 220px;
+  max-width: 320px;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid #dfe3e8;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(32, 45, 61, 0.16);
+  list-style: none;
+}
+.mention-menu li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mention-menu li[aria-selected='true'] {
+  background: #f1f4f8;
+}
+.mention-menu small {
+  color: #8a949c;
+  font-size: 12px;
+  white-space: nowrap;
 }
 .format-bubble {
   z-index: 1000;

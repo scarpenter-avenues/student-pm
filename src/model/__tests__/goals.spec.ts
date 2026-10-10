@@ -3,6 +3,8 @@ import {
   checkinDue,
   checkinWindow,
   coachNeeds,
+  DEFAULT_GOAL_IDEAS,
+  goalIdeasFor,
   datePassed,
   goalFlags,
   planCondition,
@@ -91,5 +93,18 @@ describe('planCondition', () => {
       'I give up when it gets confusing',
     )
     expect(planCondition('Tutorials get confusing')).toBe('tutorials get confusing')
+  })
+})
+
+describe('goal ideas', () => {
+  it("uses the program's list when it has one (even empty), else the defaults", () => {
+    expect(goalIdeasFor(null, 'wish')).toBe(DEFAULT_GOAL_IDEAS.wish)
+    expect(goalIdeasFor({ goalIdeas: { plan: ['ask a mentor'] } }, 'wish')).toBe(
+      DEFAULT_GOAL_IDEAS.wish,
+    )
+    expect(goalIdeasFor({ goalIdeas: { plan: ['ask a mentor'] } }, 'plan')).toEqual([
+      'ask a mentor',
+    ])
+    expect(goalIdeasFor({ goalIdeas: { evidence: [] } }, 'evidence')).toEqual([])
   })
 })

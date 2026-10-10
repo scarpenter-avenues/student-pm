@@ -96,7 +96,7 @@ const timeline = ref<InstanceType<typeof GoalTimeline> | null>(null)
           :aria-expanded="shown"
           @click="emit('toggle')"
         >
-          {{ goalStatement(goal.wish) }}
+          <span class="arrow" aria-hidden="true">▾</span>{{ goalStatement(goal.wish) }}
         </button>
         <h4 v-else class="title">{{ goalStatement(goal.wish) }}</h4>
         <GoalStatusPill :status="goal.status" />
@@ -211,8 +211,19 @@ const timeline = ref<InstanceType<typeof GoalTimeline> | null>(null)
   line-height: 1.3;
   text-align: left;
 }
-.collapsed .title {
-  font-size: 16px;
+button.title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.arrow {
+  flex: 0 0 auto;
+  color: #737d86;
+  font-size: 12px;
+  transition: transform 0.15s;
+}
+.title[aria-expanded='false'] .arrow {
+  transform: rotate(-90deg);
 }
 .more {
   flex: 0 0 auto;

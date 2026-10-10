@@ -129,14 +129,18 @@ function add() {
     <header>
       <div>
         <h3>Members</h3>
-        <p>
-          Mentors and coaches manage the roster. Emails are only used to match sign-ins and aren't
-          shown here.
-        </p>
       </div>
       <button v-if="manage && !adding" type="button" class="small-button" @click="startAdd">
         ＋ Add member
       </button>
+      <span v-else-if="!manage" class="edit-note">
+        🔒
+        {{
+          team.can.value.assignSubteams
+            ? 'Mentors and coaches add members and change roles'
+            : 'Mentors and coaches can change this'
+        }}
+      </span>
     </header>
 
     <form v-if="adding" class="inline-form" @submit.prevent="add">

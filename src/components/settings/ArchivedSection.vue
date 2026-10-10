@@ -44,6 +44,7 @@ function remove(id: string, title: string) {
           team can restore them. Deleting one is permanent.
         </p>
       </div>
+      <span v-if="!team.can.value.manage" class="edit-note">🔒 Mentors and coaches can delete</span>
     </header>
     <p v-if="!list.length && !archived.loading.value" class="muted">No archived tasks.</p>
     <template v-for="task in list" :key="task.id">

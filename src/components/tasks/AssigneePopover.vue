@@ -47,7 +47,7 @@ function onKeydown(event: KeyboardEvent) {
 
 <style>
 .assignee-popover {
-  z-index: 44;
+  z-index: 55;
   padding: 6px;
   border: 1px solid var(--line);
   border-radius: 8px;

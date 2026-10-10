@@ -93,7 +93,7 @@ function sendReply(id: string) {
 const QUICK = [
   'Nice progress 👏',
   'Great plan',
-  "Let's talk at build night",
+  "Let's talk at the next meeting",
   'Try the next step you named',
 ]
 const respondingTo = ref<string | 'general' | null>(null)

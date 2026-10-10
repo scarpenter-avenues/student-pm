@@ -238,7 +238,7 @@ tr:hover .row-open,
   border-color: var(--team-line);
 }
 .check-menu {
-  z-index: 40;
+  z-index: 55;
   display: grid;
   min-width: 200px;
   max-height: 280px;
@@ -281,4 +281,37 @@ tr:hover .row-open,
   width: 10px;
   height: 10px;
   border-radius: 50%;
+}
+
+/* Dragging tasks (v-drag-sort): the spot it will land shows faded; the card or row follows the pointer. While a
+   drag is on, subtask rows step aside so a task moves as one row. */
+.drag-placeholder {
+  opacity: 0.35;
+}
+.drag-ghost {
+  box-shadow: 0 10px 28px rgba(32, 45, 61, 0.22);
+  opacity: 0.95;
+  cursor: grabbing;
+}
+/* Table rows can't float with their column widths, so the row itself slides into place, highlighted. */
+tr.drag-ghost {
+  opacity: 0 !important; /* SortableJS sets an inline opacity on the floating copy */
+}
+tr.drag-placeholder {
+  opacity: 1;
+}
+tr.drag-placeholder > td {
+  background: var(--team-soft);
+}
+tr.drag-placeholder > td:first-child {
+  box-shadow: inset 3px 0 0 var(--team-ink);
+}
+body.is-dragging,
+body.is-dragging * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+body.is-dragging .subtask-row,
+body.is-dragging .subtask-add-row {
+  display: none;
 }

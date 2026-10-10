@@ -1,7 +1,7 @@
 // Learning goals (WOOP / mental contrasting, implementation intentions), ported from the mock-up. Pure functions;
 // views pass in today's date and the team's sprints.
 import { daysBetween, shiftIsoDate } from './dates'
-import type { GoalStatus, PlanResult } from './types'
+import type { GoalIdeaKey, GoalStatus, PlanResult } from './types'
 
 export const GOAL_STATUSES: readonly GoalStatus[] = [
   "Haven't started",
@@ -25,28 +25,30 @@ export const PAUSE_REASONS = [
   'My job on the team changed',
 ]
 
-export const WISH_IDEAS = [
-  'Design 3D printed parts in OnShape',
-  'Create assemblies in OnShape',
-  'Learn Java for FTC',
-  'Learn how to implement a PID controller',
-  'Use the iLab machines safely',
-  'Design a portfolio',
-  "Lead by supporting my teammates' progress",
-]
-export const STEP_IDEAS = {
+/** Built-in ideas for each set-a-goal step. Program coaches can replace any list in Program settings. */
+export const DEFAULT_GOAL_IDEAS: Record<GoalIdeaKey, readonly string[]> = {
+  wish: [
+    'Design 3D printed parts in Onshape',
+    'Create assemblies in Onshape',
+    'Learn Java for FTC',
+    'Learn how to implement a PID controller',
+    'Use the shop tools safely',
+    'Design a portfolio',
+    "Lead by supporting my teammates' progress",
+  ],
   evidence: [
     'I can do it without help',
     'I can teach it to a teammate',
     'The code works on the robot in testing',
   ],
   obstacle: [
-    'I get distracted at Robotics',
+    'I get distracted',
     'I give up when something gets confusing',
     "I'm not sure where to start",
     'I run out of time',
     "I'm nervous to ask for help",
   ],
+  // The "then I will…" half of an if-then plan.
   plan: [
     'ask a teammate for 10 minutes of help',
     'do some research',
@@ -61,13 +63,24 @@ export const STEP_IDEAS = {
     'Build a cardboard prototype of ___',
   ],
 }
+export const GOAL_IDEA_KEYS = Object.keys(DEFAULT_GOAL_IDEAS) as GoalIdeaKey[]
+/** Program coaches can list up to this many ideas per step, each up to this many characters. */
+export const MAX_GOAL_IDEAS = 12
+export const MAX_GOAL_IDEA_LENGTH = 80
+
+/** A program's ideas for one step: its own list when it has one (even an empty one), else the defaults. */
+export function goalIdeasFor(
+  program: { goalIdeas?: Partial<Record<GoalIdeaKey, string[]>> } | null | undefined,
+  key: GoalIdeaKey,
+): readonly string[] {
+  return program?.goalIdeas?.[key] ?? DEFAULT_GOAL_IDEAS[key]
+}
 
 export type GoalStepKey = 'wish' | 'evidence' | 'by' | 'obstacle' | 'plan' | 'firstStep'
 export interface GoalStep {
   key: GoalStepKey
   title: string
   lead: string
-  example?: string
   starter?: string
   hint?: (value: string) => string
 }
@@ -76,17 +89,15 @@ export const GOAL_STEPS: readonly GoalStep[] = [
     key: 'wish',
     title: 'What do you want to learn or get better at?',
     lead: 'Start with a verb, like Learn, Design, Create, or Use.',
-    example: 'Learn Java for FTC',
     hint: (v) =>
       /\b(win|score|points|rank|first place|beat)\b/i.test(v)
-        ? 'That sounds like a result. Try naming the skill behind it, like “tune our autonomous paths.”'
+        ? 'That sounds like a result. Try naming the skill behind it.'
         : '',
   },
   {
     key: 'evidence',
     title: "How will you know you've got it?",
     lead: "I'll know I've got it when…",
-    example: 'I design a bracket on my own that gets printed and used on the robot',
     hint: (v) =>
       /\b(feel|understand|know|better|good at|comfortable)\b/i.test(v)
         ? "Could a teammate tell you've done it? Try something you can show or point to."
@@ -97,7 +108,6 @@ export const GOAL_STEPS: readonly GoalStep[] = [
     key: 'obstacle',
     title: "What's most likely to get in your way?",
     lead: 'Think about you, not other people. Something that might stop me is…',
-    example: 'I give up when tutorials get confusing',
     hint: (v) =>
       /\b(they|them|teammates?|nobody|everyone|coach|mentor)\b/i.test(v)
         ? 'Try naming something you can control. What do you tend to do?'
@@ -107,16 +117,13 @@ export const GOAL_STEPS: readonly GoalStep[] = [
     key: 'plan',
     title: 'Make an if-then plan',
     lead: 'When that obstacle shows up, what will you do?',
-    example:
-      "If a tutorial gets confusing, then I'll ask Jordan to sit with me for 10 minutes at the next build night",
     starter: 'If ___, then I will ___',
     hint: (v) => (v && !/\bthen\b/i.test(v) ? 'Try the shape “If ___, then I will ___.”' : ''),
   },
   {
     key: 'firstStep',
     title: "What's one thing you'll do this sprint?",
-    lead: 'This will become a Learning task assigned to you in the current sprint.',
-    example: 'Watch a tutorial on Onshape sketch constraints',
+    lead: 'This task will be added to your team board.',
     hint: (v) => (/_{2,}/.test(v) ? 'Fill in the blanks to make it specific.' : ''),
   },
 ]

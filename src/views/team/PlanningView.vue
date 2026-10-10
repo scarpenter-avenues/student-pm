@@ -2,14 +2,17 @@
 // Planning (the mock-up's "Backlog" tab): the unplanned Backlog, then every sprint as a collapsible section with its
 // objectives (editable here) and tasks, then "Past sprints (N)". Dense: 12px text, ~29px rows, one pinned column
 // header. Sprint dates are buttons that open the calendar: start (saved at once, then optionally an end) and end.
+// Drag rows to reorder them, or onto another sprint or the Backlog (open or collapsed) to move them there.
 import { computed, ref } from 'vue'
 import { writes } from '@/data'
 import { todayIso } from '@/model/dates'
 import { earliestSprintDate, rescheduleSprint } from '@/model/sprints'
 import type { Sprint, Task, WithId } from '@/model/types'
+import { useTaskEdits } from '@/composables/useTaskEdits'
 import { useTeam } from '@/composables/useTeamData'
 import { subtaskKey, useSelection } from '@/composables/useSelection'
 import { useToast } from '@/stores/toast'
+import { vDragSort, type TaskDrop } from '@/ui/dragSort'
 import { formatDotted, formatShortDate, plural } from '@/ui/format'
 import AnnouncementBanner from '@/components/tasks/AnnouncementBanner.vue'
 import BulkBar from '@/components/tasks/BulkBar.vue'
@@ -106,6 +109,20 @@ function moveTask(sprintId: string | null) {
   toast.show(`Moved “${task.title}” to ${team.sprintName(sprintId)}`)
 }
 
+// ---------- drag and drop ----------
+const edits = useTaskEdits(team)
+const dragTo = (key: string) => ({
+  group: 'planning',
+  key,
+  draggable: 'tr.task-row',
+  onDrop: (drop: TaskDrop) => {
+    const sprintId = drop.to === 'backlog' ? null : drop.to
+    const task = edits.drop(drop, { sprintId })
+    if (task && drop.from !== drop.to)
+      toast.show(`Moved “${task.title}” to ${team.sprintName(sprintId)}`)
+  },
+})
+
 // ---------- sprint dates ----------
 const calendar = ref<{
   index: number
@@ -175,7 +192,7 @@ const calendarNote = computed(() => {
       </thead>
 
       <template v-for="section in sections" :key="section.key">
-        <tbody class="section" :class="{ open: isOpen(section) }">
+        <tbody v-drag-sort="dragTo(section.key)" class="section" :class="{ open: isOpen(section) }">
           <tr class="section-row">
             <td colspan="7">
               <div class="section-head">
@@ -276,7 +293,12 @@ const calendarNote = computed(() => {
         </tr>
       </tbody>
       <template v-if="pastOpen">
-        <tbody v-for="section in past" :key="section.key" class="section past-sprint">
+        <tbody
+          v-for="section in past"
+          :key="section.key"
+          v-drag-sort="dragTo(section.key)"
+          class="section past-sprint"
+        >
           <tr class="section-row">
             <td colspan="7">
               <div class="section-head">

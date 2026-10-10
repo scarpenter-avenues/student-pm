@@ -1,15 +1,17 @@
 <script setup lang="ts">
 // Board, and My Tasks (`mine`): three columns tinted with the team color, exactly one screen tall, each scrolling on
 // its own. My Tasks is deliberately the simplest view: the current sprint, assigned to you, no filters, every column
-// kept so there's always somewhere to add a task.
+// kept so there's always somewhere to add a task. Drag cards to reorder them or to another column (status).
 import { computed, nextTick } from 'vue'
 import { writes } from '@/data'
 import { rankBetween } from '@/model/rank'
 import type { Status, Task, WithId } from '@/model/types'
+import { useTaskEdits } from '@/composables/useTaskEdits'
 import { useTaskView } from '@/composables/useTaskView'
 import { useSession } from '@/stores/session'
 import { useTaskPanel } from '@/stores/taskPanel'
 import { useToast } from '@/stores/toast'
+import { vDragSort, type TaskDrop } from '@/ui/dragSort'
 import { STATUSES } from '@/ui/options'
 import AnnouncementBanner from '@/components/tasks/AnnouncementBanner.vue'
 import SprintHeader from '@/components/tasks/SprintHeader.vue'
@@ -22,6 +24,8 @@ const { team, sprint, visible, filtered } = useTaskView(() => !!props.mine)
 const session = useSession()
 const panel = useTaskPanel()
 const toast = useToast()
+const edits = useTaskEdits(team)
+const onDrop = (drop: TaskDrop) => edits.drop(drop, { status: drop.to as Status })
 
 const columns = computed(() =>
   STATUSES.map((status) => ({
@@ -72,7 +76,10 @@ async function move(list: WithId<Task>[], index: number, step: -1 | 1) {
         <span class="column-name">{{ column.status }}</span>
         <span class="column-count">{{ column.tasks.length }}</span>
       </header>
-      <div class="task-list">
+      <div
+        v-drag-sort="{ group: 'board', key: column.status, draggable: '.task-card', onDrop }"
+        class="task-list"
+      >
         <TaskCard
           v-for="(task, index) in column.tasks"
           :key="task.id"

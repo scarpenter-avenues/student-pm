@@ -257,11 +257,16 @@
   display: grid;
   gap: 8px;
   margin: 0;
-  padding: 0;
+  /* Answers line up under the question's first letter, not its number. */
+  padding: 0 0 0 20px;
   border: 0;
 }
+.question-number {
+  display: inline-block;
+  width: 20px;
+}
 .checkin-question legend {
-  margin-bottom: 6px;
+  margin: 0 0 6px -20px;
   padding: 0;
   color: #2c343b;
   font-size: 14px;

@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .choice-menu {
   position: fixed;
-  z-index: 40;
+  z-index: 55;
   display: grid;
   min-width: 200px;
   max-height: 320px;

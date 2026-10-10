@@ -87,8 +87,8 @@ const timelines = ref<Record<string, InstanceType<typeof GoalTimeline> | null>>(
       <p v-if="!active.length && !list.loading.value" class="goal-more">
         {{
           paused.length
-            ? `${name} has paused ${paused.length === 1 ? 'their goal' : 'their goals'}. A quick conversation at build night can help pick one back up or set a new one.`
-            : `${name} hasn't set a goal yet. A quick conversation at build night usually helps.`
+            ? `${name} has paused ${paused.length === 1 ? 'their goal' : 'their goals'}. A quick conversation at the next meeting can help pick one back up or set a new one.`
+            : `${name} hasn't set a goal yet. A quick conversation at the next meeting usually helps.`
         }}
       </p>
       <PausedGoals v-if="paused.length" :goals="paused" :owner="false" />

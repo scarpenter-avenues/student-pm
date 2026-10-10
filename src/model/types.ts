@@ -66,7 +66,14 @@ export interface Program {
   auth: ProgramAuth
   subteamDefaults: Subteam[]
   currentSeasonId: string
+  /** The tappable ideas in the set-a-goal steps. A list that's missing uses the built-in defaults. */
+  goalIdeas?: Partial<Record<GoalIdeaKey, string[]>>
+  /** The plan "Import default" puts in a new huddle. Missing: the built-in one (src/model/huddles.ts). */
+  huddlePlan?: HuddlePlanRow[]
 }
+
+/** The set-a-goal steps that offer tappable ideas. */
+export type GoalIdeaKey = 'wish' | 'evidence' | 'obstacle' | 'plan' | 'firstStep'
 
 /** programs/{p}/public/signIn: what the sign-in page needs before anyone has signed in. Anyone can read it. */
 export interface PublicSignIn {
@@ -237,6 +244,8 @@ export interface HuddlePlanRow {
   text: string
   /** ["all"], ["adults"], or team ids */
   audience: string[]
+  /** Optional: the coach or mentor running it (member uid). */
+  runBy?: string
 }
 
 /** programs/{p}/huddles/{id} */
@@ -253,6 +262,8 @@ export interface Huddle {
   textHtml?: string
   text?: string
   readBy: string[]
+  /** Set when a program coach edits a posted huddle. */
+  editedAt?: Timestamp
 }
 
 /** programs/{p}/goalSummaries/{goalId}: what teammates may see. */

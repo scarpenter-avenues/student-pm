@@ -6,6 +6,7 @@
 import {
   arrayUnion,
   deleteDoc,
+  deleteField,
   doc,
   serverTimestamp,
   setDoc,
@@ -21,8 +22,10 @@ import {
   type Comment,
   type Goal,
   type GoalEvent,
+  type GoalIdeaKey,
   type GoalSummary,
   type Huddle,
+  type HuddlePlanRow,
   type Invite,
   type Member,
   type Sprint,
@@ -185,6 +188,17 @@ export function createWrites(refs: Refs, currentUid: () => string) {
       return updateDoc(refs.team(teamId), changes as UpdateData<Team>)
     },
 
+    // ---------- program ----------
+    /** Replaces one step's goal ideas; null goes back to the built-in defaults. Program coaches only. */
+    setGoalIdeas(key: GoalIdeaKey, ideas: string[] | null) {
+      return updateDoc(refs.program(), { [`goalIdeas.${key}`]: ideas ?? deleteField() })
+    },
+
+    /** Replaces the program's default huddle plan; null goes back to the built-in one. Program coaches only. */
+    setHuddlePlan(plan: HuddlePlanRow[] | null) {
+      return updateDoc(refs.program(), { huddlePlan: plan ?? deleteField() })
+    },
+
     // ---------- Team Home and events ----------
     saveHomePage(teamId: string, html: string) {
       return setDoc(refs.homePage(teamId), {
@@ -277,6 +291,13 @@ export function createWrites(refs: Refs, currentUid: () => string) {
         postedAt: serverTimestamp() as never,
         readBy: [currentUid()],
       })
+    },
+    /** A program coach's changes to a posted huddle. Doesn't re-notify anyone (readBy stays). */
+    updateHuddle(
+      id: string,
+      fields: Pick<Huddle, 'date' | 'statusHtml' | 'status' | 'plan' | 'notesHtml' | 'notes'>,
+    ) {
+      return updateDoc(refs.huddle(id), { ...fields, editedAt: serverTimestamp() })
     },
     deleteHuddle(id: string) {
       return deleteDoc(refs.huddle(id))

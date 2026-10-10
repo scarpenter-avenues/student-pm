@@ -127,7 +127,6 @@ const moveOptions = computed(() => [
     <header>
       <div>
         <h3>Subteams</h3>
-        <p>Rename, recolor, or add subteams. Changes apply to every task and objective.</p>
       </div>
       <button
         v-if="editable && editing !== 'new'"
@@ -137,6 +136,9 @@ const moveOptions = computed(() => [
       >
         ＋ Add subteam
       </button>
+      <span v-if="!editable" class="edit-note"
+        >🔒 Team leads, mentors, and coaches can change this</span
+      >
     </header>
 
     <form v-if="editing === 'new'" class="inline-form" @submit.prevent="commit">

@@ -279,7 +279,7 @@ function onFocus() {
 <style>
 /* The list is teleported to <body> (FloatingPanel), so these styles aren't scoped. */
 .assignee-menu {
-  z-index: 45;
+  z-index: 55;
   display: grid;
   max-height: 260px;
   margin: 0;

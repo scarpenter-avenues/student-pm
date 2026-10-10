@@ -61,7 +61,11 @@ watch(
     if (role !== 'student' && role !== 'lead') return
     prompted.value = true
     if (snoozed() || flow.current) return
-    if (!active.value.length || needs.value.length) flow.open({ kind: 'prompt' })
+    // A passed date with nothing else due skips the reminder and opens its choices directly.
+    const only = needs.value.length === 1 ? needs.value[0]! : null
+    if (only?.passed && !only.due && !only.unread)
+      flow.open({ kind: 'datePassed', goalId: only.goal.id })
+    else if (!active.value.length || needs.value.length) flow.open({ kind: 'prompt' })
   },
   { immediate: true },
 )
@@ -115,7 +119,11 @@ watch(
       />
       <ReflectionForm v-else-if="step.kind === 'reflection' && stepGoal" :goal="stepGoal" />
       <PauseForm v-else-if="step.kind === 'pause' && stepGoal" :goal="stepGoal" />
-      <DatePassed v-else-if="step.kind === 'datePassed' && stepGoal" :goal="stepGoal" />
+      <DatePassed
+        v-else-if="step.kind === 'datePassed' && stepGoal"
+        :goal="stepGoal"
+        @later="later"
+      />
       <GoalFinished v-else-if="step.kind === 'finished'" :active-count="active.length" />
       <GoalPrompt
         v-else-if="step.kind === 'prompt'"

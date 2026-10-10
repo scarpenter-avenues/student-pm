@@ -47,6 +47,29 @@ const goLabel = computed(() =>
         : 'Decide now'
     : 'View feedback',
 )
+/** One short paragraph per goal: what's due, then any new feedback. */
+function sentence({ goal, due, passed, unread }: GoalNeeds) {
+  const parts: string[] = []
+  if (passed)
+    parts.push(
+      `You were aiming for ${byLabel(goal.by, formatShortDate)}. Keep going, finish it, or change it.`,
+    )
+  if (due)
+    parts.push(
+      due.overdue
+        ? `Your ${due.sprint.name} check-in is due. It takes about a minute.`
+        : `${due.sprint.name} ends ${formatEventDate(due.sprint.end)}. Checking in takes about a minute.`,
+    )
+  if (unread) {
+    const also = parts.length ? ' also' : ''
+    parts.push(
+      unread === 1
+        ? `A coach${also} commented on this goal.`
+        : `Your coaches${also} left ${unread} new comments.`,
+    )
+  }
+  return parts.join(' ')
+}
 function goToGoals() {
   if (team.teamId.value)
     void router.push({ name: 'team', params: { teamId: team.teamId.value, tab: 'goals' } })
@@ -76,7 +99,6 @@ function resume() {
 
 <template>
   <template v-if="!active.length">
-    <p class="goal-kicker">Your goal</p>
     <h2>{{ paused.length ? 'Your goal is paused' : 'Set your learning goal' }}</h2>
     <p class="goal-lead">
       <template v-if="paused.length">
@@ -85,12 +107,11 @@ function resume() {
         ><template v-else> is</template> paused. Pick it back up, or set a new goal.
       </template>
       <template v-else-if="finishedBefore">
-        Nice work finishing your last goal. Pick what you want to learn next. It takes about 5
-        minutes.
+        Nice work finishing your last goal. Pick what you want to learn next.
       </template>
       <template v-else>
-        Pick one thing you want to learn this season. It takes about 5 minutes, and you'll check in
-        for about a minute at the end of each sprint.
+        Pick one thing you want to learn this season. You'll check in for about a minute at the end
+        of each sprint.
       </template>
     </p>
     <div class="goal-modal-actions">
@@ -112,30 +133,10 @@ function resume() {
     </div>
   </template>
   <template v-else>
-    <p class="goal-kicker">{{ active.length > 1 ? 'Your goals' : 'Your goal' }}</p>
     <h2>{{ title }}</h2>
     <template v-for="need in needs" :key="need.goal.id">
       <p class="statement">{{ goalStatement(need.goal.wish) }}</p>
-      <ul class="needs">
-        <li v-if="need.passed">
-          You were aiming for {{ byLabel(need.goal.by, formatShortDate) }}. Keep going, finish it,
-          or change it.
-        </li>
-        <li v-if="need.due">
-          {{
-            need.due.overdue
-              ? `Your ${need.due.sprint.name} check-in still needs doing. It takes about a minute.`
-              : `${need.due.sprint.name} ends ${formatEventDate(need.due.sprint.end)}. It takes about a minute.`
-          }}
-        </li>
-        <li v-if="need.unread">
-          {{
-            need.unread === 1
-              ? 'A coach commented on this goal'
-              : `${need.unread} new comments from your coaches`
-          }}
-        </li>
-      </ul>
+      <p class="need">{{ sentence(need) }}</p>
     </template>
     <div class="goal-modal-actions">
       <button type="button" class="goal-button" @click="emit('later')">Later</button>
@@ -146,14 +147,13 @@ function resume() {
 
 <style scoped>
 .statement {
-  margin: 12px 0 4px;
+  margin: 12px 0 2px;
   color: #202124;
   font-size: 15px;
   font-weight: 700;
 }
-.needs {
+.need {
   margin: 0;
-  padding-left: 20px;
   color: #3f474e;
   font-size: 14px;
 }

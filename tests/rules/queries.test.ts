@@ -87,6 +87,21 @@ describe('announcements and huddles', () => {
     await assertFails(getDocs(data('studentA').q.huddles()))
     await assertSucceeds(data('mentorA').writes.markHuddlesRead(['h1']))
   })
+  it('program coaches edit a posted huddle; mentors cannot', async () => {
+    const fields = {
+      date: '2026-10-10',
+      statusHtml: '<p>Updated</p>',
+      status: 'Updated',
+      plan: [{ time: '15:30', text: 'Safety check', audience: ['all'], runBy: 'mentorA' }],
+      notesHtml: '',
+      notes: '',
+    }
+    await assertSucceeds(data('coach').writes.updateHuddle('h1', fields))
+    const huddle = (await getDoc(data('coach').refs.huddle('h1'))).data()
+    expect(huddle?.status).toBe('Updated')
+    expect(huddle?.editedAt).toBeTruthy()
+    await assertFails(data('mentorA').writes.updateHuddle('h1', fields))
+  })
   it('anyone marks announcements read in their own state', async () => {
     const { refs, writes } = data('studentA')
     await assertSucceeds(writes.markAnnouncementsRead(['a1']))
@@ -307,5 +322,28 @@ describe('task writes', () => {
   })
   it('comments are added as yourself', async () => {
     await assertSucceeds(data('studentA').writes.addComment('teamA', 't1', 'Looks good'))
+  })
+})
+
+describe('program settings', () => {
+  it('program coaches set and reset goal ideas; nobody else can', async () => {
+    const coach = data('coach')
+    await assertSucceeds(coach.writes.setGoalIdeas('wish', ['Learn to weld safely']))
+    expect((await getDoc(coach.refs.program())).data()?.goalIdeas).toEqual({
+      wish: ['Learn to weld safely'],
+    })
+    await assertSucceeds(coach.writes.setGoalIdeas('wish', null))
+    expect((await getDoc(coach.refs.program())).data()?.goalIdeas).toEqual({})
+    await assertFails(data('mentorA').writes.setGoalIdeas('wish', []))
+    await assertFails(data('leadA').writes.setGoalIdeas('wish', []))
+  })
+  it('program coaches set and reset the default huddle plan; mentors cannot', async () => {
+    const coach = data('coach')
+    const plan = [{ time: '15:30', text: 'Safety check', audience: ['all'], runBy: 'mentorA' }]
+    await assertSucceeds(coach.writes.setHuddlePlan(plan))
+    expect((await getDoc(coach.refs.program())).data()?.huddlePlan).toEqual(plan)
+    await assertSucceeds(coach.writes.setHuddlePlan(null))
+    expect((await getDoc(coach.refs.program())).data()?.huddlePlan).toBeUndefined()
+    await assertFails(data('mentorA').writes.setHuddlePlan(plan))
   })
 })

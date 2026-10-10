@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// A goal's "by" date has passed: keep going (new date), I got it (wrap up), change my goal, or pause it.
+// A goal's "by" date has passed: keep going (new date), I got it (wrap up), change my goal, or pause it. Opens
+// directly on arrival when that's the only thing a student needs to do; Later hides the reminder for the session.
 import { byLabel } from '@/model/goals'
 import { goalStatement } from '@/model/types'
 import type { GoalDoc } from '@/composables/useGoals'
@@ -7,6 +8,7 @@ import { useGoalFlow } from '@/stores/goalFlow'
 import { formatShortDate } from '@/ui/format'
 
 const props = defineProps<{ goal: GoalDoc }>()
+const emit = defineEmits<{ later: [] }>()
 const flow = useGoalFlow()
 const id = props.goal.id
 </script>
@@ -38,7 +40,7 @@ const id = props.goal.id
     </button>
   </div>
   <div class="goal-modal-actions">
-    <button type="button" class="goal-button" @click="flow.close()">Later</button>
+    <button type="button" class="goal-button" @click="emit('later')">Later</button>
   </div>
 </template>
 

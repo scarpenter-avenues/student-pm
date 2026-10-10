@@ -162,7 +162,7 @@ onBeforeUnmount(() => props.anchor?.setAttribute('aria-expanded', 'false'))
 <style scoped>
 .calendar {
   position: fixed;
-  z-index: 40;
+  z-index: 55;
   width: 244px;
   padding: 8px;
   border: 1px solid var(--line);
