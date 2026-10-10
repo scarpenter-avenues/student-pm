@@ -28,13 +28,13 @@ export default defineConfig({
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: process.env.CI ? 'html' : 'list',
+  reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Maximum time each action such as `click()` can take. Defaults to 0 (no limit). */
     actionTimeout: 0,
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173',
+    baseURL: 'http://localhost:5173',
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
@@ -47,15 +47,11 @@ export default defineConfig({
   // Chromium only for now (Chromebooks and Android phones are the main devices).
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 
-  /* Needs the Firebase emulators with the demo data: `npm start` then `npm run seed:demo`. */
+  // The dev server in emulator mode (.env.emulator), locally and on CI. The tests also need the Firebase emulators
+  // with the demo data: `npm start` + `npm run seed:demo` locally; CI starts them with `firebase emulators:exec`.
   webServer: {
-    /**
-     * Use the dev server by default for faster feedback loop.
-     * Use the preview server on CI for more realistic testing.
-     * Playwright will re-use the local server if there is already a dev-server running.
-     */
-    command: process.env.CI ? 'npm run preview' : 'npm run dev',
-    port: process.env.CI ? 4173 : 5173,
+    command: 'npm run dev',
+    port: 5173,
     reuseExistingServer: !process.env.CI,
   },
 })

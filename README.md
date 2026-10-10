@@ -3,8 +3,8 @@
 Team boards, sprints, and learning goals for student teams: robotics, design, engineering, clubs, and class projects.
 Simple enough for middle schoolers, with planning tools for team leads and coaches, and built around student privacy.
 
-> **Status:** early development. The full interface exists as a clickable mock-up (`mockup/index.html`: open it in
-> Chrome); the production app is being built from it.
+> **Status:** early development. Every page of the design (`mockup/index.html`, a clickable mock-up: open it in Chrome)
+> now works in the app against the Firebase emulators. Next: polishing pages, and deploying to a real Firebase project.
 
 ## What it does
 
@@ -43,8 +43,10 @@ http://localhost:4000. `seed:demo` replaces whatever is in the emulators with "E
 accounts you can sign in as.
 
 Tests: `npm run test:unit`, `npm run test:rules` (security rules; starts its own emulator, or `npm run test:rules:live`
-while `npm start` is running), `npm run test:e2e` (needs `npm start` and `npm run seed:demo`).
-Other scripts: `npm run lint`, `npm run type-check`, `npm run build`.
+while `npm start` is running), `npm run test:e2e` (needs `npm start` and `npm run seed:demo`). CI runs all of them on
+every pull request. Other scripts: `npm run lint`, `npm run type-check`, `npm run build`.
+
+Want to help? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Deploying for your organization
 
@@ -56,6 +58,7 @@ people), choose how people sign in (Google Workspace domains, email/password, or
 
 - [docs/configuration.md](docs/configuration.md): setting up a deployment.
 - [docs/data-model.md](docs/data-model.md): Firestore collections, types, access rules, and queries.
+- [CONTRIBUTING.md](CONTRIBUTING.md): ground rules, setup, and checks for contributors.
 - [CLAUDE.md](CLAUDE.md): the design notes behind the mock-up (features, decisions, preferences).
 
 ## License
