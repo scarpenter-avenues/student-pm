@@ -57,7 +57,7 @@ const goalsDot = computed(() => {
 
 // Team colors tint the whole app (menus included), so the variables go on the root element.
 watchEffect(() => {
-  const vars = teamAccent(team.value?.color)
+  const vars = teamAccent(onDashboard.value ? 'blue' : team.value?.color)
   Object.entries(vars).forEach(([name, value]) =>
     document.documentElement.style.setProperty(name, value),
   )

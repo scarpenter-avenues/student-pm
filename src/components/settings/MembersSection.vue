@@ -51,9 +51,7 @@ function toggleSubteam(uid: string, current: readonly string[], subteamId: strin
     : [...current, subteamId]
   const order = props.team.subteams.value.map((s) => s.id).filter((id) => next.includes(id))
   const member = props.team.memberById.value.get(uid)
-  writes
-    .updateMember(uid, { subteams: { ...member?.subteams, [teamId.value]: order } })
-    .catch(fail)
+  writes.updateMember(uid, { subteams: { ...member?.subteams, [teamId.value]: order } }).catch(fail)
 }
 
 // ---------- remove ----------

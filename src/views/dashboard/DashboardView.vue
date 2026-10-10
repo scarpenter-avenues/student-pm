@@ -10,6 +10,8 @@ const views: Record<string, { component: Component; props?: Record<string, unkno
     component: defineAsyncComponent(() => import('@/views/HuddleView.vue')),
     props: { dashboard: true },
   },
+  tasks: { component: defineAsyncComponent(() => import('./DashboardTasksView.vue')) },
+  goals: { component: defineAsyncComponent(() => import('./DashboardGoalsView.vue')) },
   announcements: {
     component: defineAsyncComponent(() => import('@/views/AnnouncementsView.vue')),
     props: { dashboard: true },
