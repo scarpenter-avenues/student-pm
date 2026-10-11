@@ -75,6 +75,7 @@ interface Program {
   // plan in src/model/huddles.ts.
   huddlePlan?: HuddlePlanRow[];
   email?: { on: boolean };                        // set by the email sender when it's installed (docs/email.md)
+  githubSync?: { on: boolean };                   // set by the GitHub sync when it's installed (docs/github.md)
 }
 interface Subteam { id: string; name: string; color: SubteamColor; description: string }
 type SubteamColor = "red" | "green" | "yellow" | "blue" | "purple" | "teal" | "pink" | "gray";
@@ -149,7 +150,8 @@ interface Team {
   color: string;                                  // preset key ("green") or custom "#rrggbb"
   sprintDays: 7 | 10 | 14 | 21;
   subteams: Subteam[];                            // the team's own copy, editable in team Settings
-  github: { repo: string | null; importIssues: boolean; closeOnDone: boolean };
+  github: { repo: string | null; importIssues: boolean; closeOnDone: boolean;
+            subteamIds?: string[] };              // the subteams a new issue's task starts in
   createdAt: Timestamp;
 }
 ```
@@ -184,7 +186,8 @@ interface Task {
   descriptionHtml: string;                        // Tiptap output
   subtasks: Subtask[];                            // array order = step order
   goalId: string | null;                          // Learning tasks created from a goal (setup or check-in)
-  github: { repo: string; number: number; url: string; state: "open" | "closed" } | null;
+  github: { repo: string; number: number; url: string; state: "open" | "closed";
+            title?: string; descriptionHash?: string } | null;   // as last synced; see docs/github.md
   archived: { by: string; at: Timestamp; from: string } | null;   // from: "Sprint 3", "Backlog", …
   createdBy: string; createdAt: Timestamp; updatedAt: Timestamp;
 }

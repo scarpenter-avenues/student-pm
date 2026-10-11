@@ -1,8 +1,10 @@
-// The Apps Script side of the email sender: settings from Script properties, network through UrlFetchApp, mail
-// through MailApp (the Gmail account of whoever installs it), and a time trigger. `npm run build:email` bundles
-// this into dist-email/Code.gs; see docs/email.md for installing it.
+// The Apps Script side of the two background jobs a program can install: the email sender (docs/email.md) and the
+// GitHub sync (docs/github.md). Settings come from Script properties, network goes through UrlFetchApp, mail
+// through MailApp (the Gmail account of whoever installs it), and each job has its own time trigger. `npm run
+// build:email` bundles this into dist-email/Code.gs. Install either job or both.
 import { processOutbox, type Io } from './outbox'
 import { createStore, GOOGLE_HOSTS, type Request } from './rest'
+import { syncGithub, type GithubIo } from '../github/sync'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 declare const UrlFetchApp: any
@@ -66,9 +68,16 @@ const io: Io = {
   log: (message) => console.log(message),
 }
 
+/** The database, which needs only the project and program (email's other settings aren't required for it). */
 const store = () => {
-  const { projectId, programId } = settings()
-  return createStore(request, GOOGLE_HOSTS, projectId, programId)
+  const properties = PropertiesService.getScriptProperties()
+  const need = (key: string): string => {
+    const value = (properties.getProperty(key) ?? '').trim()
+    if (!value)
+      throw new Error(`Set the script property ${key} (Project Settings → Script properties).`)
+    return value
+  }
+  return createStore(request, GOOGLE_HOSTS, need('PROJECT_ID'), need('PROGRAM_ID'))
 }
 
 /** Runs every minute (see install): sends whatever is waiting. */
@@ -103,9 +112,9 @@ export function install() {
   )
 }
 
-function uninstallTriggers() {
+function uninstallTriggers(handler = TRIGGER) {
   for (const trigger of ScriptApp.getProjectTriggers())
-    if (trigger.getHandlerFunction() === TRIGGER) ScriptApp.deleteTrigger(trigger)
+    if (trigger.getHandlerFunction() === handler) ScriptApp.deleteTrigger(trigger)
 }
 
 /** Stops sending and tells the app that email is off. */
@@ -131,4 +140,71 @@ export function sendTestEmail() {
     html: `<p>This is a test from the Switchback email sender.</p><p><a href="${current.appUrl}">Open the app</a></p>`,
   })
   console.log(`Sent to ${to}. ${io.quota()} recipients left today.`)
+}
+
+// ---------- GitHub sync ----------
+const GITHUB_TRIGGER = 'syncIssues'
+
+function githubIo(): GithubIo {
+  const properties = PropertiesService.getScriptProperties()
+  // Optional for public repos, but without it GitHub's shared limit is quickly used up.
+  const token = (properties.getProperty('GITHUB_TOKEN') ?? '').trim()
+  return {
+    github(path) {
+      const response = UrlFetchApp.fetch(`https://api.github.com${path}`, {
+        method: 'get',
+        headers: {
+          Accept: 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        muteHttpExceptions: true,
+      })
+      let json: unknown = null
+      try {
+        json = JSON.parse(response.getContentText() || 'null')
+      } catch {
+        json = null
+      }
+      return { status: response.getResponseCode(), json }
+    },
+    cursor: (key) => properties.getProperty(`GITHUB_SINCE ${key}`),
+    setCursor: (key, iso) => properties.setProperty(`GITHUB_SINCE ${key}`, iso),
+    now: () => new Date(),
+    log: (message) => console.log(message),
+  }
+}
+
+/** Runs every 5 minutes (see installGithub): brings each connected team's issues up to date. */
+export function syncIssues() {
+  const lock = LockService.getScriptLock()
+  if (!lock.tryLock(1000)) return
+  try {
+    const results = syncGithub(store(), githubIo())
+    const worth = results.filter((result) => result.created || result.updated || result.note)
+    if (worth.length) console.log(JSON.stringify(worth))
+    return results
+  } finally {
+    lock.releaseLock()
+  }
+}
+
+/** Run once: syncs now (so you see it work), starts the 5-minute trigger, and tells the app the sync is on. */
+export function installGithub() {
+  const results = syncIssues() ?? []
+  uninstallTriggers(GITHUB_TRIGGER)
+  ScriptApp.newTrigger(GITHUB_TRIGGER).timeBased().everyMinutes(5).create()
+  store().setProgramSwitch('githubSync', true)
+  console.log(
+    results.length
+      ? `GitHub sync is on. ${results.map((r) => `${r.repo}: ${r.note ?? `${r.created} added, ${r.updated} updated`}`).join(' · ')}`
+      : 'GitHub sync is on. No team has connected a repo yet (Team Settings → GitHub).',
+  )
+}
+
+/** Stops syncing and tells the app the sync is off. Tasks already made stay. */
+export function uninstallGithub() {
+  uninstallTriggers(GITHUB_TRIGGER)
+  store().setProgramSwitch('githubSync', false)
+  console.log('GitHub sync is off.')
 }

@@ -37,13 +37,19 @@ function decodeFields(fields: Record<string, Value> = {}): Record<string, unknow
   return Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, decode(value)]))
 }
 
-type Plain = string | number | boolean | Date
+/** What the sender writes: plain values, dates (stored as timestamps), lists, and nested objects. */
+export type Plain = string | number | boolean | Date | null | Plain[] | { [key: string]: Plain }
 function encode(value: Plain): Value {
+  if (value === null) return { nullValue: null }
   if (value instanceof Date) return { timestampValue: value.toISOString() }
   if (typeof value === 'number') return { integerValue: String(value) }
   if (typeof value === 'boolean') return { booleanValue: value }
-  return { stringValue: value }
+  if (typeof value === 'string') return { stringValue: value }
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(encode) } }
+  return { mapValue: { fields: encodeFields(value) } }
 }
+const encodeFields = (fields: Record<string, Plain>) =>
+  Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, encode(value)]))
 
 const toDoc = (doc: RestDoc): Doc => ({
   id: doc.name.split('/').pop()!,
@@ -122,9 +128,7 @@ export function createStore(request: Request, hosts: Hosts, projectId: string, p
           {
             update: {
               name: doc.name,
-              fields: Object.fromEntries(
-                Object.entries(fields).map(([key, value]) => [key, encode(value)]),
-              ),
+              fields: encodeFields(fields),
             },
             updateMask: { fieldPaths: Object.keys(fields) },
             ...(ifUnchangedSince ? { currentDocument: { updateTime: ifUnchangedSince } } : {}),
@@ -137,10 +141,44 @@ export function createStore(request: Request, hosts: Hosts, projectId: string, p
     },
     /** Tells the app whether email is set up (programs/{p}.email.on). */
     setEmailOn(on: boolean) {
-      const response = request('PATCH', `${program}?updateMask.fieldPaths=email.on`, {
-        fields: { email: { mapValue: { fields: { on: encode(on) } } } },
+      this.setProgramSwitch('email', on)
+    },
+    /** A feature's on/off switch on the program doc (programs/{p}.<feature>.on), which the app reads. */
+    setProgramSwitch(feature: 'email' | 'githubSync', on: boolean) {
+      const response = request('PATCH', `${program}?updateMask.fieldPaths=${feature}.on`, {
+        fields: { [feature]: { mapValue: { fields: { on: encode(on) } } } },
       })
       if (response.status !== 200) throw fail('Updating the program', response)
+    },
+    /** Creates a document under the program at `path`; false if one is already there. */
+    create(path: string, fields: Record<string, Plain>): boolean {
+      const response = request('POST', `${root}:commit`, {
+        writes: [
+          {
+            update: {
+              name: `projects/${projectId}/databases/(default)/documents/programs/${programId}/${path}`,
+              fields: encodeFields(fields),
+            },
+            currentDocument: { exists: false },
+          },
+        ],
+      })
+      if (response.status === 400 || response.status === 409) return false
+      if (response.status !== 200) throw fail(`Creating ${path}`, response)
+      return true
+    },
+    /** The highest task rank in a team (order is priority; a new task goes after it), or null. */
+    lastRank(teamId: string): string | null {
+      const response = request('POST', `${program}/teams/${teamId}:runQuery`, {
+        structuredQuery: {
+          from: [{ collectionId: 'tasks' }],
+          orderBy: [{ field: { fieldPath: 'rank' }, direction: 'DESCENDING' }],
+          limit: 1,
+        },
+      })
+      if (response.status !== 200) throw fail('Reading task order', response)
+      const doc = (response.json as { document?: RestDoc }[]).find((row) => row.document)?.document
+      return doc ? String(toDoc(doc).data.rank ?? '') || null : null
     },
     /** uid → the email each person signs in with (from Firebase Authentication, not the database). */
     emails(): Record<string, string> {

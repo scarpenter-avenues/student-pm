@@ -58,6 +58,7 @@ people), choose how people sign in (Google Workspace domains, email/password, or
 
 - [docs/configuration.md](docs/configuration.md): setting up a deployment.
 - [docs/email.md](docs/email.md): optional email for announcements and huddles (a Google Apps Script you install).
+- [docs/github.md](docs/github.md): optional GitHub issues as tasks (the same script).
 - [docs/data-model.md](docs/data-model.md): Firestore collections, types, access rules, and queries.
 - [CONTRIBUTING.md](CONTRIBUTING.md): ground rules, setup, and checks for contributors.
 - [CLAUDE.md](CLAUDE.md): the design notes behind the mock-up (features, decisions, preferences).

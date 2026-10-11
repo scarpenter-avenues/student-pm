@@ -1,15 +1,25 @@
 <script setup lang="ts">
 // Connect the code team's GitHub repo (owner/repo or a github.com URL). Two options: new issues come into the
 // Backlog as GitHub issue tasks; closing an issue marks its task Done. Leads, mentors, and coaches edit; others see the
-// repo. Nothing syncs yet: that needs a server (see docs/data-model.md).
+// repo. The sync itself is a background job the program installs (docs/github.md); until it has, this says so.
 import { computed, ref } from 'vue'
 import { writes } from '@/data'
 import type { GithubSettings, Team, WithId } from '@/model/types'
+import { useSession } from '@/stores/session'
 import { useToast } from '@/stores/toast'
+import SelectButton from '@/components/ui/SelectButton.vue'
+import SubteamTags from '@/components/ui/SubteamTags.vue'
 
 const props = defineProps<{ team: WithId<Team>; editable: boolean }>()
 const toast = useToast()
+const session = useSession()
 const github = computed(() => props.team.github)
+/** The program's GitHub sync is installed and running. */
+const syncing = computed(() => !!session.program?.githubSync?.on)
+/** The chosen subteams that still exist. */
+const issueSubteams = computed(() =>
+  (github.value.subteamIds ?? []).filter((id) => props.team.subteams.some((s) => s.id === id)),
+)
 const input = ref('')
 const error = ref('')
 
@@ -61,11 +71,17 @@ function connect() {
         <a :href="`https://github.com/${github.repo}`" target="_blank" rel="noopener noreferrer">{{
           github.repo
         }}</a>
-        <span class="connected">Connected</span>
+        <span class="connected" :class="{ waiting: !syncing }">{{
+          syncing ? 'Syncing' : 'Connected'
+        }}</span>
         <button v-if="editable" type="button" class="link-button" @click="save({ repo: null })">
           Disconnect
         </button>
       </div>
+      <p v-if="!syncing" class="not-syncing">
+        Nothing syncs yet: your program's GitHub sync isn't turned on. A program coach sets it up
+        once for every team.
+      </p>
       <label class="option">
         <input
           type="checkbox"
@@ -78,6 +94,28 @@ function connect() {
           ><small>They show as GitHub issue tasks.</small></span
         >
       </label>
+      <div class="option subteam-option">
+        <span
+          ><strong>Subteam for new issues</strong
+          ><small>The subteam each new issue's task starts in.</small></span
+        >
+        <SelectButton
+          :model-value="issueSubteams"
+          label="Subteam for new issues"
+          placeholder="No subteam"
+          multiple
+          :disabled="!editable"
+          :options="team.subteams.map((s) => ({ value: s.id, label: s.name }))"
+          @update:model-value="save({ subteamIds: $event as string[] })"
+        >
+          <template #value="{ value }"
+            ><SubteamTags :subteams="team.subteams" :ids="value as string[]"
+          /></template>
+          <template #option="{ option }"
+            ><SubteamTags :subteams="team.subteams" :ids="[option.value as string]"
+          /></template>
+        </SelectButton>
+      </div>
       <label class="option">
         <input
           type="checkbox"
@@ -125,6 +163,21 @@ function connect() {
   color: #227346;
   font-size: 12px;
   font-weight: 650;
+}
+.connected.waiting {
+  background: #f0f2f4;
+  color: #59636d;
+}
+.not-syncing {
+  margin: 0 0 10px;
+  color: #8a5a12;
+  font-size: 13px;
+}
+.subteam-option {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-left: 21px;
 }
 .option {
   display: flex;

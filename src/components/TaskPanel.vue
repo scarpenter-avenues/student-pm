@@ -356,8 +356,11 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 const teamMark = computed(() => teamColorOf(team.team.value?.color).bg)
+// A task the GitHub sync added has no person to credit (its "GitHub" row links to the issue).
 const creator = computed(() =>
-  parent.value && !subtaskId.value ? team.nameOf(parent.value.createdBy) : '',
+  parent.value && !subtaskId.value && parent.value.createdBy !== 'github'
+    ? team.nameOf(parent.value.createdBy)
+    : '',
 )
 </script>
 
@@ -484,6 +487,22 @@ const creator = computed(() =>
               ><SubteamTags :subteams="team.subteams.value" :ids="[option.value as string]"
             /></template>
           </SelectButton>
+          <template v-if="!subtaskId && parent?.github">
+            <span class="label">GitHub</span>
+            <a
+              class="github-link"
+              :href="parent.github.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Issue #{{ parent.github.number }} ↗<span
+                class="issue-state"
+                :class="{ closed: parent.github.state === 'closed' }"
+                >{{
+                  parent.github.state === 'closed' ? 'Closed on GitHub' : 'Open on GitHub'
+                }}</span
+              ></a
+            >
+          </template>
           <span class="label">Type</span>
           <SelectButton
             class="panel-field"
@@ -749,6 +768,34 @@ const creator = computed(() =>
 }
 .detail-title:focus {
   border-color: var(--team-line);
+}
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  color: #2864c7;
+  font-size: 14px;
+}
+.github-link {
+  text-decoration: none;
+}
+.github-link:hover {
+  text-decoration: underline;
+}
+.issue-state {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: #e3f4ea;
+  color: #227346;
+  font-size: 11px;
+  font-weight: 650;
+  text-decoration: none;
+}
+.issue-state.closed {
+  background: #ede7f8;
+  color: #5b3fa6;
 }
 .detail-project {
   display: flex;

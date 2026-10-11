@@ -1,9 +1,17 @@
-// Bundles the email sender into one file for Apps Script: dist-email/Code.gs (plus its manifest, appsscript.json).
+// Bundles the email sender and the GitHub sync into one file for Apps Script: dist-email/Code.gs (plus its manifest, appsscript.json).
 // Apps Script only runs top-level functions, so the bundle is wrapped and each entry point gets a one-line stub.
 import { copyFileSync, mkdirSync } from 'node:fs'
 import { build } from 'esbuild'
 
-const ENTRY_POINTS = ['sendPending', 'install', 'uninstall', 'sendTestEmail']
+const ENTRY_POINTS = [
+  'sendPending',
+  'install',
+  'uninstall',
+  'sendTestEmail',
+  'syncIssues',
+  'installGithub',
+  'uninstallGithub',
+]
 
 mkdirSync('dist-email', { recursive: true })
 await build({

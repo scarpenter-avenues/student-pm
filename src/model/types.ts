@@ -72,6 +72,8 @@ export interface Program {
   huddlePlan?: HuddlePlanRow[]
   /** Set by the email sender when it's installed (scripts/email). Until then the app offers no email. */
   email?: { on: boolean }
+  /** Set by the GitHub sync when it's installed (scripts/github). Until then nothing syncs. */
+  githubSync?: { on: boolean }
 }
 
 /** The set-a-goal steps that offer tappable ideas. */
@@ -123,6 +125,8 @@ export interface GithubSettings {
   repo: string | null
   importIssues: boolean
   closeOnDone: boolean
+  /** The subteams a new issue's task starts in (none if missing or empty). */
+  subteamIds?: string[]
 }
 
 /** programs/{p}/teams/{teamId} */
@@ -178,6 +182,9 @@ export interface GithubIssueRef {
   number: number
   url: string
   state: 'open' | 'closed'
+  /** The issue's title and a fingerprint of its description as last synced (see scripts/github/sync.ts). */
+  title?: string
+  descriptionHash?: string
 }
 
 /** programs/{p}/teams/{t}/tasks/{taskId} */
