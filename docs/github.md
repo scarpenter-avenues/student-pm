@@ -22,7 +22,7 @@ never changes anything on GitHub.
 
 | Copied | Not copied |
 |---|---|
-| Title, issue number, link, open or closed | Who opened it, assignees, labels, milestones |
+| Title (the first 90 characters), issue number, link, open or closed | Who opened it, assignees, labels, milestones |
 | The description, as plain text (up to 5,000 characters) | Comments, reactions, pull requests |
 
 No GitHub usernames or profiles reach the database. People assign the task to teammates in the app as usual; that

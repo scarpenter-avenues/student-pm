@@ -11,12 +11,14 @@ const props = defineProps<{ goals: readonly GoalDoc[]; owner: boolean }>()
 const emit = defineEmits<{ resume: [goal: GoalDoc] }>()
 const open = ref(!props.owner)
 const timelines = ref<Set<string>>(new Set())
+// Shows or hides a paused goal's history.
 function toggleTimeline(id: string) {
   const next = new Set(timelines.value)
   if (next.has(id)) next.delete(id)
   else next.add(id)
   timelines.value = next
 }
+// The day a goal was paused, as "Oct 2".
 const pausedOn = (goal: GoalDoc) =>
   goal.pausedAt ? formatShortDate(localIso(goal.pausedAt.toDate())) : ''
 </script>

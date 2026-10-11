@@ -18,6 +18,7 @@ useClickAway(
   () => [panel.value?.element, props.anchor],
   () => emit('close'),
 )
+// Esc closes the popover (unless the picker inside already used it to close its own list).
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && !event.defaultPrevented) {
     event.preventDefault()

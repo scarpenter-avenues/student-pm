@@ -30,6 +30,7 @@ const students = computed(() =>
 )
 const window = computed(() => checkinWindow(team.sprints.value, todayIso()))
 
+// A date as "today", "yesterday", "3 days ago", or the date itself once it is a week or more back.
 function relative(iso: string) {
   const days = Math.round((Date.parse(todayIso()) - Date.parse(iso)) / 86_400_000)
   return days === 0

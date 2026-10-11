@@ -29,8 +29,10 @@ const month = ref(focus.value.slice(0, 7))
 const grid = computed(() => calendarMonth(month.value))
 const today = todayIso()
 
+// A day outside the allowed range can't be picked.
 const disabled = (iso: string) =>
   (!!props.min && iso < props.min) || (!!props.max && iso > props.max)
+// A day inside the shaded range (for example, the task's sprint).
 const inRange = (iso: string) => !!props.range && iso >= props.range.start && iso <= props.range.end
 // If the focus day isn't in this month (after paging), Tab lands on the first day you can pick.
 const tabStop = computed(() =>
@@ -39,6 +41,7 @@ const tabStop = computed(() =>
     : grid.value.days.find((iso) => !disabled(iso)),
 )
 
+// Puts keyboard focus on the current day, after the grid has been redrawn.
 async function focusDay() {
   await nextTick()
   popover.value
@@ -46,16 +49,19 @@ async function focusDay() {
     ?.focus({ preventScroll: true })
 }
 
+// Asks the parent to close. After Esc, focus goes back to the button that opened the calendar.
 function close(returnFocus = false) {
   emit('close')
   if (returnFocus) props.anchor?.focus()
 }
 
+// Tells the parent which day was picked. The parent decides whether that closes the calendar.
 function pick(iso: string) {
   focus.value = iso
   emit('pick', iso)
 }
 
+// Esc closes; the arrow keys move a day or a week at a time, changing month when they run off the edge.
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     event.preventDefault()
@@ -72,6 +78,7 @@ function onKeydown(event: KeyboardEvent) {
   void focusDay()
 }
 
+// The ‹ and › buttons: one month back or forward.
 function step(delta: number) {
   month.value = shiftMonth(month.value, delta)
 }

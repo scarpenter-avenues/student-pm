@@ -9,6 +9,10 @@ export interface CalendarMonth {
   days: string[]
 }
 
+/**
+ * One month laid out for the date picker: its title, how many blank cells come before the 1st, and its days as
+ * "YYYY-MM-DD".
+ */
 export function calendarMonth(month: string): CalendarMonth {
   const first = toUtcDate(`${month}-01`)
   const count = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate()
@@ -35,6 +39,7 @@ export const CALENDAR_MOVES: Record<string, number> = {
   ArrowDown: 7,
 }
 
+/** Where an arrow key takes you from a day: a day left or right, a week up or down. Null for any other key. */
 export function moveDay(iso: string, key: string): string | null {
   const days = CALENDAR_MOVES[key]
   return days === undefined ? null : shiftIsoDate(iso, days)

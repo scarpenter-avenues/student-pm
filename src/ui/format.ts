@@ -38,6 +38,7 @@ export function formatMoment(at: { toDate(): Date } | null | undefined, now = ne
   if (!at) return ''
   const date = at.toDate()
   const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+  // Midnight at the start of a date, so two times on the same day compare equal.
   const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
   const days = Math.round((day(now) - day(date)) / 86_400_000)
   if (days === 0) return `Today · ${time}`

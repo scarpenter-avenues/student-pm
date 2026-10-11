@@ -70,19 +70,23 @@ function sentence({ goal, due, passed, unread }: GoalNeeds) {
   }
   return parts.join(' ')
 }
+// Every button on the pop-up first takes the student to their Goals tab.
 function goToGoals() {
   if (team.teamId.value)
     void router.push({ name: 'team', params: { teamId: team.teamId.value, tab: 'goals' } })
 }
+// "Start": runs the steps that are due (date decisions, then check-ins), one after another.
 function go() {
   goToGoals()
   if (steps.value.length) flow.run(steps.value)
   else flow.close()
 }
+// "Set a goal": opens the wizard.
 function setGoal() {
   goToGoals()
   flow.open({ kind: 'wizard' })
 }
+// "Resume": un-pauses the first paused goal.
 function resume() {
   goToGoals()
   flow.close()

@@ -50,6 +50,7 @@ const mention = reactive({
   top: 0,
   command: null as ((item: MentionItem) => void) | null,
 })
+// The @ menu's contents and position, updated as you type after the @.
 function showMentions(props: {
   items: MentionItem[]
   command: (item: MentionItem) => void
@@ -64,12 +65,15 @@ function showMentions(props: {
     ...(rect ? { left: rect.left, top: rect.bottom + 4 } : {}),
   })
 }
+// Replaces the "@pat" you typed with the chosen mention.
 function pickMention(item: MentionItem | undefined) {
   if (!item || !mention.command) return
   const { id, label, kind, teamId, color } = item
   mention.command({ id, label, kind, teamId, color } as MentionItem)
   mention.open = false
 }
+// Keys while the @ menu is open: arrows move, Enter or Tab picks, Esc closes. Returns true if the key was used,
+// so the editor ignores it.
 function onMentionKey(event: KeyboardEvent): boolean {
   if (!mention.open || !mention.items.length) return false
   const count = mention.items.length
@@ -156,6 +160,7 @@ const FORMATS: { format: Format; label: string; title: string; text: string }[] 
   { format: 'bulletList', label: 'Bulleted list', title: 'Bulleted list', text: '•≡' },
 ]
 
+// A formatting button was clicked: turn that format on or off for the selection.
 function apply(format: Format) {
   const chain = editor.value?.chain().focus()
   if (!chain) return
@@ -169,8 +174,10 @@ function apply(format: Format) {
   }
   commands[format]().run()
 }
+// Whether the selection already has this format (so its button looks pressed).
 const isActive = (format: Format) => !!editor.value?.isActive(format)
 
+// Swaps the bubble between its formatting buttons and the link box.
 async function showLink(show: boolean) {
   linkMode.value = show
   if (!show) return
@@ -179,6 +186,7 @@ async function showLink(show: boolean) {
   linkInput.value?.focus()
   linkInput.value?.select()
 }
+// Turns the selection into a link. Only http and https addresses are accepted.
 function saveLink() {
   const current = editor.value
   if (!current) return
@@ -192,10 +200,12 @@ function saveLink() {
   current.chain().focus().extendMarkRange('link').setLink({ href }).run()
   linkMode.value = false
 }
+// Removes the link from the selection, leaving its text.
 function removeLink() {
   editor.value?.chain().focus().extendMarkRange('link').unsetLink().run()
   linkMode.value = false
 }
+// Esc in the link box goes back to the editor.
 function onLinkKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     event.preventDefault()
@@ -204,6 +214,7 @@ function onLinkKeydown(event: KeyboardEvent) {
     editor.value?.commands.focus()
   }
 }
+// ⌘K or Ctrl+K opens the link box for the selected text.
 function onKeydown(event: KeyboardEvent) {
   const current = editor.value
   if (
@@ -217,6 +228,7 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
+// The colors of a mention in the @ menu: a team's own color, a tint of it for a student, gray for an adult.
 function chipStyle(item: MentionItem) {
   if (item.kind === 'team') {
     const { bg, fg } = teamColorOf(item.color ?? undefined)

@@ -20,6 +20,10 @@ export function goalCreated(goal: Goal): string {
   return goal.createdAt ? localIso(goal.createdAt.toDate()) : todayIso()
 }
 
+/**
+ * The few fields the goal rules in model/goals.ts need, taken from a stored goal (whose times are Firestore
+ * timestamps, not date text).
+ */
 export function goalLike(goal: Goal): GoalLike {
   return {
     state: goal.state,
@@ -49,6 +53,7 @@ export function needsOf(goal: GoalDoc, sprints: readonly Sprint[], today = today
     unread: goal.state === 'active' ? goal.unreadFeedback : 0,
   }
 }
+/** Whether a goal has anything for its student to do: a check-in due, a passed date, or unread feedback. */
 export const needsAttention = (needs: GoalNeeds) => !!needs.due || needs.passed || needs.unread > 0
 
 /** The signed-in student's goals (every team and season: goals follow the student). */

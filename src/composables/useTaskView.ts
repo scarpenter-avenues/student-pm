@@ -6,6 +6,10 @@ import { useSession } from '@/stores/session'
 import { useTaskFilters } from '@/stores/taskFilters'
 import { useTeam } from './useTeamData'
 
+/**
+ * The tasks a task page shows: the chosen sprint's, narrowed by the filters. With `mine`, it is always the
+ * current sprint's tasks assigned to you, and the filters are ignored (that's My Tasks).
+ */
 export function useTaskView(mine: () => boolean) {
   const team = useTeam()
   const filters = useTaskFilters()
@@ -27,6 +31,7 @@ export function useTaskView(mine: () => boolean) {
       : team.tasksIn(shown.id)
   })
 
+  // Whether one task passes the subteam, assignee, and search filters.
   function matches(task: Task): boolean {
     const uid = session.member?.id ?? ''
     if (mine()) return task.assigneeIds.includes(uid)

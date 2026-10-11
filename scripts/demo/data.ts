@@ -19,11 +19,14 @@ export interface DemoUser {
   provider: 'google.com' | 'password'
 }
 
+// "Circuit Breakers" → "circuit-breakers". Sample ids are made from names, so they are readable in the
+// database.
 const slug = (name: string) =>
   name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
+// A timestamp at a given hour (UTC) on a date, for sample records that need a time.
 const at = (iso: string, hour = 9) =>
   Timestamp.fromDate(new Date(`${iso}T${String(hour).padStart(2, '0')}:00:00Z`))
 const P = `programs/${DEMO_PROGRAM_ID}`
@@ -60,6 +63,7 @@ const SUBTEAMS = [
     description: 'Driving, strategy, and alliance coordination',
   },
 ]
+// A subteam's id from its name.
 const subteamId = (name: string) => SUBTEAMS.find((s) => s.name === name)?.id ?? slug(name)
 
 interface DemoTeam {
@@ -169,11 +173,18 @@ CB_SPRINTS[3]!.objectives = [
   ['Engineering portfolio draft ready for our first qualifier', [], false],
 ]
 
+// The id of the season's nth sprint (0 is the first).
 const sprintId = (index: number) => `${SEASON.id}-s${index + 1}`
 
+/**
+ * Builds the whole sample program as a list of documents and sign-in accounts. Nothing is written here; seed-
+ * demo.ts does that. `today` places the sample around the current date, so there's always a current sprint and
+ * something due.
+ */
 export function buildDemo(today: string): { docs: Doc[]; users: DemoUser[] } {
   const docs: Doc[] = []
   const users: DemoUser[] = []
+  // Queues one document: where it goes and what it holds.
   const add = (path: string, data: Record<string, unknown>) => docs.push([path, data])
   // "Today" for the sample: inside the season, so there's always a current sprint.
   const reference = today < SEASON.start ? '2026-10-08' : today > SEASON.end ? SEASON.end : today
@@ -358,6 +369,7 @@ export function buildDemo(today: string): { docs: Doc[]; users: DemoUser[] } {
     github: { repo: null, importIssues: true, closeOnDone: true },
     createdAt: at('2025-08-20'),
   })
+  // A sample person's id, from their name.
   const uidOf = (name: string) => slug(name)
 
   // ---------- tasks ----------
@@ -764,6 +776,7 @@ export function buildDemo(today: string): { docs: Doc[]; users: DemoUser[] } {
     reflection?: { helped: string; different: string; next: string }
     events: DemoEvent[]
   }
+  // Adds one goal: its private record, the summary teammates see, and its history.
   const addGoal = (goal: DemoGoal) => {
     const teamId = slug(goal.team)
     const studentId = uidOf(goal.student)
@@ -1209,6 +1222,7 @@ export function buildDemo(today: string): { docs: Doc[]; users: DemoUser[] } {
     const teamIndex = TEAMS.indexOf(team)
     goals.forEach(([index, wish, status, createdAgo, checkins, feedbackAgo]) => {
       const student = team.students[index]!
+      // A date some days before the sample's "today".
       const day = (ago: number) => shiftIsoDate(reference, -ago)
       const done = status === 'Got it'
       const events: DemoEvent[] = [

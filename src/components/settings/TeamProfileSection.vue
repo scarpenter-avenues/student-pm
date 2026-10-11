@@ -26,6 +26,7 @@ const changed = computed(
     number.value.trim() !== props.team.number ||
     color.value !== props.team.color,
 )
+// Saves the team's name, number, and color.
 function save() {
   const clean = name.value.replace(/\s+/g, ' ').trim()
   if (!clean) return toast.show('The team needs a name.')

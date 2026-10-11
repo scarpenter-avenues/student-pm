@@ -8,6 +8,7 @@ import { createAdmin } from './admin'
 
 export const refs = createRefs(db, programId)
 export const queries = createQueries(refs)
+// Writes record who made them. Asking for the uid while signed out is a bug, so it throws.
 const currentUid = () => {
   const uid = auth.currentUser?.uid
   if (!uid) throw new Error('Not signed in.')

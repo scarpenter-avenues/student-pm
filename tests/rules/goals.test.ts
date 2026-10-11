@@ -1,3 +1,5 @@
+// Security rules tests for goals: teammates see only the statement and status, the plan and history stay with the
+// student and their coaches, and nobody can write a goal that isn't theirs.
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 import {
   assertFails,
@@ -76,6 +78,7 @@ describe('goal privacy', () => {
 })
 
 describe('writing goals', () => {
+  // A valid new goal for studentA; tests change one field at a time to see what the rules refuse.
   const newGoal = (overrides: Record<string, unknown> = {}) => ({
     studentId: 'studentA',
     teamId: 'teamA',
@@ -155,6 +158,7 @@ describe('goal history (events)', () => {
     await assertFails(getDoc(doc(as(env, 'studentA2'), `${events}/e1`)))
   })
   it('the student writes check-ins and replies; only adults write feedback', async () => {
+    // A valid entry on a goal's timeline (a check-in, feedback, or a reply) from a given author.
     const entry = (type: string, authorId: string, teamId = 'teamA') => ({
       type,
       authorId,

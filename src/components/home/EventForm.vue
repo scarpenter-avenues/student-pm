@@ -34,6 +34,7 @@ const typeOptions = (Object.keys(EVENT_ICONS) as EventType[]).map((type) => ({
   label: `${EVENT_ICONS[type]} ${type}`,
 }))
 
+// Saves the event if it has a title and a date.
 function submit() {
   const title = fields.title.trim()
   if (!title) return titleInput.value?.focus()
@@ -51,6 +52,7 @@ function submit() {
     fields.scope,
   )
 }
+// Esc cancels (unless an open calendar or menu inside already used it).
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && !event.defaultPrevented) {
     event.preventDefault()

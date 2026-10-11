@@ -22,6 +22,7 @@ const groups = computed(() => {
   return list
 })
 const open = ref<Set<string>>(new Set())
+// Opens or closes one past goal's details.
 function toggle(id: string) {
   const next = new Set(open.value)
   if (next.has(id)) next.delete(id)
@@ -34,6 +35,7 @@ const outcome: Record<GoalDoc['state'], string> = {
   done: 'Got it',
   changed: 'Changed',
 }
+// The team a goal belonged to and when it ran: "Circuit Breakers · Sep 8 – Oct 2" (or "– now", "– paused").
 function span(goal: GoalDoc) {
   const start = formatShortDate(goalCreated(goal))
   const end = goal.finishedAt

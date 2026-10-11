@@ -19,12 +19,16 @@ export const TEAM_COLORS: Record<string, BadgeColors> = {
   gray: { bg: '#b8c0c7', fg: '#2e363d' },
 }
 
+// A custom color: "#" and six hex digits.
 const isHex = (color: string) => /^#[0-9a-f]{6}$/i.test(color)
 
+// "#74d69b" → [116, 214, 155]: the red, green, and blue parts as numbers.
 function channels(hex: string): number[] {
   return [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16))
 }
 
+// How bright a color looks to the eye, from 0 (black) to 1 (white). Green counts most and blue least. Used to
+// choose dark or light text on top of it.
 function luminance(hex: string): number {
   const [red = 0, green = 0, blue = 0] = channels(hex).map((value) => value / 255)
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue

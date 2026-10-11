@@ -17,6 +17,7 @@ const router = useRouter()
 const { unread, markRead } = useHuddles()
 const { nameOf } = useNames(useTeam())
 
+// The huddles this person tapped Later on, in this browser tab.
 function laterIds(): string[] {
   try {
     return JSON.parse(sessionStorage.getItem(KEY) ?? '[]') as string[]
@@ -33,6 +34,7 @@ const items = computed(() =>
 )
 const shown = computed(() => session.isAdult && !onHuddlePage.value && items.value.length > 0)
 
+// "Later": hides the ones showing until a new tab is opened. They stay unread.
 function dismiss() {
   later.value = [...later.value, ...items.value.map((item) => item.id)]
   try {
@@ -41,9 +43,11 @@ function dismiss() {
     // Private windows can refuse storage; it just shows again next time.
   }
 }
+// "Got it": marks the ones showing as read.
 function gotIt() {
   void markRead(items.value.map((item) => item.id))
 }
+// "See all huddles": the dashboard tab for coaches, the Huddle page for mentors.
 function seeAll() {
   void router.push(
     session.isCoach ? { name: 'dashboard', params: { tab: 'huddle' } } : { name: 'huddle' },

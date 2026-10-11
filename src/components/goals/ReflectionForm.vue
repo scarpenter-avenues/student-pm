@@ -12,6 +12,7 @@ const answers = reactive({ helped: '', different: '', next: '' })
 const first = ref<HTMLInputElement | null>(null)
 onMounted(() => first.value?.focus())
 
+// "Got it": saves the reflection answers and moves the goal to the student's history.
 function finish() {
   actions.finish(props.goal, {
     helped: answers.helped.trim(),

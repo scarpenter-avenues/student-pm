@@ -30,6 +30,7 @@ const props = defineProps<{
 }>()
 const session = useSession()
 const toast = useToast()
+// If a save is refused, say so.
 const fail = (e: Error) => toast.show(`Couldn't save: ${e.message}`)
 
 interface Person {
@@ -59,6 +60,7 @@ const people = computed<Person[]>(() => [
   })),
 ])
 const ORDER: Role[] = ['coach', 'mentor', 'lead', 'student']
+// Coaches, mentors, leads, then students; within a role, by name.
 const byRole = (a: Person, b: Person) =>
   ORDER.indexOf(a.role) - ORDER.indexOf(b.role) || a.name.localeCompare(b.name)
 
@@ -67,6 +69,7 @@ const search = ref('')
 const collapsed = ref<Set<string>>(new Set())
 const groups = computed(() => {
   const query = search.value.trim().toLowerCase()
+  // Does this person match the search box?
   const matches = (p: Person) => !query || p.name.toLowerCase().includes(query)
   const list = [
     {
@@ -99,12 +102,14 @@ const total = computed(() => people.value.length)
 const noTeam = computed(
   () => people.value.filter((p) => p.role !== 'coach' && !p.teamIds.length).length,
 )
+// Collapses or opens a group.
 function toggleGroup(key: string) {
   const next = new Set(collapsed.value)
   if (next.has(key)) next.delete(key)
   else next.add(key)
   collapsed.value = next
 }
+// A search or a team filter opens every group shown.
 const isOpen = (key: string) =>
   !!search.value.trim() || filter.value !== 'all' || !collapsed.value.has(key)
 
@@ -112,8 +117,10 @@ const roleOptions = (Object.keys(ROLE_LABELS) as Role[]).map((role) => ({
   value: role,
   label: ROLE_LABELS[role],
 }))
+// Is this row you? (You can't change your own role or remove yourself.)
 const self = (p: Person) => p.member?.id === session.member?.id
 
+// Changes a role, for a member or for an invite that hasn't been used yet.
 function setRole(p: Person, role: Role) {
   // Coaches cover every team; someone leaving the mentor role keeps only their first team.
   const teamIds = role === 'coach' ? [] : role !== 'mentor' ? p.teamIds.slice(0, 1) : p.teamIds
@@ -122,11 +129,13 @@ function setRole(p: Person, role: Role) {
   writes.updateMember(p.member.id, { role }).catch(fail)
   if (teamIds.join() !== p.teamIds.join()) admin.setTeams(p.member, teamIds).catch(fail)
 }
+// Changes someone's team or teams. Their subteams reset, since subteams belong to a team.
 function setTeams(p: Person, teamIds: string[]) {
   if (p.invite) return writes.saveInvite({ ...p.invite, teamIds, subteams: {} }).catch(fail)
   if (p.member) admin.setTeams(p.member, teamIds).catch(fail)
 }
 const confirming = ref<string | null>(null)
+// Removes someone from the program (or withdraws their invite).
 function remove(p: Person) {
   confirming.value = null
   if (p.invite) writes.deleteInvite(p.invite.email).catch(fail)
@@ -138,6 +147,7 @@ function remove(p: Person) {
 const adding = ref(false)
 const draft = ref({ name: '', email: '', role: 'student' as Role, teamIds: [] as string[] })
 const error = ref('')
+// Opens the Add person form, blank.
 function startAdd() {
   draft.value = {
     name: '',
@@ -151,6 +161,7 @@ function startAdd() {
   error.value = ''
   adding.value = true
 }
+// Adds a person by writing an invite for their email; they join the first time they sign in with it.
 function add() {
   const name = draft.value.name.replace(/\s+/g, ' ').trim()
   const email = draft.value.email.trim().toLowerCase()

@@ -70,6 +70,11 @@ export function shortName(raw: string): string {
     : name
 }
 
+/**
+ * Checks every row of an import and says, for each, whether it's ready or why it will be skipped (bad email,
+ * already in the program, listed twice, unknown role or team). Nothing is saved here; the preview shows this
+ * result first.
+ */
 export function checkRows(
   rows: string[][],
   options: {

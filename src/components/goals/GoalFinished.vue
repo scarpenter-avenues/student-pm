@@ -8,6 +8,8 @@ const props = defineProps<{ activeCount: number }>()
 const flow = useGoalFlow()
 const toast = useToast()
 const queued = flow.hasQueued()
+// "Set my next goal": opens the wizard, unless the student already has as many goals as they can work on at
+// once.
 function setNext() {
   if (props.activeCount >= MAX_ACTIVE_GOALS)
     return toast.show(

@@ -26,6 +26,7 @@ const emit = defineEmits<{ 'update:modelValue': [iso: string | null] }>()
 const button = ref<HTMLButtonElement | null>(null)
 const open = ref(false)
 
+// A day was picked: close, report it if it changed, and return focus to the button.
 function pick(iso: string) {
   open.value = false
   if (iso !== props.modelValue) emit('update:modelValue', iso)

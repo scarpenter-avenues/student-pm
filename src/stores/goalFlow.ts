@@ -38,6 +38,7 @@ export const useGoalFlow = defineStore('goalFlow', () => {
       current.value = queue.shift() ?? null
     },
     hasQueued: () => queue.length > 0,
+    /** Closes the pop-up and drops any steps still waiting behind it. */
     close() {
       queue = []
       current.value = null

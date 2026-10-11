@@ -23,6 +23,10 @@ export function htmlToText(html: string): string {
     .trim()
 }
 
+/**
+ * Makes text safe to put inside HTML: <, >, &, and " become their harmless written-out forms, so nothing typed
+ * can act as a tag.
+ */
 export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')

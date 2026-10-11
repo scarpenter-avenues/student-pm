@@ -22,6 +22,10 @@ import type {
 } from '@/model/types'
 import { converter } from './converter'
 
+/**
+ * The address of every collection and document under one program. Everything lives under programs/{programId},
+ * so one program can never reach another's data.
+ */
 export function createRefs(db: Firestore, programId: string) {
   const col = <T extends DocumentData>(...path: string[]) =>
     collection(db, 'programs', programId, ...path).withConverter(converter<T>())

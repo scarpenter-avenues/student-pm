@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// What a student, lead, or mentor sees when they're in the program but not on any team yet.
 import { useSession } from '@/stores/session'
 
 const session = useSession()

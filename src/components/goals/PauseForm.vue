@@ -11,6 +11,7 @@ const props = defineProps<{ goal: GoalDoc }>()
 const flow = useGoalFlow()
 const actions = useGoalActions()
 const reason = ref<string | null>(null)
+// Pauses the goal with the reason tapped, then moves to the next queued step (if any).
 function pause() {
   actions.pause(props.goal, reason.value)
   flow.next()

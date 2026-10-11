@@ -1,4 +1,6 @@
 <script setup lang="ts">
+// Shows the current toast: the short message at the bottom of the screen after an action ("Check-in saved"), with
+// its Undo button if it has one. The message itself lives in stores/toast.
 import { useToast } from '@/stores/toast'
 
 const toast = useToast()

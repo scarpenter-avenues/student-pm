@@ -22,6 +22,8 @@ export interface Doc {
   data: Record<string, unknown>
 }
 
+// Firestore's REST API wraps every value in its type ({ stringValue: "x" }). These unwrap what comes back into
+// ordinary values.
 function decode(value: Value): unknown {
   if ('stringValue' in value) return value.stringValue
   if ('booleanValue' in value) return value.booleanValue
@@ -33,12 +35,14 @@ function decode(value: Value): unknown {
   if ('mapValue' in value) return decodeFields((value.mapValue as RestDoc).fields)
   return null
 }
+// Unwraps every field of a document.
 function decodeFields(fields: Record<string, Value> = {}): Record<string, unknown> {
   return Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, decode(value)]))
 }
 
 /** What the sender writes: plain values, dates (stored as timestamps), lists, and nested objects. */
 export type Plain = string | number | boolean | Date | null | Plain[] | { [key: string]: Plain }
+// The reverse: wraps an ordinary value in its Firestore type before sending it.
 function encode(value: Plain): Value {
   if (value === null) return { nullValue: null }
   if (value instanceof Date) return { timestampValue: value.toISOString() }
@@ -48,9 +52,11 @@ function encode(value: Plain): Value {
   if (Array.isArray(value)) return { arrayValue: { values: value.map(encode) } }
   return { mapValue: { fields: encodeFields(value) } }
 }
+// Wraps every field of an object.
 const encodeFields = (fields: Record<string, Plain>) =>
   Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, encode(value)]))
 
+// A REST document as something easier to use: its id, its unwrapped fields, and when it last changed.
 const toDoc = (doc: RestDoc): Doc => ({
   id: doc.name.split('/').pop()!,
   name: doc.name,
@@ -69,9 +75,14 @@ export const GOOGLE_HOSTS: Hosts = {
   auth: 'https://identitytoolkit.googleapis.com',
 }
 
+/**
+ * The database, as the sender sees it: a handful of reads and writes under one program. `request` does the
+ * actual network call, so tests can point this at the emulator.
+ */
 export function createStore(request: Request, hosts: Hosts, projectId: string, programId: string) {
   const root = `${hosts.firestore}/v1/projects/${projectId}/databases/(default)/documents`
   const program = `${root}/programs/${programId}`
+  // An error that says what was being attempted and what the server answered.
   const fail = (what: string, response: Response) =>
     new Error(`${what} failed (${response.status}): ${JSON.stringify(response.json).slice(0, 300)}`)
 

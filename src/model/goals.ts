@@ -136,6 +136,7 @@ export function planCondition(obstacle: string): string {
 
 /** Fill-in-the-blank text still has blanks ("___"). */
 export const hasBlanks = (text: string) => /_{2,}/.test(text)
+/** Tidies typed text: runs of spaces and line breaks become one space, and the ends are trimmed. */
 export const cleanText = (text: string) => text.replace(/\s+/g, ' ').trim()
 
 export interface GoalLike {
@@ -149,6 +150,7 @@ export interface GoalLike {
   unreadFeedback: number
 }
 
+/** An active goal whose "by" date is behind us, so the student needs to decide what's next. */
 export function datePassed(goal: Pick<GoalLike, 'state' | 'by'>, today: string): boolean {
   return goal.state === 'active' && !!goal.by.date && goal.by.date < today
 }

@@ -20,6 +20,7 @@ useClickAway(
   () => (open.value = false),
 )
 
+// "All teams" stands alone: ticking it clears the rest, and ticking anything else clears it.
 function toggle(value: string, on: boolean) {
   if (value === 'all') return emit('update:modelValue', ['all'])
   const next = on
@@ -37,6 +38,7 @@ const summary = computed(() => {
     ? (props.teams.find((t) => t.id === value[0])?.name ?? '1 team')
     : `${teams} teams`
 })
+// Esc closes the menu, and nothing behind it.
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && open.value) {
     event.preventDefault()

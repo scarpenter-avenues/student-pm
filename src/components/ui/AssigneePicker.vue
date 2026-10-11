@@ -46,12 +46,14 @@ const matches = computed(() => {
     )
 })
 
+// Adds a person and clears the search box, ready for the next.
 function add(person: Person | undefined) {
   if (!person) return
   emit('update:modelValue', [...props.modelValue, person.id])
   query.value = ''
   active.value = 0
 }
+// Takes a person off.
 function remove(id: string) {
   emit(
     'update:modelValue',
@@ -60,6 +62,8 @@ function remove(id: string) {
   input.value?.focus()
 }
 
+// ↑ and ↓ move through the matches, Enter adds the highlighted one, Backspace in an empty box removes the last
+// person, and Esc closes the list.
 function onKeydown(event: KeyboardEvent) {
   const count = Math.max(1, matches.value.length)
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -92,6 +96,7 @@ function parts(name: string) {
       }
 }
 
+// Clicking or tabbing into the box opens the list.
 function onFocus() {
   open.value = true
 }

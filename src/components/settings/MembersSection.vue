@@ -16,6 +16,7 @@ import SubteamTags from '@/components/ui/SubteamTags.vue'
 const props = defineProps<{ team: TeamData }>()
 const session = useSession()
 const toast = useToast()
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 const teamId = computed(() => props.team.teamId.value!)
 const manage = computed(() => props.team.can.value.manage)
@@ -42,9 +43,12 @@ const roleOptions = computed(() =>
     label: ROLE_LABELS[role],
   })),
 )
+// Changes someone's role.
 function setRole(uid: string, role: Role) {
   writes.updateMember(uid, { role }).catch(fail)
 }
+// Puts a person on a subteam, or takes them off. Subteams are kept per team, since a mentor can be on several
+// teams.
 function toggleSubteam(uid: string, current: readonly string[], subteamId: string) {
   const next = current.includes(subteamId)
     ? current.filter((id) => id !== subteamId)
@@ -56,6 +60,7 @@ function toggleSubteam(uid: string, current: readonly string[], subteamId: strin
 
 // ---------- remove ----------
 const confirming = ref<string | null>(null)
+// Takes someone off this team. They stay in the program (a coach can add them to another team).
 function remove(uid: string) {
   const member = props.team.memberById.value.get(uid)
   if (!member) return
@@ -83,6 +88,7 @@ function remove(uid: string) {
   confirming.value = null
   toast.show(`${member.displayName} removed from ${props.team.team.value?.name}`)
 }
+// Withdraws an invite that hasn't been used yet.
 function cancelInvite(email: string, name: string) {
   writes.deleteInvite(email).catch(fail)
   toast.show(`Removed ${name}'s invite`)
@@ -92,11 +98,14 @@ function cancelInvite(email: string, name: string) {
 const adding = ref(false)
 const draft = ref({ name: '', email: '', role: 'student' as Role, subteamIds: [] as string[] })
 const error = ref('')
+// Opens the Add member form, blank.
 function startAdd() {
   draft.value = { name: '', email: '', role: 'student', subteamIds: [] }
   error.value = ''
   adding.value = true
 }
+// Adds a member. Nobody is created yet: this writes an invite for the email, and the person joins the first
+// time they sign in with it.
 function add() {
   const name = draft.value.name.replace(/\s+/g, ' ').trim()
   const email = draft.value.email.trim().toLowerCase()

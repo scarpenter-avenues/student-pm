@@ -12,6 +12,7 @@ import SubteamTags from '@/components/ui/SubteamTags.vue'
 
 const props = defineProps<{ defaults: readonly Subteam[] }>()
 const toast = useToast()
+// The defaults are one list on the program; any change saves the list. They are copied into new teams only.
 function save(next: Subteam[]) {
   updateDoc(refs.program(), { subteamDefaults: next }).catch((e: Error) =>
     toast.show(`Couldn't save: ${e.message}`),
@@ -19,10 +20,12 @@ function save(next: Subteam[]) {
 }
 const editing = ref<string | 'new' | null>(null)
 const draft = ref({ name: '', description: '' })
+// Opens the form on a subteam, or blank to add one.
 function start(subteam: Subteam | null) {
   editing.value = subteam?.id ?? 'new'
   draft.value = { name: subteam?.name ?? '', description: subteam?.description ?? '' }
 }
+// Saves the form. Names must be unique.
 function commit() {
   const name = draft.value.name.replace(/\s+/g, ' ').trim()
   if (!name) return

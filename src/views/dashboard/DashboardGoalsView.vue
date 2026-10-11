@@ -59,6 +59,8 @@ const NONE: never[] = []
 const student = computed(() =>
   typeof route.query.student === 'string' ? route.query.student : null,
 )
+// Opens one student's goals (or goes back to the list with null). The student is kept in the address, so Back
+// works and the page can be reloaded.
 function open(studentId: string | null) {
   void router.push({
     name: 'dashboard',

@@ -23,6 +23,10 @@ function defaultProject(): string | undefined {
   }
 }
 
+/**
+ * Connects with admin rights (which skip the security rules) to the local emulators or to a real project. A
+ * real project needs credentials on this machine; see checkCredentials.
+ */
 export function connectAdmin({ emulator, project }: AdminOptions) {
   const projectId = emulator ? EMULATOR_PROJECT : (project ?? defaultProject())
   if (emulator) {
@@ -64,8 +68,12 @@ export async function checkEmulator(): Promise<void> {
   }
 }
 
+/**
+ * Splits a command line into its flags ("--dry-run") and its values ("--project my-id" or "--project=my-id").
+ */
 export function parseArgs(argv: string[]) {
   const flags = new Set(argv.filter((arg) => arg.startsWith('--') && !arg.includes('=')))
+  // The value given for an option, in either form; undefined if it was not given.
   const value = (name: string) => {
     const inline = argv.find((arg) => arg.startsWith(`--${name}=`))
     if (inline) return inline.split('=').slice(1).join('=')

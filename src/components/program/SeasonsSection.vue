@@ -20,6 +20,7 @@ const props = defineProps<{
 const toast = useToast()
 const sorted = computed(() => [...props.seasons].sort((a, b) => b.start.localeCompare(a.start)))
 const current = computed(() => props.seasons.find((s) => s.id === props.currentId) ?? null)
+// How many teams took part in a season.
 const teamCount = (id: string) =>
   props.allTeams.filter((team) => team.seasonIds.includes(id)).length
 const inSeason = computed(() => props.allTeams.filter((t) => t.seasonIds.includes(props.currentId)))
@@ -28,6 +29,7 @@ const inactive = computed(() =>
 )
 
 const editing = ref<{ edge: 'start' | 'end'; anchor: HTMLElement } | null>(null)
+// Saves the day picked in the calendar as the current season's start or end.
 function pick(iso: string) {
   if (!current.value || !editing.value) return
   updateDoc(doc(refs.seasons(), current.value.id), { [editing.value.edge]: iso }).catch(

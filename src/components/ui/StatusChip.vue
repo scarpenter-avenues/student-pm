@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// A task's status as a small colored chip: gray for To do, orange for In progress, green for Done.
 import type { Status } from '@/model/types'
 
 defineProps<{ status: Status }>()

@@ -44,6 +44,7 @@ const label = computed(
     `${{ status: 'Status', due: 'Due date', assignee: 'Assignees', subteam: 'Subteams', type: 'Type' }[props.field]} of ${record.value.title}`,
 )
 
+// Saves a change to this cell's task, or to its subtask when the cell is in a subtask row.
 function save(changes: Partial<Subtask>) {
   edits.save(props.task, props.subtask?.id ?? null, changes)
 }

@@ -20,13 +20,16 @@ const button = ref<HTMLButtonElement | null>(null)
 const panel = ref<InstanceType<typeof FloatingPanel> | null>(null)
 const open = ref(false)
 
+// Reports the new set of ticked options.
 function set(values: string[]) {
   // Everything ticked is the same as no filter.
   emit('update:modelValue', values.length === props.options.length ? [] : values)
 }
+// Ticks or unticks one option, keeping the options in their original order.
 function toggle(value: string, on: boolean) {
   set(props.options.filter((option) => (option === value ? on : props.modelValue.includes(option))))
 }
+// Esc closes the list.
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && open.value) {
     event.preventDefault()

@@ -14,6 +14,9 @@ import {
   type ProgramConfig,
 } from './lib/config'
 
+// Reads and checks the config, then creates or updates the program, its season, its starting teams and their
+// sprints, and the first coach's invite. Safe to run again: it never overwrites teams that already exist. With
+// --dry-run it only reports.
 async function main() {
   const { flags, value } = parseArgs(process.argv.slice(2))
   const emulator = flags.has('--emulator')

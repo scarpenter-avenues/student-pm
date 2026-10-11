@@ -1,3 +1,4 @@
+// Tests for task order (each task's rank) and for the ordered list of subtasks inside a task.
 import { describe, expect, it } from 'vitest'
 import { byRank, rankAt, rankBetween, rankForMove, ranksFor } from '../rank'
 import { addSubtask, moveSubtask, updateSubtask } from '../subtasks'

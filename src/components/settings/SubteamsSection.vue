@@ -15,11 +15,13 @@ import SubteamTags from '@/components/ui/SubteamTags.vue'
 
 const props = defineProps<{ team: TeamData }>()
 const toast = useToast()
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 const teamId = computed(() => props.team.teamId.value!)
 const editable = computed(() => props.team.can.value.editTeam)
 const subteams = computed(() => props.team.subteams.value)
 
+// How many members and tasks use a subteam, shown beside it.
 function usage(id: string) {
   const members = props.team.members.value.filter((m) =>
     (m.subteams[teamId.value] ?? []).includes(id),
@@ -27,12 +29,14 @@ function usage(id: string) {
   const tasks = props.team.tasks.value.filter((t) => t.subteamIds.includes(id)).length
   return `${plural(members, 'member')} · ${plural(tasks, 'task')}`
 }
+// The team's subteams are one list on the team; any change saves the list.
 function save(next: Subteam[]) {
   return writes.updateTeam(teamId.value, { subteams: next }).catch(fail)
 }
 
 // ---------- recolor ----------
 const colorFor = ref<{ id: string; anchor: HTMLElement } | null>(null)
+// Changes a subteam's color.
 function recolor(color: SubteamColor) {
   const id = colorFor.value?.id
   void save(subteams.value.map((s) => (s.id === id ? { ...s, color } : s)))
@@ -41,6 +45,7 @@ function recolor(color: SubteamColor) {
 // ---------- edit / add ----------
 const editing = ref<string | 'new' | null>(null)
 const draft = ref({ name: '', description: '', color: 'gray' as SubteamColor })
+// Opens the form on a subteam, or blank to add one.
 function startEdit(subteam: Subteam | null) {
   editing.value = subteam?.id ?? 'new'
   draft.value = subteam
@@ -51,6 +56,7 @@ function startEdit(subteam: Subteam | null) {
         color: SUBTEAM_COLORS.find((c) => !subteams.value.some((s) => s.color === c)) ?? 'gray',
       }
 }
+// Saves the form: a new subteam, or new details for an existing one. Names must be unique.
 function commit() {
   const name = draft.value.name.replace(/\s+/g, ' ').trim()
   if (!name) return toast.show('The subteam needs a name.')
@@ -69,12 +75,15 @@ function commit() {
 // ---------- delete ----------
 const deleting = ref<string | null>(null)
 const moveTo = ref<string>('')
+// Asks what should happen to the people and tasks on a subteam before deleting it.
 function startDelete(id: string) {
   deleting.value = id
   moveTo.value = ''
 }
+// Deletes a subteam. Every task and member on it moves to the subteam chosen in the confirm row, or to none.
 async function remove(id: string) {
   const target = moveTo.value || null
+  // A list of subteam ids with the deleted one replaced (or dropped), and no duplicates.
   const swap = (ids: readonly string[]) => [
     ...new Set(ids.map((x) => (x === id ? target : x)).filter((x): x is string => !!x)),
   ]

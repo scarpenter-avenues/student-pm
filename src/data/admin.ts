@@ -23,6 +23,8 @@ type Write =
   | { kind: 'update'; ref: DocumentReference; data: object }
   | { kind: 'delete'; ref: DocumentReference }
 
+// Firestore applies at most 500 changes in one batch, so a big job (a new season, deleting a team) goes in
+// chunks of 400. Each chunk is all-or-nothing; the whole job is not.
 async function commitAll(db: Firestore, writes: Write[]) {
   for (let i = 0; i < writes.length; i += 400) {
     const batch = writeBatch(db)
@@ -42,6 +44,10 @@ export interface NewTeam {
   sprintDays: number
 }
 
+/**
+ * The program coach's bigger jobs, each touching many documents. Built from `refs` (like queries and writes) so
+ * the rules tests can run them as a coach.
+ */
 export function createAdmin(refs: Refs, currentUid: () => string) {
   const db = refs.program().firestore
 

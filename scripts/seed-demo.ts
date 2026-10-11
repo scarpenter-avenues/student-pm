@@ -6,6 +6,8 @@ import { checkEmulator, connectAdmin, EMULATOR_PROJECT } from './lib/admin'
 import { buildDemo, DEMO_PASSWORD, DEMO_PROGRAM_ID } from './demo/data'
 import { todayIso } from '../src/model/dates'
 
+// Empties the local database and deletes the local sign-in accounts, so each seed starts from nothing. These
+// addresses exist only on the emulators.
 async function clearEmulators() {
   const firestore = process.env.FIRESTORE_EMULATOR_HOST
   const auth = process.env.FIREBASE_AUTH_EMULATOR_HOST
@@ -18,6 +20,8 @@ async function clearEmulators() {
   })
 }
 
+// Builds the sample program for today's date, writes it in batches, and creates a sign-in account for each
+// sample person.
 async function main() {
   const { db, auth } = connectAdmin({ emulator: true })
   if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_HOST)

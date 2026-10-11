@@ -15,6 +15,7 @@ const props = defineProps<{ sprint: WithId<Sprint> | 'all' | null; picker?: bool
 const team = useTeam()
 const filters = useTaskFilters()
 
+// The word beside a sprint in the picker: Current, Past, or Upcoming.
 function phase(sprint: WithId<Sprint>) {
   const today = todayIso()
   if (sprint.id === team.currentSprint.value?.id) return 'Current'

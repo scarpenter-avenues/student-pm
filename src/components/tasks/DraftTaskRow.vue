@@ -51,6 +51,7 @@ onMounted(async () => {
   input.value?.focus()
 })
 
+// Adds the task (or subtask) if it has a name; otherwise puts the cursor back in the name box.
 function add() {
   const title = fields.title.replace(/\s+/g, ' ').trim()
   if (!title) return input.value?.focus()
@@ -59,6 +60,7 @@ function add() {
   fields.title = ''
   input.value?.focus()
 }
+// Enter in the name box adds; Esc cancels.
 function onKeydown(event: KeyboardEvent) {
   if (
     event.key === 'Enter' &&

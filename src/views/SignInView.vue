@@ -28,6 +28,8 @@ const error = ref('')
 const info = ref('')
 const busy = ref(false)
 
+// Runs one sign-in action with the buttons disabled. The action returns a message if it failed (shown in red);
+// otherwise `done`, if given, is shown as a notice.
 async function run(action: () => Promise<string | null>, done?: string) {
   busy.value = true
   error.value = ''
@@ -41,6 +43,9 @@ async function run(action: () => Promise<string | null>, done?: string) {
   }
 }
 
+// The email form does one of three things, depending on its mode: sign in, create a password, or send a reset
+// link. The reset notice is worded the same whether or not the account exists, so it can't be used to find out
+// who has one.
 function submit() {
   const address = email.value.trim()
   if (mode.value === 'reset') {
@@ -56,12 +61,14 @@ function submit() {
   )
 }
 
+// Switches the form between those modes and clears any message.
 function setMode(next: Mode) {
   mode.value = next
   error.value = ''
   info.value = ''
 }
 
+// "I've verified my email": asks Firebase again, and carries on into the app if it is true.
 async function checkVerified() {
   await run(async () =>
     (await session.checkVerified())
@@ -70,6 +77,7 @@ async function checkVerified() {
   )
 }
 
+// "Try again" after an error.
 const reload = () => window.location.reload()
 const signedInAs = computed(() => session.user?.email ?? '')
 </script>

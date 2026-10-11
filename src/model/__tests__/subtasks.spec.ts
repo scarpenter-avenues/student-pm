@@ -1,3 +1,4 @@
+// Tests for where a dragged subtask lands among its siblings.
 import { describe, expect, it } from 'vitest'
 import { placeSubtask } from '../subtasks'
 import type { Subtask } from '../types'

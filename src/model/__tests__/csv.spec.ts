@@ -1,3 +1,5 @@
+// Tests for reading a spreadsheet of people: quoted cells, optional header row and Team column, and why each bad
+// row is skipped.
 import { describe, expect, it } from 'vitest'
 import { checkRows, parseCsv, shortName } from '../csv'
 

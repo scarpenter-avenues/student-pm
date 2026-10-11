@@ -40,6 +40,7 @@ export interface Context {
   teamNames: Readonly<Record<string, string>>
 }
 
+// Coaches and mentors.
 const isAdult = (person: Person) => person.role === 'coach' || person.role === 'mentor'
 
 /**
@@ -71,9 +72,12 @@ export function huddleRecipients(
   return people.filter((person) => isAdult(person) && person.id !== post.authorId)
 }
 
+// A person's display name, for "Ms. Patel posted…".
 const nameOf = (context: Context, id: string) =>
   context.people.find((person) => person.id === id)?.displayName ?? 'Someone'
 
+// Builds the email in both forms mail apps want: plain text, and simple HTML made from that same text with
+// every character escaped.
 function message(subject: string, blocks: string[], link: { label: string; url: string }): Message {
   const text = [...blocks, `${link.label}: ${link.url}`].join('\n\n')
   const html = [
@@ -83,6 +87,7 @@ function message(subject: string, blocks: string[], link: { label: string; url: 
   return { subject, text, html }
 }
 
+/** The email for an announcement: who posted it and to whom, the title, the text, and a link to the app. */
 export function announcementMessage(post: AnnouncementPost, context: Context): Message {
   const to = post.audience.includes('all')
     ? 'all teams'
@@ -98,6 +103,7 @@ export function announcementMessage(post: AnnouncementPost, context: Context): M
   )
 }
 
+// "2026-10-10" → "Sat, Oct 10".
 function day(iso: string): string {
   const [y = 2000, m = 1, d = 1] = iso.split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-US', {
@@ -108,6 +114,7 @@ function day(iso: string): string {
   })
 }
 
+/** The email for a huddle (where things stand, the plan, heads-ups) or a quick note. */
 export function huddleMessage(post: HuddlePost, context: Context): Message {
   const link = { label: 'Open the huddle', url: `${context.appUrl}/huddle` }
   const author = nameOf(context, post.authorId)

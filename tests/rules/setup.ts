@@ -31,6 +31,7 @@ export const people = {
 
 export type Uid = keyof typeof people
 
+/** Connects to the emulator with the current firestore.rules loaded. Each test file makes one. */
 export function makeEnv(): Promise<RulesTestEnvironment> {
   return initializeTestEnvironment({
     // Its own project, so the tests never clear the demo data in a running `npm start`.
@@ -94,6 +95,7 @@ export function task(overrides: Record<string, unknown> = {}) {
   }
 }
 
+/** An invite document for someone who hasn't signed in yet. */
 export function invite(email: string, role: Person['role'], teamIds: string[]) {
   return {
     email,
@@ -111,6 +113,7 @@ export async function seed(env: RulesTestEnvironment) {
   await env.clearFirestore()
   await env.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore() as unknown as Firestore
+    // Writes one sample document.
     const set = (path: string, data: Record<string, unknown>) => setDoc(doc(db, path), data)
     const writes: Promise<void>[] = [
       set(PROGRAM, {

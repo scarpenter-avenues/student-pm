@@ -1,3 +1,5 @@
+// Playwright runs the browser tests in e2e/ (`npm run test:e2e`): it starts the app's dev server if one isn't
+// running, opens a real Chromium, and clicks through the app.
 import process from 'node:process'
 import { defineConfig, devices } from '@playwright/test'
 

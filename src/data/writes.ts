@@ -59,6 +59,8 @@ export type TaskChanges = Partial<
   >
 >
 
+// The part of a goal teammates may see (its statement and status), kept in its own document so the rules can
+// share that much and nothing more.
 function summaryOf(goal: Goal): GoalSummary {
   return {
     studentId: goal.studentId,
@@ -70,6 +72,7 @@ function summaryOf(goal: Goal): GoalSummary {
   }
 }
 
+// One entry in a goal's history (a check-in, feedback, a pause...), stamped with who and when.
 function event(
   authorId: string,
   teamId: string,
@@ -79,7 +82,12 @@ function event(
   return { ...fields, id: '', authorId, teamId, date, createdAt: serverTimestamp() as never }
 }
 
+/**
+ * Every change the views make, in one place. `currentUid` is asked at write time, so a write always records
+ * whoever is signed in right now.
+ */
 export function createWrites(refs: Refs, currentUid: () => string) {
+  // The "please email this" record that goes out in the same batch as a post (see scripts/email).
   const outbox = (kind: OutboxItem['kind'], sourceId: string): OutboxItem & { id: string } => ({
     id: '',
     kind,
@@ -118,6 +126,10 @@ export function createWrites(refs: Refs, currentUid: () => string) {
       return { id: ref.id, written }
     },
 
+    /**
+     * Changes some of a task's fields and stamps the time. Only the fields passed are touched, so two people
+     * editing different fields don't overwrite each other.
+     */
     updateTask(teamId: string, taskId: string, changes: TaskChanges) {
       return updateDoc(refs.task(teamId, taskId), {
         ...changes,
@@ -133,6 +145,7 @@ export function createWrites(refs: Refs, currentUid: () => string) {
       } as UpdateData<Task>)
     },
 
+    /** Un-archives a task. It reappears where its rank puts it. */
     restoreTask(teamId: string, taskId: string) {
       return updateDoc(refs.task(teamId, taskId), { archived: null, updatedAt: serverTimestamp() })
     },
@@ -194,6 +207,10 @@ export function createWrites(refs: Refs, currentUid: () => string) {
       changes.forEach(({ id, start, end }) => batch.update(refs.sprint(teamId, id), { start, end }))
       return batch.commit()
     },
+    /**
+     * Changes the team's profile, subteams, or GitHub settings (the rules decide which of those the person may
+     * change).
+     */
     updateTeam(teamId: string, changes: Partial<Omit<Team, 'createdAt'>>) {
       return updateDoc(refs.team(teamId), changes as UpdateData<Team>)
     },
@@ -224,6 +241,7 @@ export function createWrites(refs: Refs, currentUid: () => string) {
       const ref = eventId ? doc(collection, eventId) : doc(collection)
       return setDoc(ref, { ...fields, id: ref.id })
     },
+    /** Removes a calendar event: the team's own, or a program-wide one when `teamId` is null. */
     deleteEvent(teamId: string | null, eventId: string) {
       return deleteDoc(doc(teamId ? refs.teamEvents(teamId) : refs.programEvents(), eventId))
     },
@@ -240,6 +258,7 @@ export function createWrites(refs: Refs, currentUid: () => string) {
         invitedAt: serverTimestamp() as never,
       })
     },
+    /** Withdraws an invite before it's claimed. */
     deleteInvite(email: string) {
       return deleteDoc(refs.invite(email))
     },
@@ -249,6 +268,10 @@ export function createWrites(refs: Refs, currentUid: () => string) {
     ) {
       return updateDoc(refs.member(uid), changes as UpdateData<Member>)
     },
+    /**
+     * Deletes someone's member record, which ends their access. What they wrote stays. Program settings uses
+     * admin.removeFromProgram instead, which also takes them off their teams' tasks.
+     */
     removeMember(uid: string) {
       return deleteDoc(refs.member(uid))
     },
@@ -292,9 +315,11 @@ export function createWrites(refs: Refs, currentUid: () => string) {
     ) {
       return updateDoc(doc(refs.announcements(), id), fields)
     },
+    /** Deletes a post. The view keeps a copy for a few seconds so Undo can put it back. */
     deleteAnnouncement(id: string) {
       return deleteDoc(doc(refs.announcements(), id))
     },
+    /** Undo for deleteAnnouncement: writes the same post back under its old id. */
     restoreAnnouncement(announcement: Announcement & { id: string }) {
       return setDoc(doc(refs.announcements(), announcement.id), announcement)
     },
@@ -319,6 +344,7 @@ export function createWrites(refs: Refs, currentUid: () => string) {
     ) {
       return updateDoc(refs.huddle(id), { ...fields, editedAt: serverTimestamp() })
     },
+    /** Deletes a huddle or quick note (program coaches). */
     deleteHuddle(id: string) {
       return deleteDoc(refs.huddle(id))
     },
@@ -417,6 +443,10 @@ export function createWrites(refs: Refs, currentUid: () => string) {
       return setDoc(refs.userState(currentUid()), { announcementsRead: read }, { merge: true })
     },
 
+    /**
+     * Adds you to each huddle's "seen by" list. arrayUnion adds without reading first, so two people marking at
+     * once both count.
+     */
     markHuddlesRead(huddleIds: string[]) {
       return Promise.all(
         huddleIds.map((id) => updateDoc(refs.huddle(id), { readBy: arrayUnion(currentUid()) })),

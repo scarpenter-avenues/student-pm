@@ -2,10 +2,16 @@
 // ↑/↓ move between items, and the current item (or the first) is focused on open.
 import { nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 
+/**
+ * Makes a dropdown menu behave: opens and closes, closes on a click outside or Esc, moves through its items
+ * with the arrow keys, and returns focus to the button that opened it.
+ */
 export function useMenu(root: Ref<HTMLElement | null>, trigger: Ref<HTMLElement | null>) {
   const open = ref(false)
+  // The menu's items, in order (anything marked role="menuitem…").
   const items = () => [...(root.value?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [])]
 
+  // A press anywhere outside the menu closes it.
   function onPointerDown(event: PointerEvent) {
     if (!root.value?.contains(event.target as Node)) open.value = false
   }
@@ -22,6 +28,7 @@ export function useMenu(root: Ref<HTMLElement | null>, trigger: Ref<HTMLElement 
   })
   onBeforeUnmount(() => document.removeEventListener('pointerdown', onPointerDown))
 
+  // Esc closes; the up and down arrows move between items.
   function onKeydown(event: KeyboardEvent) {
     if (!open.value) return
     const list = items()

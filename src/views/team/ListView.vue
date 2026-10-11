@@ -19,6 +19,7 @@ const { team, sprint, visible, filtered } = useTaskView(() => false)
 const COLUMNS: TaskField[] = ['status', 'due', 'assignee', 'subteam', 'type']
 const collapsed = ref<Set<string>>(new Set())
 const edits = useTaskEdits(team)
+// A row was dropped: the group it landed in becomes its status, and its place there becomes its rank.
 const onDrop = (drop: TaskDrop) => edits.drop(drop, { status: drop.to as Status })
 
 const groups = computed(() =>
@@ -27,6 +28,7 @@ const groups = computed(() =>
     tasks: visible.value.filter((task) => task.status === status),
   })).filter((group) => group.tasks.length || !filtered.value),
 )
+// Every selectable row from top to bottom (tasks and their subtasks), for shift-click ranges.
 const order = () =>
   groups.value.flatMap((group) =>
     group.tasks.flatMap((task) => [
@@ -38,6 +40,7 @@ const selection = useSelection(order)
 const newSprintId = computed(() =>
   sprint.value && sprint.value !== 'all' ? sprint.value.id : (team.currentSprint.value?.id ?? null),
 )
+// Collapses or opens a status group.
 function toggleGroup(status: string) {
   const next = new Set(collapsed.value)
   if (next.has(status)) next.delete(status)

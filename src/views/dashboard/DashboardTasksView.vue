@@ -43,6 +43,7 @@ const items = computed(() =>
     return group ? [{ key, team: group.data }] : []
   }),
 )
+// Esc clears the selection, unless something else (an open menu) already used the key.
 const onKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape' && page.selected.value.size && !event.defaultPrevented) page.clear()
 }

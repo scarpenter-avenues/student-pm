@@ -10,6 +10,7 @@ export const useTaskFilters = defineStore('taskFilters', () => {
   const assignee = ref<string>('all')
   const search = ref('')
 
+  // Switching teams starts the filters over: another team's subteams and people would match nothing.
   function forTeam(id: string | null) {
     if (id === teamId.value) return
     teamId.value = id

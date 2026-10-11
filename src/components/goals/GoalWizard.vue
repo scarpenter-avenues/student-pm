@@ -67,11 +67,15 @@ const question = computed<GoalStepKey>(() =>
   key.value === 'intro' || key.value === 'review' ? 'wish' : key.value,
 )
 const textKey = computed<TextKey>(() => (question.value === 'by' ? 'wish' : question.value))
+// A step's title, hint, and the rest (from the model).
 const info = (k: GoalStepKey) => GOAL_STEPS.find((step) => step.key === k)!
 
+// What has been answered for a step, or null if nothing yet.
 function value(k: GoalStepKey): string | null {
   return k === 'by' ? (draft.by ? 'set' : null) : cleanText(draft[k]) || null
 }
+// Is a step answered well enough to move on? The first step can't keep any ___ blanks, and the plan has to
+// finish its "then I will…".
 function complete(k: GoalStepKey): boolean {
   if (k === 'firstStep') return !hasBlanks(draft.firstStep)
   if (k === 'plan')
@@ -109,12 +113,14 @@ const customBy = ref(
   !!draft.by &&
     !byOptions.value.some((o) => o.date === draft.by?.date && o.label === draft.by?.label),
 )
+// By when: picks one of the listed dates (a sprint end or a competition).
 function pickBy(option: { label: string; date: string }) {
   customBy.value = false
   draft.by = { label: option.label, date: option.date }
 }
 /** "Pick a date…" opens the calendar right on the button. */
 const calendarAnchor = ref<HTMLElement | null>(null)
+// Saves the day picked in the calendar and closes it.
 async function pickCustomDate(iso: string) {
   const row = calendarAnchor.value
   customBy.value = true
@@ -141,6 +147,7 @@ watch(
   },
   { immediate: true },
 )
+// Selects the first ___ in the answer box, so typing replaces it.
 function selectFirstBlank() {
   const el = input.value
   if (!el) return
@@ -148,6 +155,7 @@ function selectFirstBlank() {
   if (at >= 0) el.setSelectionRange(at, at + (el.value.slice(at).match(/_+/)?.[0].length ?? 0))
   else el.setSelectionRange(el.value.length, el.value.length)
 }
+// Tapping an idea chip fills in the answer. For the plan it fills only the part after "then I will".
 async function useIdea(k: GoalStepKey, idea: string) {
   if (k === 'by') return
   if (k === 'plan') {
@@ -160,6 +168,7 @@ async function useIdea(k: GoalStepKey, idea: string) {
   input.value?.focus()
   selectFirstBlank()
 }
+// Enter moves on (Shift+Enter still makes a new line).
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter' && !event.shiftKey) {
     event.preventDefault()
@@ -194,20 +203,24 @@ const nextLabel = computed(() =>
         ? 'Skip for now'
         : 'Next',
 )
+// Next: on to the following step, or straight back to the review if that's where the student came from.
 function next() {
   if (key.value === 'intro' || key.value === 'review') return
   if (!complete(question.value)) return
   index.value = returnToReview.value ? steps.indexOf('review') : index.value + 1
 }
+// Back one step. From the first step it closes the wizard, and so does Back on the review when editing a goal (which opens there).
 function back() {
   if (index.value === 0 || (editing && key.value === 'review')) return flow.close()
   index.value--
 }
+// "Edit" on the review screen: opens that step, and Next returns to the review.
 function jump(k: GoalStepKey) {
   returnToReview.value = true
   index.value = steps.indexOf(k)
 }
 
+// Saves: changes to an existing goal, or a new goal.
 function save() {
   if (!questions.every(complete)) return
   if (props.goal) {

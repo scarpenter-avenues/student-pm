@@ -35,11 +35,13 @@ const listed = computed(() =>
 const all = computed(() => props.sprints.flatMap((sprint) => sprint.objectives))
 const metCount = computed(() => all.value.filter((objective) => objective.met).length)
 
+// A sprint's objectives are stored as a list on the sprint, so every change saves the whole list.
 function save(sprint: WithId<Sprint>, objectives: Objective[]) {
   writes
     .updateSprint(props.teamId, sprint.id, { objectives })
     .catch((error: Error) => toast.show(`Couldn't save: ${error.message}`))
 }
+// Marks an objective met, or not met.
 function toggleMet(sprint: WithId<Sprint>, objective: Objective) {
   save(
     sprint,
@@ -48,6 +50,7 @@ function toggleMet(sprint: WithId<Sprint>, objective: Objective) {
     ),
   )
 }
+// Deletes an objective.
 function remove(sprint: WithId<Sprint>, objective: Objective) {
   save(
     sprint,
@@ -69,6 +72,7 @@ const editing = reactive<{
   subteamIds: [],
 })
 const input = ref<HTMLInputElement[] | null>(null)
+// Opens the editor on an objective, or on a blank one to add (objective = null).
 async function startEdit(sprint: WithId<Sprint>, objective: Objective | null) {
   Object.assign(editing, {
     sprintId: sprint.id,
@@ -80,9 +84,12 @@ async function startEdit(sprint: WithId<Sprint>, objective: Objective | null) {
   await nextTick()
   input.value?.[0]?.focus()
 }
+// Closes the editor without saving.
 function cancel() {
   editing.sprintId = null
 }
+// Saves the editor: a new objective is added to the end; an existing one is replaced in place. Empty text
+// cancels.
 function commit(sprint: WithId<Sprint>) {
   const text = editing.text.replace(/\s+/g, ' ').trim().slice(0, MAX)
   if (!text) return cancel()
@@ -98,11 +105,13 @@ function commit(sprint: WithId<Sprint>) {
   save(sprint, objectives)
   cancel()
 }
+// Ticks or unticks a subteam on the objective being edited.
 function toggleSubteam(id: string) {
   editing.subteamIds = editing.subteamIds.includes(id)
     ? editing.subteamIds.filter((other) => other !== id)
     : [...editing.subteamIds, id]
 }
+// Enter saves and Esc cancels.
 function onKeydown(event: KeyboardEvent, sprint: WithId<Sprint>) {
   if (event.key === 'Enter') {
     event.preventDefault()

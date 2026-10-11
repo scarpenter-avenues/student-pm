@@ -25,6 +25,7 @@ const team = useTeam()
 const { nameOf } = useNames(team)
 const { huddles, unread, markRead } = useHuddles()
 const adults = useLiveQuery(() => session.isAdult && queries.adults())
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 
 // Opening the page marks everything read (and anything that arrives while it's open).
@@ -42,7 +43,9 @@ const newestHuddle = computed(
   () => huddles.value.find((item) => item.kind === 'huddle')?.id ?? null,
 )
 const opened = ref<Set<string>>(new Set())
+// The newest huddle starts open; older ones open when clicked.
 const isOpen = (item: WithId<Huddle>) => item.id === newestHuddle.value || opened.value.has(item.id)
+// Opens or collapses an older huddle.
 function toggle(item: WithId<Huddle>) {
   const next = new Set(opened.value)
   if (opened.value.has(item.id)) next.delete(item.id)
@@ -61,6 +64,7 @@ const mentions = mentionSearch(() => ({
 const adultNames = computed(() =>
   Object.fromEntries(adults.data.value.map((adult) => [adult.id, adult.displayName])),
 )
+// How many coaches and mentors have read it ("seen by 3 of 9"). Only current adults count.
 const seenBy = (item: Huddle) =>
   item.readBy.filter((uid) => adults.data.value.some((adult) => adult.id === uid)).length
 const lastPlan = computed(() => {
@@ -78,11 +82,13 @@ const reach = computed(() =>
     ? 'Coaches and mentors get an email, and see it when they sign in.'
     : 'Coaches and mentors see it when they sign in.',
 )
+// Posts a new huddle from the composer.
 function postHuddle(fields: Omit<Huddle, 'kind' | 'authorId' | 'postedAt' | 'readBy'>) {
   writes.postHuddle({ ...fields, kind: 'huddle' }, emailOn.value).catch(fail)
   mode.value = null
   toast.show(`Huddle posted. ${reach.value}`)
 }
+// Posts a quick note: just a message, shown as a slim card.
 function postNote() {
   if (!note.value.text.trim()) return
   writes
@@ -100,6 +106,7 @@ function postNote() {
   note.value = { html: '', text: '' }
   toast.show(`Quick note posted. ${reach.value}`)
 }
+// In the quick note box, Cmd/Ctrl+Enter sends and Esc cancels.
 function onNoteKeydown(event: KeyboardEvent) {
   if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
     event.preventDefault()
@@ -110,11 +117,13 @@ function onNoteKeydown(event: KeyboardEvent) {
   }
 }
 const editing = ref<string | null>(null)
+// Saves changes to a posted huddle. Nobody is notified again.
 function saveEdit(id: string, fields: Parameters<typeof writes.updateHuddle>[1]) {
   writes.updateHuddle(id, fields).catch(fail)
   editing.value = null
   toast.show('Huddle updated')
 }
+// Deletes a huddle or quick note.
 function remove(item: WithId<Huddle>) {
   writes.deleteHuddle(item.id).catch(fail)
   toast.show(item.kind === 'note' ? 'Quick note deleted' : 'Huddle deleted')

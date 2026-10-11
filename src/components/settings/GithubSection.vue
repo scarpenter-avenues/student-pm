@@ -31,11 +31,13 @@ function parseRepo(value: string): string | null {
     text.match(/^([\w.-]+)\/([\w.-]+)$/)
   return match ? `${match[1]}/${match[2]}` : null
 }
+// The GitHub settings are stored as one object on the team, so a change saves the whole object.
 function save(changes: Partial<GithubSettings>) {
   writes
     .updateTeam(props.team.id, { github: { ...github.value, ...changes } })
     .catch((e: Error) => toast.show(`Couldn't save: ${e.message}`))
 }
+// Connects the repo typed in the box, if it reads as owner/repo or a github.com link.
 function connect() {
   const repo = parseRepo(input.value)
   if (!repo) return (error.value = 'Use owner/repo or a github.com link.')

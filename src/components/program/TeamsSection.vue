@@ -35,8 +35,10 @@ const inactive = computed(() =>
   props.allTeams.filter((t) => !t.seasonIds.includes(props.season.id)),
 )
 const showInactive = ref(false)
+// How many students are on a team.
 const studentsOf = (id: string) =>
   props.members.filter((m) => m.teamIds.includes(id) && !ADULT_ROLES.includes(m.role)).length
+// A team's mentors, by name.
 const mentorsOf = (id: string) =>
   props.members
     .filter((m) => m.teamIds.includes(id) && m.role === 'mentor')
@@ -45,6 +47,7 @@ const mentorsOf = (id: string) =>
 // ---------- form ----------
 const editing = ref<string | 'new' | null>(null)
 const draft = ref({ name: '', number: '', sprintDays: '14', color: 'green' })
+// Opens the form on a team, or blank for a new one.
 function startForm(team: WithId<Team> | null) {
   editing.value = team?.id ?? 'new'
   draft.value = team
@@ -74,6 +77,7 @@ function startForm(team: WithId<Team> | null) {
       }
 }
 const error = ref('')
+// Creates the team or saves its changes, after checking the name and number.
 async function submit() {
   const name = draft.value.name.replace(/\s+/g, ' ').trim()
   const raw = draft.value.number.trim()
@@ -112,6 +116,7 @@ async function submit() {
 // ---------- delete ----------
 const deleting = ref<string | null>(null)
 const busy = ref(false)
+// Deletes a team and everything on it. Its people stay in the program with no team.
 async function remove(team: WithId<Team>) {
   busy.value = true
   try {
@@ -124,6 +129,7 @@ async function remove(team: WithId<Team>) {
     deleting.value = null
   }
 }
+// "Add to <season>": brings back a team that sat out, with a fresh sprint calendar from today.
 async function bringBack(team: WithId<Team>) {
   try {
     await admin.addTeamToSeason(team, props.season, todayIso())

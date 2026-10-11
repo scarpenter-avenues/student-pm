@@ -53,8 +53,11 @@ const groups = computed(() => {
 })
 const hasTask = computed(() => groups.value.some((group) => group.whole))
 const team = computed(() => props.items[0]?.team ?? null)
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 
+// Applies one change to everything selected. Selected subtasks of the same task are saved together, because a
+// task's subtasks are stored as one list.
 function apply(change: (task: Task | Subtask) => Partial<Subtask>) {
   groups.value.forEach(({ team: t, task, whole, subtaskIds }) => {
     const teamId = t.teamId.value!
@@ -72,10 +75,12 @@ function apply(change: (task: Task | Subtask) => Partial<Subtask>) {
   })
 }
 
+// The Status menu: sets every selected item to the same status.
 function setStatus(status: Status) {
   apply(() => ({ status }))
   toast.show(`${plural(props.items.length, 'item')} set to ${status}`)
 }
+// The Assign menu: adds a person to each selected item, or clears everyone with "Unassign".
 function assign(uid: string) {
   if (uid === '') apply(() => ({ assigneeIds: [] }))
   else
@@ -83,6 +88,8 @@ function assign(uid: string) {
       assigneeIds: item.assigneeIds.includes(uid) ? item.assigneeIds : [...item.assigneeIds, uid],
     }))
 }
+// Move to: sends the selected tasks to another sprint or the Backlog. Subtasks travel with their task, so only
+// whole tasks move.
 function move(sprintId: string | null) {
   groups.value
     .filter((group) => group.whole)
@@ -94,6 +101,7 @@ function move(sprintId: string | null) {
   )
   emit('clear')
 }
+// Archives everything selected, with one Undo for the lot.
 function archive() {
   const at = Timestamp.now()
   const by = session.member?.id ?? ''

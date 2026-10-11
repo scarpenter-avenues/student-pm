@@ -1,3 +1,5 @@
+// Tests for reading program.config.json: every mistake is reported in plain words, and each email is matched to
+// the right sign-in method.
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { checkConfig, signInMethodFor, slugify } from '../config'

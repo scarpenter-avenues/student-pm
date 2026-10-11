@@ -37,10 +37,14 @@ const assigneeLabel = computed(() =>
       : `${names.value[0]} +${names.value.length - 1}`,
 )
 
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
+// Saves a title edited in place on the card.
 function rename(title: string) {
   writes.updateTask(teamId.value, props.task.id, { title }).catch(fail)
 }
+// The checkbox beside a subtask: Done, or back to To do. (The board has no Status column, so this is the one
+// place a checkbox marks something done.)
 function toggleSubtask(item: Subtask) {
   const status = item.status === 'Done' ? 'To do' : 'Done'
   writes
@@ -76,12 +80,14 @@ function moveSubtaskTo(from: number, to: number) {
 const drafting = ref(false)
 const draftTitle = ref('')
 const draftInput = ref<HTMLInputElement | null>(null)
+// "+ Add subtask": opens the list and a box to type the new one.
 async function startDraft() {
   expanded.value = true
   drafting.value = true
   await nextTick()
   draftInput.value?.focus()
 }
+// Adds the typed subtask (if any) and closes the box. Also runs when you click away.
 function saveDraft() {
   const title = draftTitle.value.replace(/\s+/g, ' ').trim()
   if (title) {
@@ -94,6 +100,7 @@ function saveDraft() {
   draftTitle.value = ''
   drafting.value = false
 }
+// Enter adds and Esc cancels. Keys typed here go no further, so the card's own shortcuts stay quiet.
 function onDraftKeydown(event: KeyboardEvent) {
   event.stopPropagation()
   if (event.key === 'Enter') {
@@ -105,6 +112,7 @@ function onDraftKeydown(event: KeyboardEvent) {
     drafting.value = false
   }
 }
+// Alt+↑ / Alt+↓ on a focused card moves it up or down its column.
 function onKeydown(event: KeyboardEvent) {
   if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
   event.preventDefault()

@@ -28,6 +28,7 @@ beforeAll(async () => {
 beforeEach(() => seed(env))
 afterAll(() => env.cleanup())
 
+// The app's own refs, queries, and writes, signed in as one of the sample people.
 function data(uid: Uid) {
   const db: Firestore = as(env, uid)
   const refs = createRefs(db, 'p1')
@@ -184,6 +185,7 @@ describe('people', () => {
 })
 
 describe('goal writes', () => {
+  // Reads a goal as a given person.
   const load = async (uid: Uid, id = 'g1') => {
     const snap = await getDoc(data(uid).refs.goal(id))
     return snap.data()!

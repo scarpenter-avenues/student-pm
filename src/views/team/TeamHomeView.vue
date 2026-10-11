@@ -20,16 +20,19 @@ const team = useTeam()
 const session = useSession()
 const toast = useToast()
 const teamId = computed(() => team.teamId.value!)
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 
 // ---------- notes ----------
 const page = useLiveDoc(() => team.teamId.value && refs.homePage(team.teamId.value))
 const editing = ref(false)
 const draft = ref('')
+// Edit: copies the notes into a draft, so Cancel can throw the changes away.
 function edit() {
   draft.value = page.data.value?.html ?? ''
   editing.value = true
 }
+// Saves the notes.
 function save() {
   writes.saveHomePage(teamId.value, draft.value).catch(fail)
   editing.value = false
@@ -48,9 +51,11 @@ const showPast = ref(false)
 const upcoming = computed(() => events.value.filter((event) => event.date >= today))
 const past = computed(() => events.value.filter((event) => event.date < today).reverse())
 const shown = computed(() => (showAll.value ? upcoming.value : upcoming.value.slice(0, LIMIT)))
+// Anyone on the team can edit the team's own events; program-wide events belong to program coaches.
 const canEdit = (event: TeamEvent) => event.scope === 'team' || session.isCoach
 const editingEvent = ref<string | 'new' | null>(null)
 
+// How far off a day is: "today", "tomorrow", "in 12 days", "3 days ago".
 function relative(iso: string) {
   const offset = daysBetween(today, iso)
   if (offset === 0) return 'today'
@@ -58,10 +63,12 @@ function relative(iso: string) {
   if (offset === -1) return 'yesterday'
   return offset > 0 ? `in ${offset} days` : `${-offset} days ago`
 }
+// Clicking an event opens it for editing, if you may.
 function open(event: TeamEvent) {
   if (canEdit(event)) editingEvent.value = event.id
   else toast.show('Program-wide events are managed by program coaches.')
 }
+// Saves a new or changed event. Program-wide events are stored on the program, team events on the team.
 function saveEvent(event: TeamEvent | null, fields: CalendarEvent, scope: 'team' | 'program') {
   const where = (event?.scope ?? scope) === 'program' ? null : teamId.value
   writes.saveEvent(where, event?.id ?? null, fields).catch(fail)
@@ -70,6 +77,7 @@ function saveEvent(event: TeamEvent | null, fields: CalendarEvent, scope: 'team'
     event ? 'Event updated' : scope === 'program' ? 'Event added for all teams' : 'Event added',
   )
 }
+// Deletes an event, with Undo in the toast.
 function removeEvent(event: TeamEvent) {
   writes.deleteEvent(event.scope === 'program' ? null : teamId.value, event.id).catch(fail)
   editingEvent.value = null

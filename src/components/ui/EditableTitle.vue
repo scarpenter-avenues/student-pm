@@ -14,6 +14,7 @@ const draft = ref('')
 const input = ref<HTMLInputElement | null>(null)
 const button = ref<HTMLButtonElement | null>(null)
 
+// Switches to the text box, with the whole title selected.
 async function start() {
   draft.value = props.title
   editing.value = true
@@ -22,6 +23,7 @@ async function start() {
   input.value?.select()
 }
 
+// Leaves edit mode. With `keep`, saves the new title if it changed and is not empty.
 async function finish(keep: boolean) {
   if (!editing.value) return
   editing.value = false
@@ -33,6 +35,8 @@ async function finish(keep: boolean) {
   }
 }
 
+// Enter saves and Esc cancels. Keys typed here go no further, so shortcuts on the row (Alt+↑) don't fire while
+// typing.
 function onKeydown(event: KeyboardEvent) {
   event.stopPropagation()
   if (event.key === 'Enter') {

@@ -1,3 +1,5 @@
+// Tests for the sprint calendar: building a season's sprints, finding the sprint a day falls in, and what happens
+// to later sprints when one changes length.
 import { describe, expect, it } from 'vitest'
 import { buildSprints, earliestSprintDate, rescheduleSprint, sprintIndexOn } from '../sprints'
 import { daysBetween, shiftIsoDate } from '../dates'

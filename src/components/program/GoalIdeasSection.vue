@@ -35,18 +35,23 @@ const drafts = reactive<Record<GoalIdeaKey, string>>({
 
 // Every list starts collapsed; the section is long otherwise.
 const open = ref<Set<GoalIdeaKey>>(new Set())
+// Opens or closes one list.
 function toggle(key: GoalIdeaKey) {
   const next = new Set(open.value)
   if (!next.delete(key)) next.add(key)
   open.value = next
 }
 
+// A list's ideas: the program's own, or the built-in ones.
 const ideas = (key: GoalIdeaKey) => goalIdeasFor(props.program, key)
+// Has the program changed this list? (Reset shows only then.)
 const customized = (key: GoalIdeaKey) => !!props.program?.goalIdeas?.[key]
 
+// Saves a list; null puts the built-in ideas back.
 function save(key: GoalIdeaKey, next: string[] | null) {
   writes.setGoalIdeas(key, next).catch((e: Error) => toast.show(`Couldn't save: ${e.message}`))
 }
+// Adds the typed idea, unless it is empty or already there.
 function add(key: GoalIdeaKey) {
   const text = cleanText(drafts[key])
   if (!text) return
@@ -58,6 +63,7 @@ function add(key: GoalIdeaKey) {
   save(key, [...list, text])
   drafts[key] = ''
 }
+// The × on a chip.
 function remove(key: GoalIdeaKey, idea: string) {
   save(
     key,

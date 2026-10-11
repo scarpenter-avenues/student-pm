@@ -25,6 +25,7 @@ const session = useSession()
 const panel = useTaskPanel()
 const toast = useToast()
 const edits = useTaskEdits(team)
+// A card was dropped: the column it landed in becomes its status, and its place there becomes its rank.
 const onDrop = (drop: TaskDrop) => edits.drop(drop, { status: drop.to as Status })
 
 const columns = computed(() =>
@@ -39,6 +40,8 @@ const scope = computed(() =>
   props.mine ? 'Assigned to you' : sprint.value === 'all' ? 'All sprints' : 'Current sprint',
 )
 
+// "+ Add task" under a column: opens a new task with that status, in the sprint showing. On My Tasks it is
+// already assigned to you.
 function addTask(status: Status) {
   const teamId = team.teamId.value
   if (!teamId) return

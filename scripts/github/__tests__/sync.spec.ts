@@ -1,3 +1,5 @@
+// Tests for the GitHub sync's decisions: what a new issue becomes, how closing and reopening follow through, and
+// that edits made in the app aren't overwritten.
 import { describe, expect, it } from 'vitest'
 import { descriptionFrom, hashOf, planIssue, taskIdFor, type Issue, type SyncedTask } from '../sync'
 
@@ -39,6 +41,13 @@ describe('a new issue', () => {
     expect(planIssue(issue(), null, { ...on, importIssues: false }, context).action).toBe('skip')
     expect(planIssue(issue({ state: 'closed' }), null, on, context).action).toBe('skip')
     expect(planIssue(issue({ pull_request: {} }), null, on, context).action).toBe('skip')
+  })
+  it("cuts a long title to the app's 90-character limit, so the task can still be edited", () => {
+    const long = issue({ title: 'x'.repeat(140) })
+    const plan = planIssue(long, null, on, context)
+    expect(plan.action === 'create' && (plan.fields.title as string).length).toBe(90)
+    // And the cut title isn't mistaken for an edit made in the app.
+    expect(planIssue(long, taskFor(long), on, context).action).toBe('skip')
   })
   it('never carries HTML from the issue into the description', () => {
     expect(descriptionFrom('<script>alert(1)</script>\nline two')).toBe(

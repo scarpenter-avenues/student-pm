@@ -40,6 +40,7 @@ function mentionStyle(kind: string, teamId: string | null, stored: string | null
   return `background:${accent['--team-soft']};color:${accent['--team-ink']}`
 }
 
+// A mention attribute that is saved in the HTML as a data- attribute and read back from it.
 const dataAttribute = (name: string, attribute: string) => ({
   default: null,
   parseHTML: (element: HTMLElement) => element.getAttribute(attribute),
@@ -113,6 +114,7 @@ export function mentionSearch(
       }),
     ]
     const q = query.trim().toLowerCase()
+    // Whether any word of the name starts with what was typed ("pat" matches "Ms. Patel").
     const starts = (item: MentionItem) =>
       item.label
         .toLowerCase()

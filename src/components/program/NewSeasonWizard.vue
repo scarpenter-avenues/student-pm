@@ -30,7 +30,9 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>()
 const toast = useToast()
 
+// The same day one year later.
 const addYear = (iso: string) => `${Number(iso.slice(0, 4)) + 1}${iso.slice(4)}`
+// A guess at the next season's name: "2026–27" becomes "2027–28".
 function nextName(name: string) {
   const match = name.match(/^(\d{4})([–-])(\d{2,4})$/)
   if (!match) return `${name} (next)`
@@ -47,6 +49,7 @@ const draft = reactive({
 })
 type Choice = 'stay' | 'none' | 'remove'
 const STEPS = ['Season', 'Teams', 'People', 'Tasks', 'Review']
+// "9 students · 1 mentor", shown beside each team.
 function rosterLine(teamId: string) {
   const on = props.members.filter((m) => m.teamIds.includes(teamId))
   const students = on.filter((m) => !ADULT_ROLES.includes(m.role)).length
@@ -63,9 +66,12 @@ const people = computed(() =>
     .filter((member) => member.role !== 'coach')
     .map((member) => ({ member, carried: member.teamIds.filter((id) => draft.carried.has(id)) })),
 )
+// What happens to a person: what was picked for them, or the default (Keep if one of their teams carries over
+// or they have no team; otherwise Remove from team).
 const choiceOf = (person: { member: WithId<Member>; carried: string[] }): Choice =>
   draft.choices.get(person.member.id) ??
   (person.carried.length || !person.member.teamIds.length ? 'stay' : 'none')
+// The choices offered for a person. Someone with no carried-over team can't be "removed from team".
 const optionsFor = (person: { member: WithId<Member>; carried: string[] }): [Choice, string][] =>
   person.carried.length
     ? [
@@ -112,24 +118,28 @@ const tally = computed(() => {
   return counts
 })
 const setAll = ref<{ key: string; anchor: HTMLElement } | null>(null)
+// "Set everyone…": applies one choice to a whole group, skipping anyone it isn't offered to.
 function applyAll(choice: Choice) {
   const group = groups.value.find((g) => g.key === setAll.value?.key)
   group?.people.forEach((p) => {
     if (optionsFor(p).some(([value]) => value === choice)) draft.choices.set(p.member.id, choice)
   })
 }
+// Ticks or unticks a team to carry over.
 function toggleCarried(id: string, on: boolean) {
   if (on) draft.carried.add(id)
   else draft.carried.delete(id)
 }
 
 const working = ref(false)
+// Next, or on the last step, Start.
 function next() {
   if (step.value === 0 && (!draft.name.trim() || !draft.start || !draft.end))
     return toast.show('Give the season a name, a start, and an end')
   if (step.value < STEPS.length - 1) return step.value++
   void start()
 }
+// Starts the season: one multi-part change in src/data/admin.ts.
 async function start() {
   working.value = true
   try {
@@ -150,6 +160,7 @@ async function start() {
     working.value = false
   }
 }
+// The names for one choice, listed on the review step.
 const nameList = (choice: Choice) =>
   people.value
     .filter((p) => choiceOf(p) === choice && (choice !== 'none' || p.member.teamIds.length))

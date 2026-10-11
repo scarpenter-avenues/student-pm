@@ -22,6 +22,7 @@ const route = useRoute()
 const { goals, active, paused, past, loading } = useMyGoals()
 
 const step = computed(() => flow.current)
+// The goal a step is about, looked up by id (null if it has gone).
 const goalOf = (id: string | undefined) =>
   id ? (goals.value.find((goal) => goal.id === id) ?? null) : null
 const stepGoal = computed(() => {
@@ -45,7 +46,10 @@ const label = computed(
 const needs = computed(() =>
   active.value.map((goal) => needsOf(goal, team.sprints.value)).filter(needsAttention),
 )
+// "Later" is remembered per person for this browser tab only (sessionStorage), so the reminder returns in a new
+// tab.
 const KEY = () => `switchback.goalPromptLater.${session.member?.id ?? ''}`
+// Has this person already tapped Later in this tab?
 function snoozed() {
   try {
     return sessionStorage.getItem(KEY()) === '1'
@@ -69,6 +73,7 @@ watch(
   },
   { immediate: true },
 )
+// "Later": closes the pop-up and remembers not to show it again in this tab.
 function later() {
   try {
     sessionStorage.setItem(KEY(), '1')

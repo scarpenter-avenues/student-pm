@@ -4,10 +4,12 @@ import type { Subtask } from './types'
 
 export type NewSubtask = Pick<Subtask, 'title'> & Partial<Omit<Subtask, 'id' | 'archived'>>
 
+/** A short random id for a new subtask. It only has to be unique within its task. */
 export function newSubtaskId(): string {
   return `st_${crypto.randomUUID().slice(0, 8)}`
 }
 
+/** The list with a new subtask at the end (a new list; the one passed in is left alone). */
 export function addSubtask(list: readonly Subtask[], fields: NewSubtask): Subtask[] {
   return [
     ...list,
@@ -26,6 +28,10 @@ export function addSubtask(list: readonly Subtask[], fields: NewSubtask): Subtas
   ]
 }
 
+/**
+ * The list with one subtask changed. Every function here returns a new list, because the whole list is saved
+ * back to the task at once.
+ */
 export function updateSubtask(
   list: readonly Subtask[],
   id: string,

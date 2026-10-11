@@ -57,6 +57,7 @@ const expanded = ref<Set<string>>(new Set())
 
 // Grouped by subteam (the default), or one list in Planning's order. Remembered on this device.
 const GROUPED_KEY = 'switchback.timeline.grouped'
+// Whether "Group by subteam" was left on (the default) on this device.
 function storedGrouped() {
   try {
     return localStorage.getItem(GROUPED_KEY) !== 'no'
@@ -74,18 +75,23 @@ watch(grouped, (on) => {
 })
 /** The header row's height, when there is one. */
 const labelHeight = computed(() => (grouped.value ? LABEL_H : 0))
+// The subteam a task is grouped under: the first of its subteams, in the team's order.
 const firstSubteam = (task: Task) =>
   team.subteams.value.find((subteam) => task.subteamIds.includes(subteam.id)) ?? null
 
 // ---------- measuring titles (bar font) ----------
 const context = document.createElement('canvas').getContext('2d')
 const fontFamily = getComputedStyle(document.body).fontFamily
+// How wide a title is in the bars' font, measured on a hidden canvas (a rough guess if there isn't one).
 function textWidth(text: string) {
   if (!context) return text.length * 7
   context.font = `600 12px ${fontFamily}`
   return context.measureText(text).width
 }
+// A task's subtasks, without the archived ones.
 const activeSubtasks = (task: Task) => task.subtasks.filter((item) => !item.archived)
+// How far a bar's contents (title, initials, subtask count) run past its right end, in pixels. Layout leaves
+// that much room so nothing overlaps.
 function overflowPx(
   title: string,
   people: number,
@@ -176,6 +182,7 @@ const groups = computed(() => {
       items.sort((a, b) => sprintOrder(a) - sprintOrder(b))
       const lanes = items.map((_, index) => index)
       const count = items.length
+      // The height of a task's expanded subtask panel.
       const panelHeight = (item: Item) =>
         6 + item.dated.length * SUB_ROW + (item.undated ? 24 : 0) + 12
       const extra = Array.from({ length: count }, (_, lane) =>
@@ -246,11 +253,13 @@ const width = computed(() => (range.value?.days ?? 0) * dayWidth.value)
 
 // ---------- actions ----------
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
+// The status icon on a bar: Done, or back to To do.
 function toggleDone(task: WithId<Task>) {
   writes
     .updateTask(team.teamId.value!, task.id, { status: task.status === 'Done' ? 'To do' : 'Done' })
     .catch(fail)
 }
+// The same for a subtask bar.
 function toggleSubDone(task: WithId<Task>, subtask: Subtask) {
   const status: Status = subtask.status === 'Done' ? 'To do' : 'Done'
   writes
@@ -259,6 +268,7 @@ function toggleSubDone(task: WithId<Task>, subtask: Subtask) {
     })
     .catch(fail)
 }
+// Collapses a subteam group, or expands a task's subtask panel.
 function toggleSet(which: 'collapsed' | 'expanded', id: string) {
   const set = which === 'collapsed' ? collapsed : expanded
   const next = new Set(set.value)
@@ -266,6 +276,7 @@ function toggleSet(which: 'collapsed' | 'expanded', id: string) {
   else next.add(id)
   set.value = next
 }
+// "+ Add task": opens a new task in the sprint showing.
 function addTask() {
   const shown = sprint.value
   panel.create(
@@ -273,6 +284,7 @@ function addTask() {
     shown && shown !== 'all' ? shown.id : (team.currentSprint.value?.id ?? null),
   )
 }
+// A bar's tooltip: title · status · dates.
 const barTitle = (title: string, status: string, span: [string, string]) =>
   `${title} · ${status} · ${formatShortDate(span[0])}${span[0] === span[1] ? '' : ` – ${formatShortDate(span[1])}`}`
 
@@ -290,6 +302,7 @@ let dragFrom: {
   title: string
 } | null = null
 let justDragged = false
+// One key per bar, so a drag knows which bar it is moving (a subtask's includes its task).
 const barKey = (task: WithId<Task>, subtask?: Subtask) =>
   subtask ? `${task.id}/${subtask.id}` : task.id
 
@@ -307,9 +320,12 @@ function dragStyle(key: string, dates: Dates, span: [string, string]) {
     width: `${barWidth(shown, dayWidth.value)}px`,
   }
 }
+// Dates as "Oct 6 – Oct 12", or one date when they are the same day.
 const spanLabel = (span: [string, string]) =>
   `${formatShortDate(span[0])}${span[0] === span[1] ? '' : ` – ${formatShortDate(span[1])}`}`
 
+// Pointer down on a bar. Which part was grabbed decides the drag: the middle moves the bar, an end changes that
+// date.
 function startDrag(event: PointerEvent, task: WithId<Task>, subtask?: Subtask) {
   // Touch scrolls the timeline; dragging is for a mouse, trackpad, or pen.
   if (event.button !== 0 || event.pointerType === 'touch') return
@@ -344,12 +360,14 @@ function startDrag(event: PointerEvent, task: WithId<Task>, subtask?: Subtask) {
   drag.value = { key: barKey(task, subtask), mode, days: 0 }
   bar.setPointerCapture(event.pointerId)
 }
+// Pointer moved: turns the distance into whole days (allowing for any sideways scrolling since the drag began).
 function moveDrag(event: PointerEvent) {
   if (!dragFrom || !drag.value) return
   const dx = event.clientX - dragFrom.x + ((scroller.value?.scrollLeft ?? 0) - dragFrom.scroll)
   if (Math.abs(dx) > 3) dragFrom.moved = true
   if (dragFrom.moved) drag.value = { ...drag.value, days: Math.round(dx / dayWidth.value) }
 }
+// Pointer up: saves the new dates if the bar really moved, with Undo in the toast. Esc or a lost pointer cancels.
 function endDrag(event: PointerEvent, cancelled = false) {
   const from = dragFrom
   const state = drag.value
@@ -369,6 +387,7 @@ function endDrag(event: PointerEvent, cancelled = false) {
     run: () => from.save(from.dates),
   })
 }
+// A click opens the task panel; the click that ends a drag does not.
 function openBar(task: WithId<Task>, subtask?: Subtask) {
   if (!justDragged) panel.open(team.teamId.value!, task.id, subtask?.id)
 }
@@ -386,6 +405,7 @@ const scroller = ref<HTMLElement | null>(null)
 
 // ---------- "Later": tasks that start past the right edge of the view ----------
 const view = reactive({ left: 0, width: 0 })
+// Notes how much of the chart is showing, to work out which bars start past the right edge.
 function measureView() {
   if (!scroller.value) return
   view.left = scroller.value.scrollLeft
@@ -409,7 +429,9 @@ const laterShown = computed(() =>
       !collapsed.value.has(group.id) && group.items.some((item) => startsLater(item.span, false)),
   ),
 )
+// Does this bar belong in the Later column?
 const isLater = (span: [string, string]) => laterShown.value && startsLater(span, true)
+// Scrolls so a day sits `lead` days in from the left edge.
 function scrollTo(iso: string, lead = 5) {
   if (scroller.value && range.value)
     scroller.value.scrollLeft = (daysBetween(range.value.start, iso) - lead) * dayWidth.value
@@ -434,6 +456,7 @@ watch(
   { immediate: true },
 )
 onMounted(() => nextTick(() => scrolled && scrollToSprint()))
+// Zooms in or out a step, keeping the same day in the middle of the view.
 function zoomBy(step: number) {
   const next = Math.min(TIMELINE_ZOOMS.length - 1, Math.max(0, zoom.value + step))
   if (next === zoom.value || !scroller.value) return

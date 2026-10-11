@@ -1,3 +1,4 @@
+// Tests for the huddle's default plan and for tidying plan rows before they're saved.
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_HUDDLE_PLAN, cleanPlan, defaultHuddlePlan } from '../huddles'
 

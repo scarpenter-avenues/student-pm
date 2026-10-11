@@ -53,11 +53,14 @@ const request: Request = (method, url, body) => {
   return { status: Number(out.slice(at + 1)), json: JSON.parse(out.slice(0, at) || 'null') }
 }
 
+// The app's own data layer, signed in as one of the sample people.
 function data(uid: Uid) {
   const db: Firestore = as(env, uid)
   const refs = createRefs(db, 'p1')
   return { refs, writes: createWrites(refs, () => uid) }
 }
+// One run of the email sender against the emulator, with a stand-in for Gmail that records what would be sent
+// and counts down a daily quota.
 function run(settings: Partial<Settings> = {}) {
   const sent: Mail[] = []
   let quota = 100

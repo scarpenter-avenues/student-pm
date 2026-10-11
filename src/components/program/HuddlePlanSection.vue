@@ -27,17 +27,20 @@ watch(saved, () => {
   if (!changed.value) rows.value = fresh()
 })
 
+// Shows a toast when a save finishes, or says why it failed.
 function run(write: Promise<void>, done: string) {
   write.then(
     () => toast.show(done),
     (e: Error) => toast.show(`Couldn't save: ${e.message}`),
   )
 }
+// Saves the rows as the program's default plan (blank rows are dropped).
 function save() {
   const plan = cleanPlan(rows.value)
   rows.value = plan.map((row) => ({ ...row, audience: [...row.audience] }))
   run(writes.setHuddlePlan(plan), 'Default huddle plan saved')
 }
+// Goes back to the built-in plan.
 function reset() {
   run(writes.setHuddlePlan(null), 'Default huddle plan reset')
   rows.value = defaultHuddlePlan(null)

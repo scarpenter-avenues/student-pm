@@ -4,13 +4,35 @@ rules_version = '2';
 // run `npm run test:rules` after any change here.
 //
 // Roles: student, lead (students), mentor (adult, scoped to teamIds), coach (program-wide, teamIds = []).
-// The GitHub sync and other server code use the Admin SDK, which bypasses these rules.
+// The setup script, the email sender, and the GitHub sync run with the project owner's access, which bypasses
+// these rules.
+//
+// How to read this file
+// ---------------------
+// The browser talks to the database directly, so these rules are the only real lock: the app hiding a button
+// protects nothing. Each `match` names a kind of document by its path, and each `allow` says when an action on it
+// is permitted. Anything not allowed here is refused.
+//
+//   read   = get one document, or list several      create = make a new document
+//   update = change an existing document            delete = remove it
+//
+// Three names appear everywhere:
+//
+//   request.auth           who is asking (null if signed out); request.auth.uid is their id
+//   resource.data          the document as it is stored now
+//   request.resource.data  the document as it would be if this write went through
+//
+// So an `update` rule usually checks both: who may change the old document, and that the new one is still valid.
+// (A rule that checks only one of them is how privacy holes happen.)
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Someone is signed in.
     function signedIn() { return request.auth != null; }
+    // The id of whoever is asking.
     function uid() { return request.auth.uid; }
+    // The names of the fields an update would change. `changed().hasOnly(['a', 'b'])` means "nothing but a and b".
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
     // Which program a person belongs to. Written once, in the same batch as their invite claim.
@@ -30,14 +52,23 @@ service cloud.firestore {
     match /programs/{programId} {
 
       // ---------- helpers ----------
+      // Where this program and its members are stored.
       function programPath() { return /databases/$(database)/documents/programs/$(programId); }
       function memberPath(id) { return /databases/$(database)/documents/programs/$(programId)/members/$(id); }
+      // The asker's own member record: their role and their teams. Everything below is built on this, and it is
+      // read from the database, never taken from what the browser claims.
       function me() { return get(memberPath(uid())).data; }
+      // In this program at all.
       function isMember() { return signedIn() && exists(memberPath(uid())); }
+      // A program coach: an adult who works across every team.
       function isCoach() { return isMember() && me().role == 'coach'; }
+      // A program coach or a team mentor.
       function isAdult() { return isMember() && me().role in ['coach', 'mentor']; }
+      // May see this team's work: anyone on the team, or a program coach.
       function onTeam(teamId) { return isMember() && (me().role == 'coach' || teamId in me().teamIds); }
+      // An adult responsible for this team: its mentor, or a program coach.
       function adultOn(teamId) { return isMember() && (me().role == 'coach' || (me().role == 'mentor' && teamId in me().teamIds)); }
+      // May run this team: its team lead, or an adult responsible for it.
       function leadOn(teamId) { return onTeam(teamId) && (me().role == 'lead' || adultOn(teamId)); }
       // Mentors manage students and leads whose teams are all among the mentor's teams.
       function mentorCanManage(teamIds, role) {
@@ -45,7 +76,9 @@ service cloud.firestore {
       }
       // Sign-in method check (from program.config.json). Emails on the program's Google domains must use Google;
       // other emails may use email/password only if the program allows it for this person's role.
+      // Whether an email's domain is one the program signs in to with Google.
       function onGoogleDomain(auth, domain) { return 'google' in auth && domain in auth.google.domains; }
+      // Whether the asker signed in the way the program requires for someone in this role.
       function signInAllowed(role) {
         let auth = get(programPath()).data.auth;
         let domain = request.auth.token.email.lower().split('@')[1];
@@ -67,6 +100,7 @@ service cloud.firestore {
 
       // ---------- people ----------
       match /members/{memberId} {
+        // A new member record must copy its invite exactly, so nobody can give themselves a different role or team.
         function inviteMatches(invite) {
           return request.resource.data.keys().hasOnly(['displayName', 'role', 'teamIds', 'subteams', 'joinedAt'])
             && request.resource.data.displayName == invite.displayName
@@ -127,6 +161,7 @@ service cloud.firestore {
         }
 
         match /tasks/{taskId} {
+          // What every task must look like, on the way in and after any change.
           function validTask(task) {
             return task.title is string && task.title.size() > 0 && task.title.size() <= 90
               && task.status in ['To do', 'In progress', 'Done']
@@ -221,6 +256,8 @@ service cloud.firestore {
       // ---------- goals ----------
       // Teammates see only the statement and status (this doc). The rest of the goal is in goals/{goalId}.
       match /goalSummaries/{goalId} {
+        // The private goal as it will be once this write finishes. A summary is always written in the same batch as
+        // its goal, and must agree with it.
         function goalAfter() { return getAfter(/databases/$(database)/documents/programs/$(programId)/goals/$(goalId)).data; }
         allow read: if onTeam(resource.data.teamId);
         // Written with the goal (same batch). Its team always matches the goal's, so it's shown only to that team.
@@ -231,6 +268,7 @@ service cloud.firestore {
       }
 
       match /goals/{goalId} {
+        // The full goal is for the student and the adults of their current team. Teammates get the summary only.
         function canSeeGoal(goal) { return goal.studentId == uid() || adultOn(goal.teamId); }
         allow read: if isMember() && canSeeGoal(resource.data);
         allow create: if isMember() && request.resource.data.studentId == uid() && request.resource.data.teamId in me().teamIds;
@@ -242,6 +280,7 @@ service cloud.firestore {
         allow delete: if isCoach();
 
         match /events/{eventId} {
+          // The goal this history entry belongs to, as stored now.
           function goal() { return get(/databases/$(database)/documents/programs/$(programId)/goals/$(goalId)).data; }
           // Mentors see only events written while the student was on one of their teams.
           allow read: if isMember() && (goal().studentId == uid() || isCoach() || (adultOn(resource.data.teamId) && adultOn(goal().teamId)));

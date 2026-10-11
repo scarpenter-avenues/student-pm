@@ -21,6 +21,7 @@ const session = useSession()
 const team = useTeam()
 const toast = useToast()
 const { nameOf, members } = useNames(team)
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 
 const owner = computed(() => props.goal.studentId === session.member?.id)
@@ -48,15 +49,21 @@ const newFeedback = computed(() => {
   const feedback = events.value.filter((event) => event.type === 'feedback')
   return new Set(feedback.slice(-props.goal.unreadFeedback).map((event) => event.id))
 })
+// The student's replies to one piece of feedback.
 const repliesTo = (id: string) =>
   events.value.filter((event) => event.type === 'reply' && event.replyTo === id)
 
+// The role shown beside a name ("Mentor", "Program coach").
 function roleOf(uid: string) {
   const member = members.value.find((m) => m.id === uid) ?? team.memberById.value.get(uid)
   return member ? ROLE_LABELS[member.role] : ''
 }
+// A team's name, for events written while the student was on another team.
 const teamName = (id: string) => session.teamsById[id]?.name ?? team.team.value?.name ?? ''
+// A task's title, if it is still on this team's board.
 const taskTitle = (id: string) => team.tasks.value.find((task) => task.id === id)?.title
+// The finished tasks a check-in named, as one line. Tasks that can no longer be found are counted ("2 more
+// tasks").
 function did(event: GoalEvent) {
   const titles = (event.taskIds ?? []).map(taskTitle).filter(Boolean)
   const others = (event.taskIds ?? []).length - titles.length
@@ -64,6 +71,7 @@ function did(event: GoalEvent) {
     ', ',
   )
 }
+// A check-in's next steps as one line, each with its sprint.
 function nextSteps(event: GoalEvent) {
   return (event.nextSteps ?? [])
     .map((step) =>
@@ -76,12 +84,14 @@ function nextSteps(event: GoalEvent) {
 const replyingTo = ref<string | null>(null)
 const replyText = ref('')
 const replyInput = ref<HTMLInputElement[] | null>(null)
+// Student: opens the reply box under a piece of feedback.
 async function startReply(id: string) {
   replyingTo.value = id
   replyText.value = ''
   await nextTick()
   replyInput.value?.[0]?.focus()
 }
+// Student: sends the reply.
 function sendReply(id: string) {
   if (!replyText.value.trim()) return
   writes.replyToFeedback(props.goal, id, replyText.value.trim(), todayIso()).catch(fail)
@@ -99,6 +109,7 @@ const QUICK = [
 const respondingTo = ref<string | 'general' | null>(null)
 const feedbackText = ref('')
 const feedbackInput = ref<HTMLTextAreaElement[] | HTMLTextAreaElement | null>(null)
+// Coach or mentor: opens the feedback box, about one check-in or the goal in general.
 async function startFeedback(about: string | 'general') {
   respondingTo.value = about
   feedbackText.value = ''
@@ -106,6 +117,7 @@ async function startFeedback(about: string | 'general') {
   const el = Array.isArray(feedbackInput.value) ? feedbackInput.value[0] : feedbackInput.value
   el?.focus()
 }
+// Posts the feedback. Every coach of the team can read it: there are no private notes to a student.
 function postFeedback() {
   const text = feedbackText.value.trim()
   if (!text) return

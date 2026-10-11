@@ -7,4 +7,5 @@ export const PICKABLE_TYPES: readonly TaskType[] = ['Task', 'Learning', 'Idea']
 
 export const statusOptions = STATUSES.map((value) => ({ value, label: value }))
 export const typeOptions = PICKABLE_TYPES.map((value) => ({ value, label: value }))
+/** A GitHub issue's type is set by the sync, and people can't change it. */
 export const isTypeLocked = (type: TaskType) => type === 'GitHub issue'

@@ -37,6 +37,7 @@ const candidates = computed(() =>
 const ready = computed(() => candidates.value.filter((c) => !c.error))
 const templateHref = URL.createObjectURL(new Blob([CSV_TEMPLATE], { type: 'text/csv' }))
 
+// Reads the chosen file in the browser (it is never uploaded) and previews its rows.
 async function choose(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0]
   if (!file) return
@@ -44,6 +45,7 @@ async function choose(event: Event) {
   fileName.value = file.name
   rows.value = parseCsv(await file.text())
 }
+// Writes an invite for every row marked ready.
 function add() {
   ready.value.forEach((c) =>
     writes
@@ -61,6 +63,7 @@ function add() {
   )
   emit('close')
 }
+// A team's name for the preview.
 const teamName = (id: string | null) =>
   id ? (props.teams.find((t) => t.id === id)?.name ?? '') : 'No team'
 </script>

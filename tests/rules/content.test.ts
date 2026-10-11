@@ -1,3 +1,5 @@
+// Security rules tests for announcements, huddles, and each person's own read markers: who can read them, post
+// them, and change them.
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 import {
   assertFails,
@@ -26,6 +28,7 @@ beforeAll(async () => {
 beforeEach(() => seed(env))
 afterAll(() => env.cleanup())
 
+// A valid announcement to a given audience from a given author; tests change one thing about it at a time.
 const announcement = (audience: string[], authorId: string) => ({
   title: 'Build night moved',
   body: '',

@@ -1,3 +1,5 @@
+// Tests for which sign-in method an email must use, and for the plain-language versions of Firebase's sign-in
+// errors.
 import { describe, expect, it } from 'vitest'
 import { signInMethodFor } from '@/model/signIn'
 import { authMessage } from '../messages'

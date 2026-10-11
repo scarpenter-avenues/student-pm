@@ -36,6 +36,7 @@ const chosen = ref<string[]>([])
 const group = `team-picker-${Math.random().toString(36).slice(2, 8)}`
 
 const allLabel = computed(() => (props.limited ? 'All my teams' : 'All teams'))
+// What the closed button says: one team's name, "No team", "All teams", or a count.
 function summary(ids: readonly string[]) {
   const names = props.teams.filter((team) => ids.includes(team.id)).map((team) => team.name)
   if (!names.length) return 'No team'
@@ -46,11 +47,13 @@ function summary(ids: readonly string[]) {
 }
 const every = computed(() => chosen.value.length === props.teams.length)
 
+// Opening starts from the saved choice; clicking the button again closes.
 function toggleOpen() {
   if (open.value) return close()
   chosen.value = [...props.modelValue]
   open.value = true
 }
+// Closing is when a several-team choice is applied (so ticking three boxes is one change, not three).
 function close() {
   if (!open.value) return
   open.value = false
@@ -61,17 +64,21 @@ function close() {
       props.teams.map((team) => team.id).filter((id) => chosen.value.includes(id)),
     )
 }
+// One-team mode: picking is the whole choice, so it closes straight away.
 function pickOne(id: string | null) {
   chosen.value = id ? [id] : []
   close()
   button.value?.focus()
 }
+// Several-team mode: tick or untick one team.
 function toggle(id: string, on: boolean) {
   chosen.value = on ? [...chosen.value, id] : chosen.value.filter((other) => other !== id)
 }
+// "All teams" ticks or clears every team.
 function toggleAll(on: boolean) {
   chosen.value = on ? props.teams.map((team) => team.id) : []
 }
+// Esc closes without applying.
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape' && open.value) {
     event.preventDefault()

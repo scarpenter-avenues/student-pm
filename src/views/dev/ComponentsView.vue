@@ -59,6 +59,7 @@ const mentorTeams = ref<string[]>(['gear-grinders', 'pixel-pilots'])
 const statusFilter = ref<string[]>([])
 const html = ref('<p>Build night is <strong>Thursday</strong>. Bring safety glasses.</p>')
 const log = ref<string[]>([])
+// Adds a line to the "what just happened" log on the page (the last six).
 const note = (line: string) => (log.value = [line, ...log.value].slice(0, 6))
 const toast = useToast()
 </script>

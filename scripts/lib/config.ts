@@ -19,6 +19,7 @@ export interface ProgramConfig {
   teams: { name: string; number?: string; color?: string; sprintDays?: number }[]
 }
 
+// Small checks for the config. Each says whether a value is the right kind of text.
 const isDate = (value: unknown): value is string =>
   typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
 const isEmail = (value: unknown): value is string =>
@@ -30,6 +31,8 @@ const isDomain = (value: unknown): value is string =>
 
 // Untyped JSON, read safely.
 type Raw = Record<string, unknown>
+// The config comes from a hand-edited file, so anything can be missing or the wrong type. These read a value as
+// an object, text, or a list, falling back to something empty.
 const obj = (value: unknown): Raw =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Raw) : {}
 const str = (value: unknown): string => (typeof value === 'string' ? value.trim() : '')
@@ -140,6 +143,10 @@ export function signInMethodFor(
   return methodFor(programAuthFrom(config), email, role)
 }
 
+/**
+ * Reads the config file, checks it, and returns it ready to use. If anything is wrong it throws one error that
+ * lists every problem, so they can all be fixed in one go.
+ */
 export function loadConfig(path: string): ProgramConfig {
   let raw: unknown
   try {

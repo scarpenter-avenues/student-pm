@@ -17,6 +17,10 @@ export interface DashboardGoals {
 export const DASHBOARD_GOALS: InjectionKey<DashboardGoals> = Symbol('dashboardGoals')
 const STORAGE = 'switchback.collapsedGoalTeams'
 
+/**
+ * The Goals tab's shared state: each team's group reports its counts here so the page can show totals, and
+ * which groups are collapsed is remembered on this device.
+ */
 export function createDashboardGoals(): DashboardGoals {
   const groups = shallowReactive(new Map<string, GoalGroupHandle>())
   const collapsed = ref<Set<string>>(new Set())
@@ -29,6 +33,7 @@ export function createDashboardGoals(): DashboardGoals {
     register: (teamId, handle) => groups.set(teamId, handle),
     unregister: (teamId) => groups.delete(teamId),
     collapsed,
+    // Collapses or opens a team's group, and remembers it.
     setCollapsed(teamId, isCollapsed) {
       const next = new Set(collapsed.value)
       if (isCollapsed) next.add(teamId)

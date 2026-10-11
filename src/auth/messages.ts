@@ -19,6 +19,10 @@ const MESSAGES: Record<string, string> = {
 /** Errors that mean the person changed their mind, not that something went wrong. */
 const QUIET = new Set(['auth/popup-closed-by-user', 'auth/cancelled-popup-request'])
 
+/**
+ * Firebase's sign-in error as words a student can act on, or null for things that aren't errors to them
+ * (closing the Google pop-up).
+ */
 export function authMessage(error: unknown): string | null {
   const code = (error as { code?: string } | null)?.code ?? ''
   if (QUIET.has(code)) return null

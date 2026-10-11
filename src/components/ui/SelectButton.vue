@@ -23,6 +23,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: V | V[]] }>()
 
 const button = ref<HTMLButtonElement | null>(null)
 const open = ref(false)
+// Nothing chosen: show the placeholder.
 const empty = () =>
   Array.isArray(props.modelValue)
     ? !props.modelValue.length

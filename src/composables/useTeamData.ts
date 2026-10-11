@@ -11,6 +11,11 @@ import { ADULT_ROLES, type Member, type Sprint, type Task, type WithId } from '@
 import { useSession } from '@/stores/session'
 import type { Person } from '@/components/ui/AssigneePicker.vue'
 
+/**
+ * Everything about one team, live: its profile, this season's sprints, its unarchived tasks, its people, and
+ * what the signed-in person may do there. Made once for the team in the address and shared with every page (see
+ * provideTeam).
+ */
 export function createTeamData(teamIdOf: () => string | null) {
   const session = useSession()
   const teamId = computed(teamIdOf)
@@ -39,6 +44,7 @@ export function createTeamData(teamIdOf: () => string | null) {
     )
   })
   const sprintById = computed(() => new Map(sprints.value.map((sprint) => [sprint.id, sprint])))
+  /** A sprint's name for display; null is the Backlog. */
   const sprintName = (id: string | null) =>
     id === null ? 'Backlog' : (sprintById.value.get(id)?.name ?? 'Earlier sprint')
 
@@ -51,6 +57,7 @@ export function createTeamData(teamIdOf: () => string | null) {
     return [...onTeam, ...coaches]
   })
   const memberById = computed(() => new Map(members.value.map((member) => [member.id, member])))
+  /** A member's display name. Someone who has left reads "Former member". */
   const nameOf = (uid: string) => memberById.value.get(uid)?.displayName ?? 'Former member'
   /** Who tasks can be assigned to: the team's own roster (students and leads first, then mentors). */
   const people = computed<Person[]>(() =>
@@ -86,6 +93,7 @@ export function createTeamData(teamIdOf: () => string | null) {
     () => taskList.loading.value || sprintList.loading.value || teamDoc.loading.value,
   )
 
+  /** The tasks in one sprint (null for the Backlog), in priority order. */
   function tasksIn(sprintId: string | null): WithId<Task>[] {
     return tasks.value.filter((task) => task.sprintId === sprintId)
   }
@@ -115,6 +123,7 @@ export type TeamData = ReturnType<typeof createTeamData>
 
 const KEY: InjectionKey<TeamData> = Symbol('team')
 
+/** Makes this team's data available to every component inside the one that calls this. */
 export function provideTeam(data: TeamData) {
   provide(KEY, data)
 }

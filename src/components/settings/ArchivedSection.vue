@@ -11,6 +11,7 @@ import TypeLabel from '@/components/ui/TypeLabel.vue'
 
 const props = defineProps<{ team: TeamData }>()
 const toast = useToast()
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 const teamId = computed(() => props.team.teamId.value!)
 const archived = useLiveQuery(
@@ -23,10 +24,13 @@ const list = computed(() =>
 )
 const confirming = ref<string | null>(null)
 
+// Brings an archived task back to where its order puts it.
 function restore(id: string, title: string) {
   writes.restoreTask(teamId.value, id).catch(fail)
   toast.show(`Restored “${title}”`)
 }
+// Deletes an archived task for good. Only mentors and coaches see this button, and the rules refuse anyone
+// else.
 function remove(id: string, title: string) {
   writes.deleteTask(teamId.value, id).catch(fail)
   confirming.value = null

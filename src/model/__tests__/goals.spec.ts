@@ -1,3 +1,5 @@
+// Tests for the goal rules: when a check-in is due or overdue, what a coach is told about a goal, turning an
+// obstacle into an if-then plan, and the wizard's idea lists.
 import { describe, expect, it } from 'vitest'
 import {
   checkinDue,

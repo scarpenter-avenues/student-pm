@@ -1,3 +1,6 @@
+// ESLint checks the code for likely mistakes (`npm run lint`). This applies the standard Vue and TypeScript checks
+// everywhere, the Vitest checks to unit tests, and the Playwright checks to the browser tests. Formatting is left
+// to Prettier.
 import { globalIgnores } from 'eslint/config'
 import { defineConfigWithVueTs, vueTsConfigs } from '@vue/eslint-config-typescript'
 import pluginVue from 'eslint-plugin-vue'

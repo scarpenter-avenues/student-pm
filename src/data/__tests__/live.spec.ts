@@ -1,3 +1,5 @@
+// Tests for the live-data helpers: they subscribe, update as data arrives, re-subscribe only when the query really
+// changes, and stop when the component goes away. Firestore is replaced with a stand-in here.
 import { describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 

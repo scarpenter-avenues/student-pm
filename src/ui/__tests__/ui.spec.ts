@@ -1,3 +1,5 @@
+// Tests for small display helpers: a person's initials, and a team's colors (readable text on any color, and the
+// tints made from it).
 import { describe, expect, it } from 'vitest'
 import { initials } from '../format'
 import { mixHex, teamAccent, teamColorOf } from '../teamColor'

@@ -23,6 +23,10 @@ export const DASHBOARD_TASKS: InjectionKey<DashboardTasks> = Symbol('dashboardTa
 
 const STORAGE = 'switchback.collapsedTaskTeams'
 
+/**
+ * The Tasks tab's shared state. Each team loads its own tasks in its own group, so the page needs one place for
+ * the things that span teams: the selection, the totals, and which groups are collapsed.
+ */
 export function createDashboardTasks(order: () => string[]): DashboardTasks {
   const groups = shallowReactive(new Map<string, GroupHandle>())
   const selected = ref<Set<string>>(new Set())
@@ -33,6 +37,7 @@ export function createDashboardTasks(order: () => string[]): DashboardTasks {
   } catch {
     // Storage can be unavailable (private windows); every team starts open.
   }
+  // Every selectable row on the page, top to bottom, across teams (for shift-click ranges).
   const allKeys = () =>
     order().flatMap(
       (teamId) =>
@@ -49,6 +54,7 @@ export function createDashboardTasks(order: () => string[]): DashboardTasks {
     register: (teamId, handle) => groups.set(teamId, handle),
     unregister: (teamId) => groups.delete(teamId),
     has: (teamId, key) => selected.value.has(`${teamId}::${key}`),
+    /** Selects or deselects a row; with Shift, everything between the last row clicked and this one. */
     toggle(teamId, key, event) {
       const full = `${teamId}::${key}`
       const next = new Set(selected.value)
@@ -62,10 +68,12 @@ export function createDashboardTasks(order: () => string[]): DashboardTasks {
       anchor = full
       selected.value = next
     },
+    /** Deselects everything. */
     clear() {
       selected.value = new Set()
       anchor = null
     },
+    // Collapses or opens a team's group, and remembers it on this device.
     setCollapsed(teamId, isCollapsed) {
       const next = new Set(collapsed.value)
       if (isCollapsed) next.add(teamId)
@@ -80,5 +88,6 @@ export function createDashboardTasks(order: () => string[]): DashboardTasks {
   }
 }
 
+/** How many tasks are showing across every team. */
 export const totalOf = (tasks: DashboardTasks) =>
   computed(() => [...tasks.groups.values()].reduce((sum, g) => sum + g.count(), 0))

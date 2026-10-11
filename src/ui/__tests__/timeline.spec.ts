@@ -1,3 +1,5 @@
+// Tests for the Timeline's layout arithmetic (a task's span, bar widths, lanes) and for what dragging a bar does
+// to its dates.
 import { describe, expect, it } from 'vitest'
 import { dateSpan, overflowDays, packLanes, dragDates } from '../timeline'
 

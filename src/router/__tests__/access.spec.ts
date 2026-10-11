@@ -1,3 +1,5 @@
+// Tests for who may open which page, and where everyone else is sent: one case for each kind of person and sign-in
+// state.
 import { describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 

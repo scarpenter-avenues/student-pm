@@ -27,6 +27,9 @@ export interface Live<T> {
 
 type Source<S> = () => S | null | undefined | false | ''
 
+// The shared machinery behind useLiveQuery and useLiveDoc. Watches `source`; when it really changes (per
+// `same`), it stops the old subscription, resets to `empty`, and subscribes to the new target. It stops for
+// good when the component using it goes away.
 function listen<S extends object, T>(
   source: Source<S>,
   same: (a: S, b: S) => boolean,
@@ -63,6 +66,8 @@ function listen<S extends object, T>(
   return live
 }
 
+// What every subscription does when Firestore refuses or fails: log it, keep it for the screen to show, and
+// stop the loading state.
 function onError(live: Live<unknown>) {
   return (error: FirestoreError) => {
     console.error(error)
@@ -71,6 +76,10 @@ function onError(live: Live<unknown>) {
   }
 }
 
+/**
+ * A list of documents that stays up to date. Pass a function returning the query (or null/false for "nothing
+ * yet"); you get back `data`, `loading`, and `error` to use in a template.
+ */
 export function useLiveQuery<T>(source: Source<Query<T>>): Live<T[]> {
   return listen<Query<T>, T[]>(
     source,
@@ -89,6 +98,7 @@ export function useLiveQuery<T>(source: Source<Query<T>>): Live<T[]> {
   )
 }
 
+/** One document that stays up to date; `data` is null while it loads or if it does not exist. */
 export function useLiveDoc<T>(source: Source<DocumentReference<T>>): Live<T | null> {
   return listen<DocumentReference<T>, T | null>(
     source,

@@ -1,8 +1,12 @@
+// Every address in the app and the page it shows. Pages load only when they're first opened (the `() =>
+// import(...)` lines). Before each navigation the guard waits for sign-in to settle, then asks access.ts whether
+// this person may see the page.
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { useSession } from '@/stores/session'
 import { decide } from './access'
 import { DASHBOARD_TABS, DEFAULT_TEAM_TAB, TEAM_TABS } from './tabs'
 
+// "home|planning|board|…": limits the :tab part of an address to tabs that exist.
 const tabPattern = (tabs: readonly { id: string }[]) => tabs.map((tab) => tab.id).join('|')
 
 // "/" always redirects (see access.ts), so it never renders anything.

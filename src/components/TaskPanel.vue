@@ -106,6 +106,7 @@ watch([parent, subtask, () => team.loading.value], ([task, sub, loading]) => {
   if (!task || task.archived || (subtaskId.value && (!sub || sub.archived))) panel.close()
 })
 
+// Saving doesn't block the panel; if a save is refused, say so.
 function fail(error: unknown) {
   console.error(error)
   toast.show(`Couldn't save: ${(error as Error).message ?? 'unknown error'}`)
@@ -137,6 +138,7 @@ watch(
     if (document.activeElement !== titleInput.value) titleDraft.value = title ?? ''
   },
 )
+// Saves the title when you leave the box. An empty title isn't saved: the old one comes back.
 function saveTitle() {
   const next = titleDraft.value.replace(/\s+/g, ' ').trim()
   if (!next) {
@@ -149,12 +151,14 @@ function saveTitle() {
 // ---------- description (saved after a pause, and on close) ----------
 let descriptionTimer: ReturnType<typeof setTimeout> | undefined
 let pendingDescription: string | null = null
+// The description saves by itself, 0.7 seconds after you stop typing, rather than on every keystroke.
 function onDescription(html: string) {
   if (creating.value) return void (draft.descriptionHtml = html)
   pendingDescription = html
   clearTimeout(descriptionTimer)
   descriptionTimer = setTimeout(flushDescription, 700)
 }
+// Saves a waiting description right now: before the panel closes, or before switching to another task.
 function flushDescription() {
   clearTimeout(descriptionTimer)
   if (pendingDescription === null) return
@@ -181,16 +185,20 @@ const sprintOptions = computed(() => [
   })),
 ])
 
+// Closing saves anything still unsaved first.
 function close() {
   flushDescription()
   saveTitle()
   panel.close()
 }
 
+// The "Mark complete" button: Done, or back to To do.
 function toggleComplete() {
   save({ status: done.value ? 'To do' : 'Done' })
 }
 
+// Create mode: saves the draft as a real task at the bottom of the team's order, and closes the panel. The
+// toast offers to open it again.
 async function addTask() {
   const teamId = target.value?.teamId
   const title = titleDraft.value.replace(/\s+/g, ' ').trim()
@@ -207,6 +215,7 @@ async function addTask() {
   toast.show(`Added “${title}”`, { label: 'Open', run: () => panel.open(teamId, id) })
 }
 
+// Archives this task (or this subtask) and closes the panel. The toast offers Undo.
 function archive() {
   const teamId = target.value?.teamId
   const task = parent.value
@@ -231,6 +240,7 @@ function archive() {
     run: () => writes.restoreTask(teamId, task.id).catch(fail),
   })
 }
+// Undo for archiving a subtask.
 function restoreSubtask(teamId: string, taskId: string, id: string) {
   const task = team.tasks.value.find((item) => item.id === taskId)
   if (task)
@@ -241,6 +251,7 @@ function restoreSubtask(teamId: string, taskId: string, id: string) {
       .catch(fail)
 }
 
+// "Make it a task": turns this subtask into its own task, right after its parent, and opens it.
 function promote() {
   const teamId = target.value?.teamId
   const task = parent.value
@@ -265,12 +276,14 @@ const doneCount = computed(
 )
 const newSubtask = reactive({ title: '', assigneeIds: [] as string[], due: null as string | null })
 
+// Subtasks are stored as one list inside the task, so any change saves the whole list.
 function saveSubtasks(next: Subtask[]) {
   if (creating.value) return void (draft.subtasks = next)
   const teamId = target.value?.teamId
   if (teamId && parent.value)
     writes.updateTask(teamId, parent.value.id, { subtasks: next }).catch(fail)
 }
+// Adds a subtask from the row at the bottom of the list.
 function addNewSubtask() {
   const title = newSubtask.title.replace(/\s+/g, ' ').trim()
   if (!title || !record.value) return
@@ -284,6 +297,7 @@ function addNewSubtask() {
   )
   Object.assign(newSubtask, { title: '', assigneeIds: [], due: null })
 }
+// A subtask's status menu.
 function setSubtaskStatus(id: string, status: Status) {
   if (record.value) saveSubtasks(updateSubtask(record.value.subtasks, id, { status }))
 }
@@ -298,11 +312,13 @@ function moveVisibleSubtask(from: number, to: number) {
   if (fromIndex >= 0 && toIndex >= 0 && fromIndex !== toIndex)
     saveSubtasks(moveSubtask(list, fromIndex, toIndex))
 }
+// Alt+↑ / Alt+↓ on a subtask moves it up or down the list.
 function onSubtaskKeydown(event: KeyboardEvent, index: number) {
   if (!event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
   event.preventDefault()
   moveVisibleSubtask(index, index + (event.key === 'ArrowUp' ? -1 : 1))
 }
+// The × on a subtask archives it (or, while still creating the task, just drops it from the draft).
 function removeSubtask(item: Subtask) {
   const teamId = target.value?.teamId
   if (creating.value) return saveSubtasks(draft.subtasks.filter((other) => other.id !== item.id))
@@ -318,6 +334,7 @@ function removeSubtask(item: Subtask) {
     run: () => restoreSubtask(teamId, taskId, item.id),
   })
 }
+// Opens a subtask in this same panel.
 function openSubtask(item: Subtask) {
   if (creating.value || !parent.value || !target.value) return
   flushDescription()
@@ -341,6 +358,7 @@ const shownComments = computed(() => {
   )
 })
 const commentDraft = ref('')
+// Adds a comment to this task or subtask.
 function postComment() {
   const text = commentDraft.value.trim()
   const t = target.value
@@ -349,6 +367,7 @@ function postComment() {
   commentDraft.value = ''
 }
 
+// Esc closes the panel.
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     event.preventDefault()

@@ -11,6 +11,7 @@ export const EVENT_ICONS: Record<CalendarEvent['type'], string> = {
   Other: '📌',
 }
 
+/** A team's calendar, live: the program's events and the team's own, merged and sorted by date. */
 export function useEvents(teamId: () => string | null) {
   const programEvents = useLiveQuery(() => teamId() && queries.programEvents())
   const teamEvents = useLiveQuery(() => {

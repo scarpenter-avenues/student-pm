@@ -18,11 +18,17 @@ export interface GoalDraft {
   plan: string
 }
 
+/**
+ * Everything a student or coach can do to a goal. Each action saves the change and, where it matters, adds an
+ * entry to the goal's history in the same write.
+ */
 export function useGoalActions() {
   const team = useTeam()
   const session = useSession()
   const toast = useToast()
+  // Saves don't block the screen; if one is refused, say so.
   const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
+  // Today's date, read when it is needed (a tab left open overnight shouldn't keep yesterday's).
   const today = () => todayIso()
 
   /** A Learning task for me in a sprint, linked to the goal. */
@@ -52,6 +58,10 @@ export function useGoalActions() {
     written.catch(fail)
   }
 
+  /**
+   * Saves a new goal from the wizard's answers, and optionally its first step as a Learning task. Returns the
+   * goal's id, or null if something needed is missing.
+   */
   function create(draft: GoalDraft, firstStep: string | null) {
     const teamId = team.teamId.value
     const seasonId = session.program?.currentSeasonId
@@ -73,6 +83,7 @@ export function useGoalActions() {
     return id
   }
 
+  // The shared save: changes to the goal plus an optional history entry.
   function update(
     goal: GoalDoc,
     changes: Partial<Goal>,
@@ -81,6 +92,7 @@ export function useGoalActions() {
     return writes.updateGoal(goal, changes, record, today()).catch(fail)
   }
 
+  /** Saves the wizard's answers over an existing goal, recording in its history that it was edited. */
   function edit(goal: GoalDoc, draft: GoalDraft) {
     const next = {
       wish: cleanText(draft.wish),
@@ -99,6 +111,10 @@ export function useGoalActions() {
     toast.show('Goal updated')
   }
 
+  /**
+   * Saves a sprint check-in: the new status, what they did, whether the if-then plan worked (and a rewritten
+   * plan), and each next step as a Learning task.
+   */
   function checkin(
     goal: GoalDoc,
     answer: {
@@ -130,6 +146,7 @@ export function useGoalActions() {
     answer.steps.forEach((step) => addLearningTask(step.title, step.sprintId, goal.id))
   }
 
+  /** "Got it": closes the goal with the student's reflection. It moves to their goal history. */
   function finish(goal: GoalDoc, reflection: { helped: string; different: string; next: string }) {
     void update(
       goal,
@@ -138,6 +155,7 @@ export function useGoalActions() {
     )
   }
 
+  /** Pauses a goal: no check-ins, and hidden from teammates, until it is resumed. */
   function pause(goal: GoalDoc, reason: string | null) {
     void update(
       goal,
@@ -168,6 +186,7 @@ export function useGoalActions() {
     )
   }
 
+  /** Clears the "new feedback" marker once the student has seen it. */
   function markFeedbackRead(goal: GoalDoc) {
     if (goal.unreadFeedback > 0) writes.markFeedbackRead(goal.id).catch(fail)
   }

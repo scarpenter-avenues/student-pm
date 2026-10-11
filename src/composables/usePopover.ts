@@ -2,6 +2,10 @@
 // <body> with position: fixed, open below the anchor (above when there's no room), and stay inside the window.
 import { onBeforeUnmount, onMounted, ref, type Ref } from 'vue'
 
+/**
+ * Positions a floating element (a menu, the calendar) next to the thing that opened it: below by default, above
+ * if there's no room, and never off the edge of the screen.
+ */
 export function useAnchoredPosition(
   anchor: () => HTMLElement | null | undefined,
   floating: Ref<HTMLElement | null>,
@@ -10,6 +14,8 @@ export function useAnchoredPosition(
   // Hidden until measured, so it never flashes at the corner.
   const style = ref<Record<string, string>>({ visibility: 'hidden', top: '0px', left: '0px' })
 
+  // Measures both elements and works out where the floating one goes. Called when it opens and on scroll or
+  // resize.
   function place() {
     const target = anchor()
     const element = floating.value
@@ -43,6 +49,8 @@ export function useAnchoredPosition(
 
 /** Calls `dismiss` on a pointer press outside every element `inside()` returns (e.g. the popover and its anchor). */
 export function useClickAway(inside: () => (Element | null | undefined)[], dismiss: () => void) {
+  // A press outside every "inside" element dismisses the popover. Listened for in the capture phase, so it runs
+  // even if something below stops the event.
   const onPointerDown = (event: PointerEvent) => {
     const target = event.target as Node
     if (!inside().some((element) => element?.contains(target))) dismiss()

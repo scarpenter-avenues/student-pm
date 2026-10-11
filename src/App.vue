@@ -1,4 +1,7 @@
 <script setup lang="ts">
+// The outermost component. It starts the session (who's signed in), shows whichever page the router picked, and
+// hosts the toast messages. It also re-checks that you're allowed on the current page whenever your sign-in, role,
+// or teams change.
 import { watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSession } from '@/stores/session'

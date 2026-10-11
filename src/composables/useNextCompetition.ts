@@ -3,6 +3,10 @@ import { computed } from 'vue'
 import { daysBetween, todayIso } from '@/model/dates'
 import { useEvents } from './useEvents'
 
+/**
+ * The next competition on the team's calendar, for the countdown in the top bar. Events marked "if qualified"
+ * are skipped.
+ */
 export function useNextCompetition(teamId: () => string | null) {
   const { events } = useEvents(teamId)
   return computed(() => {

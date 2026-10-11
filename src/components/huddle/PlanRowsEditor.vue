@@ -11,21 +11,25 @@ const props = defineProps<{
   /** Coaches and mentors who can run a row. */
   adults: readonly { id: string; displayName: string }[]
 }>()
+// The "Run by" choices: no one, or any coach or mentor.
 const adultOptions = () => [
   { value: '', label: 'No one' },
   ...props.adults.map((adult) => ({ value: adult.id, label: adult.displayName })),
 ]
+// Sets who runs a row; "No one" removes the field.
 function setRunBy(row: HuddlePlanRow, id: string) {
   if (id) row.runBy = id
   else delete row.runBy
 }
 
+// Adds a row for all teams, starting at the last row's time.
 function addRow() {
   rows.value = [
     ...rows.value,
     { time: rows.value.at(-1)?.time ?? '15:30', text: '', audience: ['all'] },
   ]
 }
+// Removes a row.
 function removeRow(index: number) {
   rows.value = rows.value.filter((_, i) => i !== index)
 }

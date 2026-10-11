@@ -43,6 +43,7 @@ export interface Result {
 /** Gmail allows 100 recipients on one message from a script; stay well under. */
 const BCC_PER_MESSAGE = 40
 
+/** One run of the sender. Returns what happened to each pending item, for the log and the tests. */
 export function processOutbox(store: Store, io: Io, settings: Settings): Result[] {
   const pending = store.pending(20)
   if (!pending.length) return []
@@ -62,6 +63,7 @@ export function processOutbox(store: Store, io: Io, settings: Settings): Result[
   let emails: Record<string, string> | null = null
 
   return pending.map((item): Result => {
+    // Records the outcome on the outbox item and in the log.
     const finish = (state: 'sent' | 'skipped' | 'failed', recipients: number, note = '') => {
       store.patch(item, { state, recipients, note: note.slice(0, 300), sentAt: new Date() })
       io.log(

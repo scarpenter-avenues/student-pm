@@ -18,6 +18,7 @@ const withId: FirestoreDataConverter<WithId<DocumentData>, DocumentData> = {
   },
 }
 
+/** The one converter every collection uses (see withId above), typed for the collection it is used on. */
 export function converter<T extends DocumentData>(): FirestoreDataConverter<WithId<T>, T> {
   return withId as unknown as FirestoreDataConverter<WithId<T>, T>
 }

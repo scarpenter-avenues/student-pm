@@ -32,6 +32,7 @@ interface Section {
   sprint: WithId<Sprint> | null
   tasks: WithId<Task>[]
 }
+// One section of the page: a sprint and its tasks, or the Backlog (sprint = null).
 const sectionFor = (sprint: WithId<Sprint> | null): Section => ({
   key: sprint?.id ?? 'backlog',
   sprint,
@@ -52,9 +53,12 @@ const sections = computed(() => [sectionFor(null), ...upcoming.value])
 
 // Backlog and the current sprint start open; Past sprints is closed on every load.
 const open = ref<Set<string>>(new Set(['backlog', 'current']))
+// Is a section open? "current" stands for whichever sprint is current, since that isn't known until the sprints
+// load.
 const isOpen = (section: Section) =>
   open.value.has(section.key) ||
   (section.sprint?.id === currentId.value && open.value.has('current'))
+// Opens or collapses a section.
 function toggle(section: Section) {
   const next = new Set(open.value)
   if (isOpen(section)) {
@@ -65,6 +69,7 @@ function toggle(section: Section) {
 }
 const pastOpen = ref(false)
 
+// The counts beside a collapsed section: "2 objectives · 3 tasks", leaving out anything that is zero.
 function summary(section: Section) {
   const objectives = section.sprint?.objectives.length ?? 0
   return [
@@ -100,6 +105,7 @@ const moveOptions = computed(() => {
           : `${sprint.id === currentId.value ? 'Current · ' : ''}${formatShortDate(sprint.start)} – ${formatShortDate(sprint.end)}`,
   }))
 })
+// "Move to ▾" on a row: sends the task to another sprint or the Backlog.
 function moveTask(sprintId: string | null) {
   const task = moveFor.value?.task
   if (!task || !team.teamId.value) return
@@ -111,6 +117,7 @@ function moveTask(sprintId: string | null) {
 
 // ---------- drag and drop ----------
 const edits = useTaskEdits(team)
+// The drag-and-drop settings for one section's rows. Dropping in another section moves the task to that sprint.
 const dragTo = (key: string) => ({
   group: 'planning',
   key,
@@ -136,12 +143,15 @@ const calendar = ref<{
 const calendarSprint = computed(() =>
   calendar.value ? team.sprints.value[calendar.value.index] : null,
 )
+// Opens the calendar on a sprint's start or end date (clicking the same date again closes it).
 function openCalendar(sprint: WithId<Sprint>, edge: 'start' | 'end', event: MouseEvent) {
   const index = team.sprints.value.findIndex((item) => item.id === sprint.id)
   const anchor = event.currentTarget as HTMLElement
   calendar.value =
     calendar.value?.anchor === anchor ? null : { index, edge, pickedStart: false, anchor }
 }
+// Saves the picked day. Changing one sprint can shift the ones after it, so `rescheduleSprint` returns every
+// sprint that changed and they are saved together.
 function pickDate(iso: string) {
   const state = calendar.value
   const teamId = team.teamId.value

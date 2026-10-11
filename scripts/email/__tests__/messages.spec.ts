@@ -1,3 +1,5 @@
+// Tests for the email sender's decisions: who gets each kind of post, what the email says, and that nothing a
+// person typed can reach an email as HTML.
 import { describe, expect, it } from 'vitest'
 import {
   announcementMessage,

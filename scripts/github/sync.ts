@@ -53,6 +53,8 @@ export interface GithubIo {
 }
 
 const MAX_DESCRIPTION = 5000
+/** The app's own limit on a task title (firestore.rules). A longer issue title is cut to fit, or the task couldn't be edited in the app afterward. */
+const MAX_TITLE = 90
 
 /** An issue's Markdown body as the task's description: plain text, one paragraph per blank-line block. */
 export function descriptionFrom(body: string | null): string {
@@ -90,12 +92,13 @@ export function planIssue(
 ): Plan {
   if (issue.pull_request) return { action: 'skip', why: 'pull request' }
   const descriptionHtml = descriptionFrom(issue.body)
+  const title = issue.title.trim().slice(0, MAX_TITLE) || `Issue #${issue.number}`
   const github = {
     repo: context.repo,
     number: issue.number,
     url: issue.html_url,
     state: issue.state,
-    title: issue.title,
+    title,
     descriptionHash: hashOf(descriptionHtml),
   }
 
@@ -106,7 +109,7 @@ export function planIssue(
     return {
       action: 'create',
       fields: {
-        title: issue.title.slice(0, 200),
+        title,
         type: 'GitHub issue',
         status: 'To do',
         sprintId: null,
@@ -130,8 +133,8 @@ export function planIssue(
   const was = task.github
   const fields: Record<string, Plain> = {}
   // The title and description follow GitHub, unless someone changed them in the app since the last sync.
-  if (issue.title !== (was?.title ?? task.title) && task.title === (was?.title ?? task.title))
-    fields.title = issue.title.slice(0, 200)
+  if (title !== (was?.title ?? task.title) && task.title === (was?.title ?? task.title))
+    fields.title = title
   const untouched = !was?.descriptionHash || hashOf(task.descriptionHtml) === was.descriptionHash
   if (github.descriptionHash !== was?.descriptionHash && untouched)
     fields.descriptionHtml = descriptionHtml
@@ -202,6 +205,8 @@ export function syncGithub(store: Store, io: GithubIo): SyncResult[] {
       )
       const subteamIds = (settings.subteamIds ?? []).filter((id) => teamSubteams.includes(id))
       let last: string | null | undefined
+      // The rank for the next new task: after the team's last task, then after each one added in this run.
+      // Looked up only if something is actually added.
       const rank = () => {
         if (last === undefined) last = store.lastRank(team.id)
         last = generateKeyBetween(last, null)

@@ -9,6 +9,7 @@ import { teamColorOf } from '@/ui/teamColor'
 const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [color: string] }>()
 
+// A custom color ("#" and six hex digits), as opposed to a preset's name.
 const isHex = (color: string) => /^#[0-9a-f]{6}$/i.test(color)
 const custom = ref(isHex(props.modelValue) ? props.modelValue : '')
 watch(
@@ -18,6 +19,7 @@ watch(
   },
 )
 const input = ref<HTMLInputElement | null>(null)
+// A color chosen in the browser's color picker becomes the team's custom color.
 function pickCustom(event: Event) {
   const color = (event.target as HTMLInputElement).value
   custom.value = color

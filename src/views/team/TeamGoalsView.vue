@@ -47,6 +47,7 @@ watch(
   },
   { immediate: true },
 )
+// Opens or closes one of your goal cards.
 function toggleCard(id: string) {
   const next = new Set(openCards.value)
   if (next.has(id)) next.delete(id)
@@ -66,6 +67,7 @@ watch(
   },
   { immediate: true },
 )
+// "+ New goal": opens the wizard, unless you already have as many goals as you can work on at once.
 function newGoal() {
   if (active.value.length >= MAX_ACTIVE_GOALS)
     return toast.show(
@@ -73,6 +75,7 @@ function newGoal() {
     )
   flow.open({ kind: 'wizard' })
 }
+// Resumes a paused goal. If its date went by while it was paused, the wizard opens to pick a new one.
 function resume(goalId: string) {
   const goal = goals.value.find((g) => g.id === goalId)
   if (!goal || !actions.resume(goal, active.value.length)) return
@@ -84,6 +87,8 @@ function resume(goalId: string) {
 
 // ---------- adults ----------
 const reviewing = ref<string | null>(null)
+// Adults: opens a student's goals. Coaches review on the Coaches' Dashboard; mentors have no dashboard, so
+// theirs opens here.
 function openStudent(studentId: string) {
   if (session.isCoach)
     void router.push({ name: 'dashboard', params: { tab: 'goals' }, query: { student: studentId } })

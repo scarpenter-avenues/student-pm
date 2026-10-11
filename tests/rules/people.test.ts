@@ -1,3 +1,5 @@
+// Security rules tests for the program, its members, and invites: who can see the roster, who can add or change
+// people, and that an invite can only be claimed by the person it's for.
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 import {
   assertFails,
@@ -48,6 +50,7 @@ describe('program', () => {
 })
 
 describe('members (roster)', () => {
+  // The path of someone's member document.
   const member = (uid: string) => `${PROGRAM}/members/${uid}`
   it('any member can read the roster', async () => {
     await assertSucceeds(getDoc(doc(as(env, 'studentB'), member('studentA'))))

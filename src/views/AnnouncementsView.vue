@@ -26,6 +26,7 @@ const { announcements, unread, markRead } = useAnnouncements(() =>
   props.dashboard ? 'all' : team.teamId.value,
 )
 const unreadIds = computed(() => new Set(unread.value.map((item) => item.id)))
+// If a save is refused, say so.
 const fail = (error: Error) => toast.show(`Couldn't save: ${error.message}`)
 
 const teams = computed(() => {
@@ -51,6 +52,7 @@ const emailOn = computed(() => !!session.program?.email?.on)
 const email = ref(true)
 const titleInput = ref<HTMLInputElement | null>(null)
 
+// Opens the composer: blank for a new post, or filled in to edit one.
 async function compose(item: WithId<Announcement> | null = null) {
   editingId.value = item?.id ?? null
   title.value = item?.title ?? ''
@@ -69,10 +71,12 @@ async function compose(item: WithId<Announcement> | null = null) {
   await nextTick()
   titleInput.value?.focus()
 }
+// Closes the composer without posting.
 function cancel() {
   composing.value = false
   editingId.value = null
 }
+// Posts the announcement, or saves the edit. It needs a title and a message.
 function post() {
   const cleanTitle = title.value.replace(/\s+/g, ' ').trim()
   if (!cleanTitle) return titleInput.value?.focus()
@@ -96,6 +100,7 @@ function post() {
   }
   cancel()
 }
+// Deletes a post, with Undo in the toast.
 function remove(item: WithId<Announcement>) {
   writes.deleteAnnouncement(item.id).catch(fail)
   toast.show('Announcement deleted', {
@@ -103,6 +108,7 @@ function remove(item: WithId<Announcement>) {
     run: () => writes.restoreAnnouncement(item).catch(fail),
   })
 }
+// Who sees Edit and Delete on a post: its author, and program coaches.
 const canManage = (item: Announcement) => session.isCoach || item.authorId === session.member?.id
 </script>
 

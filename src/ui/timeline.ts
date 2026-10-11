@@ -48,6 +48,7 @@ export function dragDates(
   return { start: span[0], due: last > span[0] ? last : span[0] }
 }
 
+/** A bar's width in pixels: its days times the day width, less a small gap so neighbors don't touch. */
 export function barWidth(span: [string, string], dayWidth: number): number {
   return (daysBetween(span[0], span[1]) + 1) * dayWidth - 4
 }

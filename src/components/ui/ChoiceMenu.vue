@@ -35,6 +35,7 @@ const emit = defineEmits<{
 const menu = ref<HTMLElement | null>(null)
 const { style } = useAnchoredPosition(() => props.anchor, menu, { align: props.align })
 
+// What is ticked when the menu opens.
 const initial = (): V[] =>
   props.selected === undefined
     ? []
@@ -44,8 +45,11 @@ const initial = (): V[] =>
 const picked = shallowRef<V[]>(initial())
 let cancelled = false
 
+// Whether an option is currently ticked.
 const isPicked = (value: V) => picked.value.includes(value)
 
+// Clicking an option. With one choice allowed, that's the answer and the menu closes. With several allowed, it
+// ticks or unticks, and the result is sent when the menu closes.
 function choose(option: ChoiceOption<V>) {
   if (option.disabled) return
   if (props.multiple) {
@@ -58,11 +62,13 @@ function choose(option: ChoiceOption<V>) {
   close(true)
 }
 
+// Closes the menu; after Esc, focus returns to whatever opened it.
 function close(returnFocus = false) {
   emit('close')
   if (returnFocus) props.anchor?.focus()
 }
 
+// Esc closes without applying anything.
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {
     event.preventDefault()

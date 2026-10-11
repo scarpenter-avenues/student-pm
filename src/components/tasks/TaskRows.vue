@@ -50,17 +50,21 @@ const expanded = ref<Set<string>>(new Set())
 const subtaskDraftFor = ref<string | null>(null)
 const addingTask = ref(false)
 
+// A task's subtasks, without the archived ones.
 const visibleSubtasks = (task: Task): Subtask[] => task.subtasks.filter((item) => !item.archived)
+// Shows or hides a task's subtask rows.
 function toggle(task: Task & { id: string }) {
   const next = new Set(expanded.value)
   if (next.has(task.id)) next.delete(task.id)
   else next.add(task.id)
   expanded.value = next
 }
+// "+ Subtask": opens the task's subtasks and a blank row to type a new one.
 async function startSubtask(task: WithId<Task>) {
   expanded.value = new Set([...expanded.value, task.id])
   subtaskDraftFor.value = task.id
 }
+// Adds the new subtask. It starts in its parent's subteams unless others were chosen.
 function addSubtask(task: WithId<Task>, fields: DraftFields) {
   edits.addSub(task, {
     ...fields,
@@ -68,6 +72,7 @@ function addSubtask(task: WithId<Task>, fields: DraftFields) {
   })
   subtaskDraftFor.value = null
 }
+// "+ Add task": adds a task at the bottom of this section.
 function addTask(fields: DraftFields) {
   if (!props.newTask) return
   edits.add(
@@ -78,6 +83,7 @@ function addTask(fields: DraftFields) {
     ),
   )
 }
+// The task's sprint dates, which the due-date calendar shades.
 function sprintRange(task: Task) {
   const sprint = task.sprintId ? props.team.sprintById.value.get(task.sprintId) : null
   return sprint ? { start: sprint.start, end: sprint.end, name: sprint.name } : null
@@ -88,6 +94,7 @@ const newTaskRange = computed(() => {
   return sprint ? { start: sprint.start, end: sprint.end, name: sprint.name } : null
 })
 
+// Alt+↑ / Alt+↓ moves a task row, and keeps the keyboard focus on it after it moves.
 async function onTaskKeydown(event: KeyboardEvent, index: number) {
   const step = props.reorder ? altMove(event) : 0
   if (!step) return
@@ -96,6 +103,7 @@ async function onTaskKeydown(event: KeyboardEvent, index: number) {
   await nextTick()
   if (task) document.querySelector<HTMLElement>(`tr[data-task="${task.id}"] .title-button`)?.focus()
 }
+// The same for a subtask, within its own task.
 async function onSubtaskKeydown(event: KeyboardEvent, task: WithId<Task>, index: number) {
   const step = altMove(event)
   if (!step) return

@@ -45,7 +45,10 @@ import { authMessage } from '@/auth/messages'
 export type Phase =
   'starting' | 'signedOut' | 'verifyEmail' | 'joining' | 'ready' | 'noAccess' | 'failed'
 
+// The program this deployment is for (its id comes from the build's settings).
 const programDoc = () => doc(db, 'programs', programId)
+// Firestore answers "permission denied" both when you may not read something and when you are not a member
+// at all.
 const isDenied = (error: unknown) => (error as FirestoreError)?.code === 'permission-denied'
 
 export const useSession = defineStore('session', () => {
@@ -71,17 +74,21 @@ export const useSession = defineStore('session', () => {
   let stops: Unsubscribe[] = []
   let teamStops: Unsubscribe[] = []
   let teamsKey = ''
+  // Stops listening to teams (they are re-subscribed whenever your team list changes).
   const stopTeams = () => {
     teamStops.forEach((stop) => stop())
     teamStops = []
     teamsKey = ''
   }
+  // Stops every live subscription: on sign-out, on an error, and before starting over for a new person.
   const stopAll = () => {
     stops.forEach((stop) => stop())
     stops = []
     stopTeams()
   }
 
+  // A subscription failed after sign-in. Being refused means you were removed from the program; anything
+  // else is a real failure.
   function onListenError(error: FirestoreError) {
     stopAll()
     // Removed from the program while signed in: the rules stop letting us read.
@@ -89,6 +96,8 @@ export const useSession = defineStore('session', () => {
     else fail(error)
   }
 
+  // Starts the live subscriptions that everything else hangs off: the program, and your own member record
+  // (your role and teams).
   function listen(uid: string) {
     stops.push(
       onSnapshot(
@@ -116,6 +125,7 @@ export const useSession = defineStore('session', () => {
     )
   }
 
+  // The app is ready once both your member record and the program have arrived.
   function markReady() {
     if (member.value && program.value && phase.value === 'joining') phase.value = 'ready'
   }
@@ -137,6 +147,7 @@ export const useSession = defineStore('session', () => {
       stopTeams()
       teamsKey = key
       teamsById.value = {}
+      // Adds, replaces, or (with no data) removes one team in the list.
       const keep = (id: string, data: Team | undefined) => {
         const next = { ...teamsById.value }
         if (data) next[id] = { id, ...data }
@@ -176,6 +187,7 @@ export const useSession = defineStore('session', () => {
   // ---------- joining ----------
   let run = 0
 
+  // The program's name and sign-in methods, readable before anyone signs in. Fetched once.
   async function loadSignIn(): Promise<PublicSignIn | null> {
     if (!signIn.value) {
       const snap = await getDoc(doc(db, 'programs', programId, 'public', 'signIn'))
@@ -184,6 +196,7 @@ export const useSession = defineStore('session', () => {
     return signIn.value
   }
 
+  // Whether this account already has a member record. A stranger is refused the read, which also means no.
   async function isMember(uid: string): Promise<boolean> {
     try {
       return (await getDoc(doc(db, 'programs', programId, 'members', uid))).exists()
@@ -227,6 +240,9 @@ export const useSession = defineStore('session', () => {
     return true
   }
 
+  // Runs every time Firebase says who is signed in (including nobody). `run` counts calls, so if a second
+  // change arrives while this one is still waiting on the network, the older one gives up instead of
+  // overwriting newer state.
   async function handleUser(next: User | null) {
     const mine = ++run
     const hadData = phase.value === 'ready'
@@ -280,18 +296,24 @@ export const useSession = defineStore('session', () => {
   }
 
   const problem = ref('')
+  // Something unexpected broke: remember what, and show the failure screen.
   function fail(error: unknown) {
     console.error(error)
     problem.value = error instanceof Error ? error.message : String(error)
     phase.value = 'failed'
   }
 
+  // Signs out someone who used the wrong kind of account, leaving a note that explains why on the sign-in
+  // page.
   async function reject(message: string) {
     await firebaseSignOut(auth)
     notice.value = message
   }
 
+  // On sign-out: close the database, delete its offline copy from this browser, and reload. On a shared
+  // Chromebook the next person must not find the last person's data.
   async function wipeAndReload() {
+    // Closing must come first; the offline copy cannot be cleared while the database is open.
     const wipe = async () => {
       await terminate(db)
       // Fails if another tab still has the cache open; that tab clears it when it sees the sign-out.
@@ -342,11 +364,14 @@ export const useSession = defineStore('session', () => {
     }
   }
 
+  // A school-domain email must use Google, so nobody can make a second, password-based account with it.
+  // Returns the message to show, or null if a password is allowed.
   const passwordRefusal = (email: string) =>
     signIn.value && isGoogleEmail(signIn.value.auth, email)
       ? `${emailDomain(email)} accounts sign in with Google.`
       : null
 
+  /** Opens the Google sign-in pop-up. Resolves to an error message to show, or null if it worked. */
   function signInWithGoogle() {
     const provider = new GoogleAuthProvider()
     const domains = signIn.value?.auth.google?.domains ?? []
@@ -358,12 +383,17 @@ export const useSession = defineStore('session', () => {
     return attempt(() => signInWithPopup(auth, provider))
   }
 
+  /** Signs in with email and password. Resolves to an error message to show, or null if it worked. */
   async function signInWithPassword(email: string, password: string) {
     return (
       passwordRefusal(email) ?? attempt(() => signInWithEmailAndPassword(auth, email, password))
     )
   }
 
+  /**
+   * First time for a password account: creates it and sends the verification email. They can't join until they
+   * click its link.
+   */
   async function createPassword(email: string, password: string) {
     if (password.length < 8) return 'Use at least 8 characters.'
     return (
@@ -375,10 +405,12 @@ export const useSession = defineStore('session', () => {
     )
   }
 
+  /** Emails a password-reset link. */
   async function resetPassword(email: string) {
     return passwordRefusal(email) ?? attempt(() => sendPasswordResetEmail(auth, email))
   }
 
+  /** Sends the verification email again. */
   function resendVerification() {
     return attempt(async () => {
       if (auth.currentUser) await sendEmailVerification(auth.currentUser)
@@ -396,6 +428,7 @@ export const useSession = defineStore('session', () => {
     return true
   }
 
+  /** Signs out. handleUser then sees "nobody" and wipes this browser's copy of the data. */
   function signOut() {
     return firebaseSignOut(auth)
   }

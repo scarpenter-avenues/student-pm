@@ -40,6 +40,7 @@ const request: Request = (method, url, body) => {
   const at = out.lastIndexOf('\n')
   return { status: Number(out.slice(at + 1)), json: JSON.parse(out.slice(0, at) || 'null') }
 }
+// The sync's own database client, pointed at the emulator.
 const store = () =>
   createStore(
     request,
@@ -68,6 +69,7 @@ const io: GithubIo = {
   now: () => clock,
   log: () => {},
 }
+// A made-up GitHub issue, open unless told otherwise.
 const issue = (number: number, title: string, over: Partial<Issue> = {}): Issue => ({
   number,
   title,
@@ -77,6 +79,7 @@ const issue = (number: number, title: string, over: Partial<Issue> = {}): Issue 
   ...over,
 })
 
+// Runs something with the rules switched off, to set up or inspect data the way the project owner would.
 function admin<T>(run: (db: Firestore) => Promise<T>) {
   let out!: T
   return env
@@ -85,6 +88,7 @@ function admin<T>(run: (db: Firestore) => Promise<T>) {
     })
     .then(() => out)
 }
+// Connects a team to the test repo with both options on, plus anything a test overrides.
 const connect = (teamId: string, github: Record<string, unknown>) =>
   admin((db) =>
     updateDoc(doc(db, `programs/p1/teams/${teamId}`), {
@@ -92,6 +96,7 @@ const connect = (teamId: string, github: Record<string, unknown>) =>
       github: { repo: REPO, importIssues: true, closeOnDone: true, ...github },
     }),
   )
+// The task the sync made for an issue number (undefined if there is none).
 const taskOf = (number: number) =>
   admin(async (db) =>
     (await getDoc(doc(db, `programs/p1/teams/teamA/tasks/${taskIdFor(REPO, number)}`))).data(),

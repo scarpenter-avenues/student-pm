@@ -17,6 +17,8 @@ declare const Session: any
 
 const TRIGGER = 'sendPending'
 
+// The email sender's settings, read from Script properties each run (so a change takes effect without
+// redeploying).
 function settings() {
   const properties = PropertiesService.getScriptProperties()
   const need = (key: string): string => {
@@ -35,6 +37,8 @@ function settings() {
   }
 }
 
+// How the script talks to Google's APIs: as whoever installed it, using their sign-in. That is what lets it
+// read the database without going through the app's security rules.
 const request: Request = (method, url, body) => {
   const response = UrlFetchApp.fetch(url, {
     method: method.toLowerCase(),
@@ -112,6 +116,7 @@ export function install() {
   )
 }
 
+// Removes a job's time trigger (so installing twice never leaves two).
 function uninstallTriggers(handler = TRIGGER) {
   for (const trigger of ScriptApp.getProjectTriggers())
     if (trigger.getHandlerFunction() === handler) ScriptApp.deleteTrigger(trigger)
@@ -145,11 +150,14 @@ export function sendTestEmail() {
 // ---------- GitHub sync ----------
 const GITHUB_TRIGGER = 'syncIssues'
 
+// What the sync needs from outside: GitHub's API, somewhere to remember how far it got, the time, and a log.
 function githubIo(): GithubIo {
   const properties = PropertiesService.getScriptProperties()
   // Optional for public repos, but without it GitHub's shared limit is quickly used up.
   const token = (properties.getProperty('GITHUB_TOKEN') ?? '').trim()
   return {
+    // One GET to the GitHub API, with the token if there is one. Errors come back as a status, not an
+    // exception, so one bad repo can be reported without stopping the others.
     github(path) {
       const response = UrlFetchApp.fetch(`https://api.github.com${path}`, {
         method: 'get',

@@ -1,3 +1,4 @@
+// Tests for the month grid behind the date picker, and for moving through it with the arrow keys.
 import { describe, expect, it } from 'vitest'
 import { calendarMonth, moveDay, shiftMonth } from '../calendar'
 import { formatShortDate } from '../format'

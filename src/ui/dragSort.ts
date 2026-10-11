@@ -45,6 +45,7 @@ export interface DragSortOptions {
 }
 
 const SUBTASK_ROW = 'tr.subtask-row'
+// Whether an element is a subtask's table row.
 const isSubtaskRow = (element: Element | null): element is HTMLElement =>
   !!element?.matches(SUBTASK_ROW)
 
@@ -69,6 +70,8 @@ function sizeRowCopy(row: HTMLElement, copy: HTMLTableRowElement) {
   Object.assign(copy.style, { display: 'flex', alignItems: 'center' })
 }
 
+// Sets up SortableJS on one list. The options here decide how dragging feels; onMove and onEnd are where the
+// app's own rules live.
 function create(el: HTMLElement, options: DragSortOptions) {
   return Sortable.create(el, {
     group: options.group,
@@ -96,6 +99,8 @@ function create(el: HTMLElement, options: DragSortOptions) {
     // floating copy is positioned in the page, and following it would run off into empty space.
     scrollSensitivity: 56,
     scrollSpeed: 14,
+    // Called by SortableJS when it wants to scroll something. We scroll the page ourselves, up and down only;
+    // anything else is left to SortableJS ("continue").
     scrollFn(offsetX, offsetY, _event, _touch, scrolled) {
       if (scrolled !== document.scrollingElement) return 'continue'
       scrolled.scrollTop += offsetY
@@ -106,6 +111,7 @@ function create(el: HTMLElement, options: DragSortOptions) {
     ghostClass: 'drag-placeholder',
     chosenClass: 'drag-chosen',
     fallbackClass: 'drag-ghost',
+    // Remember where the item was, so it can be put back when the drag ends.
     onStart(event) {
       origin = { parent: event.item.parentNode!, next: event.item.nextSibling }
       document.body.classList.add('is-dragging')
@@ -122,6 +128,7 @@ function create(el: HTMLElement, options: DragSortOptions) {
         event.related.dataset.parent === event.dragged.dataset.parent
       )
     },
+    // The drop. Work out where the item landed, put the DOM back as it was, and report the move to the view.
     onEnd(event) {
       document.body.classList.remove('is-dragging', 'is-dragging-task')
       const item = event.item
@@ -142,6 +149,7 @@ function create(el: HTMLElement, options: DragSortOptions) {
         })
         return
       }
+      // An item's id, from its data-task or data-subtask attribute.
       const idOf = (element: Element) => (element as HTMLElement).dataset[options.idAttr ?? 'task']
       const ids = Array.from(event.to.children)
         .filter((child) => child.matches(options.draggable))

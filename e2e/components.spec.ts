@@ -1,6 +1,7 @@
 // The shared components on the dev-only gallery page (/dev/components). Needs only the dev server.
 import { test, expect, type Page } from '@playwright/test'
 
+// The dev gallery logs each event a component emits; this is the most recent one.
 const lastEvent = (page: Page) => page.locator('[data-test=log] li').first()
 
 test.beforeEach(async ({ page }) => {

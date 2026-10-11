@@ -72,6 +72,7 @@ const tasks = computed(() => {
     .map((task) => ({ id: task.id, title: task.title, fromGoal: task.goalId === props.goal.id }))
     .sort((a, b) => Number(b.fromGoal) - Number(a.fromGoal))
 })
+// Question 2: ticks or unticks a finished task as evidence.
 function toggleTask(id: string, on: boolean) {
   if (on) answer.taskIds.add(id)
   else answer.taskIds.delete(id)
@@ -83,15 +84,18 @@ const sprintChoices = computed(() =>
   ),
 )
 const stepInputs = ref<HTMLInputElement[]>([])
+// Question 4: adds a blank next step and puts the cursor in it.
 async function addStep() {
   answer.steps.push({ title: '', sprintId: defaultSprintId.value })
   await nextTick()
   stepInputs.value.at(-1)?.focus()
 }
+// Removes a next step. There is always at least one row, so removing the last adds a blank one.
 function removeStep(index: number) {
   answer.steps.splice(index, 1)
   if (!answer.steps.length) void addStep()
 }
+// Enter in a next step starts another one.
 function onStepKeydown(event: KeyboardEvent) {
   if (event.key === 'Enter') {
     event.preventDefault()
@@ -105,6 +109,8 @@ const filledSteps = computed(() =>
 )
 const ready = computed(() => !!answer.status && !!answer.planResult)
 
+// Saves the check-in once every question is answered. A rewritten plan is kept only if the old one didn't work
+// and the new text is really different.
 function save() {
   if (!ready.value || !answer.status || !answer.planResult) return
   const rewritten = cleanText(answer.newPlan)

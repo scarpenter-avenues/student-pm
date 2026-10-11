@@ -21,6 +21,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ toggle: []; edit: []; delete: [] }>()
 
+// The huddle's date, marked Today or Yesterday when it is.
 function dayLabel(iso: string) {
   const offset = daysBetween(iso, todayIso())
   return `${formatEventDate(iso)}${offset === 0 ? ' · Today' : offset === 1 ? ' · Yesterday' : ''}`
@@ -34,6 +35,7 @@ const meta = computed(
   () =>
     `${props.authorName} · ${posted.value}${props.huddle.editedAt ? ' · Edited' : ''} · Seen by ${props.seenBy} of ${props.adults}`,
 )
+// "15:30" as "3:30 PM".
 function time(hhmm: string) {
   const [h = 0, m = 0] = hhmm.split(':').map(Number)
   return new Date(2000, 0, 1, h, m).toLocaleTimeString('en-US', {

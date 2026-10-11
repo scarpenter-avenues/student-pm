@@ -45,6 +45,7 @@ const tasks = computed(() => {
   )
 })
 const done = computed(() => tasks.value.filter((task) => task.status === 'Done').length)
+// Every row this team shows, top to bottom (tasks and their subtasks), for shift-click ranges.
 const keys = () =>
   tasks.value.flatMap((task) => [
     task.id,

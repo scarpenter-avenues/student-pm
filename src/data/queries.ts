@@ -4,6 +4,11 @@
 import { limit, orderBy, query, where } from 'firebase/firestore'
 import type { Refs } from './refs'
 
+/**
+ * Every question the app asks the database, in one place. Each must be one the security rules can prove is
+ * allowed for the person asking (a query fails as a whole otherwise), and each has a case in
+ * tests/rules/queries.test.ts.
+ */
 export function createQueries(refs: Refs) {
   return {
     // ---------- tasks ----------

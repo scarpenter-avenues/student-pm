@@ -48,10 +48,13 @@ const plan = ref<HuddlePlanRow[]>(
 )
 const error = ref('')
 
+// "Copy plan from <date>": starts from the last huddle's rows (copies, so editing them doesn't touch the old
+// huddle).
 function copyPlan() {
   if (props.lastPlan)
     plan.value = props.lastPlan.plan.map((row) => ({ ...row, audience: [...row.audience] }))
 }
+// Posts the huddle, or saves the changes when editing one. It needs a date and either a status or a plan.
 function post() {
   const rows = cleanPlan(plan.value)
   if (!date.value) return (error.value = 'Pick the date.')

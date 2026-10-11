@@ -1,3 +1,5 @@
+// Security rules tests for teams, tasks, and comments: only a team's own people can read or change its work, and
+// only adults can delete for good.
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest'
 import {
   assertFails,

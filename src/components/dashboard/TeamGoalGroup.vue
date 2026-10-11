@@ -99,6 +99,7 @@ const hidden = computed(() => !rows.value.length && (props.focused || !!props.se
 
 const open = ref(!page.collapsed.value.has(props.team.id))
 watch(open, (isOpen) => page.setCollapsed(props.team.id, !isOpen))
+// A date as "today", "yesterday", "3 days ago", or the date itself once it is more than a week back.
 function relative(iso: string) {
   const days = Math.round((Date.parse(todayIso()) - Date.parse(iso)) / 86_400_000)
   return days === 0

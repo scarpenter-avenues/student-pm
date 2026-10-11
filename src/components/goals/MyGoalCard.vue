@@ -47,6 +47,7 @@ const menuOptions = computed(() => [
   { value: 'edit', label: 'Edit goal' },
   { value: 'pause', label: 'Pause goal' },
 ])
+// The ⋯ menu: Check in, Edit goal, or Pause goal.
 function pick(action: string) {
   const goalId = props.goal.id
   if (action === 'checkin') flow.open({ kind: 'checkin', goalId })
