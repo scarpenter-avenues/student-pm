@@ -3,36 +3,44 @@
 Each organization that runs this app (a school, a club, a community program) deploys its own copy to its own Firebase
 project. Everything specific to that organization lives in two files that are **not** committed to the repo:
 
-| File | What it holds | Made from |
-|---|---|---|
-| `program.config.json` | Program name, how people sign in, the first coach, the season, default subteams, starting teams | `program.config.example.json` |
-| `.env.local` | The Firebase web app settings (API key, project ID, …) | `.env.example` (added with the app) |
+| File                  | What it holds                                                                                   | Made from                           |
+| --------------------- | ----------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `program.config.json` | Program name, how people sign in, the first coach, the season, default subteams, starting teams | `program.config.example.json`       |
+| `.env.local`          | The Firebase web app settings (API key, project ID, …)                                          | `.env.example` (added with the app) |
 
-> **Status:** the app is still being built. `npm run setup` works today; the step marked *(coming)* doesn't exist yet.
+> **Status:** the app is still being built. `npm run setup` works today; the step marked _(coming)_ doesn't exist yet.
 
 ## `program.config.json`
 
 ```jsonc
 {
   "program": {
-    "id": "example-robotics",          // short id used in the database (letters, numbers, dashes)
-    "name": "Example Robotics"         // shown in the app
+    "id": "example-robotics", // short id used in the database (letters, numbers, dashes)
+    "name": "Example Robotics", // shown in the app
   },
-  "signIn": {                          // one or both methods
-    "google": { "allowedDomains": ["example.edu"] },   // Workspace domain(s) people sign in with
-    "password": { "roles": ["mentor", "coach"] }       // who may use email/password
+  "signIn": {
+    // one or both methods
+    "google": { "allowedDomains": ["example.edu"] }, // Workspace domain(s) people sign in with
+    "password": { "roles": ["mentor", "coach"] }, // who may use email/password
   },
-  "firstCoach": {                      // the first program coach; they add everyone else in the app
-    "displayName": "Alex P.",          // first name + last initial
-    "email": "coach@example.edu"
+  "firstCoach": {
+    // the first program coach; they add everyone else in the app
+    "displayName": "Alex P.", // first name + last initial
+    "email": "coach@example.edu",
   },
   "season": { "id": "2026-27", "name": "2026–27", "start": "2026-09-01", "end": "2027-03-31" },
-  "subteamDefaults": [                 // copied into each new team; teams can change their own later
-    { "name": "Mechanical", "color": "red", "description": "Design, CAD, fabrication, and maintenance" }
+  "subteamDefaults": [
+    // copied into each new team; teams can change their own later
+    {
+      "name": "Mechanical",
+      "color": "red",
+      "description": "Design, CAD, fabrication, and maintenance",
+    },
   ],
-  "teams": [                           // optional: teams to create now (more can be added in the app)
-    { "name": "Circuit Breakers", "number": "418", "color": "green", "sprintDays": 14 }
-  ]
+  "teams": [
+    // optional: teams to create now (more can be added in the app)
+    { "name": "Circuit Breakers", "number": "418", "color": "green", "sprintDays": 14 },
+  ],
 }
 ```
 
@@ -48,11 +56,11 @@ Turn on one or both. The security rules enforce these choices, not just the sign
 
 Common setups:
 
-| Program | `signIn` |
-|---|---|
-| School; adults use school accounts too | `{ "google": { "allowedDomains": ["example.edu"] } }` |
+| Program                                            | `signIn`                                                                                            |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| School; adults use school accounts too             | `{ "google": { "allowedDomains": ["example.edu"] } }`                                               |
 | School; volunteer mentors and coaches from outside | `{ "google": { "allowedDomains": ["example.edu"] }, "password": { "roles": ["mentor", "coach"] } }` |
-| Community team, no shared domain | `{ "password": { "roles": ["student", "lead", "mentor", "coach"] } }` |
+| Community team, no shared domain                   | `{ "password": { "roles": ["student", "lead", "mentor", "coach"] } }`                               |
 
 How it plays out:
 
@@ -94,7 +102,7 @@ Colors: subteams use `red`, `green`, `yellow`, `blue`, `purple`, `teal`, `pink`,
      has signed in (nothing personal).
    - Safe to re-run: it updates the program's name, sign-in settings, and subteam defaults, leaves existing teams
      alone, and invites the first coach only while the program has no coach.
-6. **Deploy** *(coming)*: `npm run deploy` will publish the security rules, indexes, and the app to Firebase Hosting.
+6. **Deploy** _(coming)_: `npm run deploy` will publish the security rules, indexes, and the app to Firebase Hosting.
 7. **Sign in as the first coach** and add mentors and students under Coaches' Dashboard → Settings → People (or import a
    CSV).
 
