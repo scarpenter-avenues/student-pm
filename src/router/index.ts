@@ -61,7 +61,18 @@ export const routes: RouteRecordRaw[] = [
   { path: '/:unknown(.*)*', redirect: '/' },
 ]
 
-const router = createRouter({ history: createWebHistory(import.meta.env.BASE_URL), routes })
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes,
+  // A different page starts at its top (the scroll doesn't carry over from the last one). Back and Forward
+  // return to where you were, after a moment for the page's data to load (until then it's too short to scroll
+  // that far). A change that stays on the same page (a query) leaves the scroll alone.
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition)
+      return new Promise((resolve) => setTimeout(() => resolve(savedPosition), 350))
+    if (to.path !== from.path) return { top: 0, left: 0 }
+  },
+})
 
 router.beforeEach(async (to) => {
   const session = useSession()

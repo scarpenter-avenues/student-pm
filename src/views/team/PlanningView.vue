@@ -393,6 +393,10 @@ const calendarNote = computed(() => {
 
 <style scoped>
 /* A scrolling wrapper would capture the pinned header, so only narrow screens scroll sideways (and pin nothing). */
+/* The positioning parent for a dragged row's floating copy (see the note in ListView). */
+.planning {
+  position: relative;
+}
 @media (max-width: 900px) {
   .planning {
     overflow-x: auto;

@@ -119,6 +119,9 @@ function toggleGroup(status: string) {
 
 <style scoped>
 .list-view {
+  /* The positioning parent for a dragged row's floating copy. On iOS that copy is placed in the page, not pinned
+     to the screen; without this it escapes the scroller, widens the page, and the page jumps toward the top. */
+  position: relative;
   overflow-x: auto;
   border-top: 1px solid var(--line);
 }

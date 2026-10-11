@@ -357,6 +357,15 @@ tr.drag-ghost > td {
     background: var(--team-soft);
   }
 }
+/* The page never scrolls sideways during a drag, and the Board lets go of its column snapping so it can be
+   scrolled smoothly to the next column while a card is held at its edge. */
+html:has(body.is-dragging),
+body.is-dragging {
+  overflow-x: hidden;
+}
+body.is-dragging .board {
+  scroll-snap-type: none;
+}
 body.is-dragging,
 body.is-dragging * {
   cursor: grabbing !important;

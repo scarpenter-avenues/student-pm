@@ -91,6 +91,15 @@ function create(el: HTMLElement, options: DragSortOptions) {
     delay: 160,
     delayOnTouchOnly: true,
     touchStartThreshold: 8,
+    // Holding an item near an edge scrolls whatever scrolls there: a column, the board (sideways, to reach the
+    // other columns on a phone), the page (up and down). The page itself never scrolls sideways: on iOS the
+    // floating copy is positioned in the page, and following it would run off into empty space.
+    scrollSensitivity: 56,
+    scrollSpeed: 14,
+    scrollFn(offsetX, offsetY, _event, _touch, scrolled) {
+      if (scrolled !== document.scrollingElement) return 'continue'
+      scrolled.scrollTop += offsetY
+    },
     animation: 150,
     // An empty list (a column with no cards, a collapsed sprint) takes a drop from a little way off.
     emptyInsertThreshold: 24,
