@@ -143,6 +143,7 @@ const timeline = ref<InstanceType<typeof GoalTimeline> | null>(null)
         </div>
       </section>
       <section class="updates">
+        <h5 v-if="timeline?.historyCount">History</h5>
         <GoalTimeline ref="timeline" :goal="goal" latest />
         <button
           v-if="(timeline?.historyCount ?? 0) > 2"
@@ -288,7 +289,7 @@ h5 small {
   line-height: 1.45;
 }
 .updates {
-  margin-top: 14px;
+  margin-top: 18px;
 }
 .updates :deep(.goal-timeline-wrap) {
   margin-top: 0;

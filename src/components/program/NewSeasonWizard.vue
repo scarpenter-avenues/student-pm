@@ -533,9 +533,20 @@ const nameList = (choice: Choice) =>
   gap: 8px;
   padding-left: 18px;
 }
+/* Phones: the three choices take their own line under the name and share it evenly; a long one wraps. */
 @media (max-width: 680px) {
   .person {
     flex-wrap: wrap;
+  }
+  .segmented {
+    flex: 1 0 100%;
+    min-width: 0;
+  }
+  .segmented button {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 4px 4px;
+    white-space: normal;
   }
 }
 </style>

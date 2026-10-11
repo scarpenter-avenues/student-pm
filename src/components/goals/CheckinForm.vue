@@ -278,7 +278,8 @@ function save() {
   grid-template-columns: minmax(0, 1fr) 150px 30px;
   gap: 6px;
 }
-.step-sprint {
+/* The picker's button is another component's root, so it needs :deep to be styled from here. */
+.next-step-row :deep(.step-sprint) {
   min-height: 40px;
   border-radius: 8px;
 }
@@ -296,12 +297,24 @@ function save() {
 .add-step {
   justify-self: start;
 }
+/* Phones: the step and its × on one line, the sprint picker under them. */
 @media (max-width: 680px) {
   .next-step-row {
     grid-template-columns: minmax(0, 1fr) 30px;
   }
-  .step-sprint {
+  .next-step-row > input {
+    grid-row: 1;
     grid-column: 1;
+  }
+  .step-remove {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .next-step-row :deep(.step-sprint) {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-width: 150px;
   }
 }
 </style>

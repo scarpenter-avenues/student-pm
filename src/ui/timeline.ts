@@ -21,6 +21,33 @@ export function dateSpan({
   return first <= last ? [first, last] : [last, first]
 }
 
+export type BarDrag = 'move' | 'start' | 'end'
+
+/**
+ * A bar dragged by `days`: the middle moves the dates it has (a task with only a due date keeps having only that);
+ * an end changes that end and never crosses the other one. Pulling an end fills in a missing date, so the other
+ * end stays where it was.
+ */
+export function dragDates(
+  dates: { start: string | null; due: string | null },
+  mode: BarDrag,
+  days: number,
+): { start: string | null; due: string | null } {
+  const span = dateSpan(dates)
+  if (!span || !days) return { start: dates.start, due: dates.due }
+  if (mode === 'move')
+    return {
+      start: dates.start && shiftIsoDate(dates.start, days),
+      due: dates.due && shiftIsoDate(dates.due, days),
+    }
+  if (mode === 'start') {
+    const first = shiftIsoDate(span[0], days)
+    return { start: first < span[1] ? first : span[1], due: span[1] }
+  }
+  const last = shiftIsoDate(span[1], days)
+  return { start: span[0], due: last > span[0] ? last : span[0] }
+}
+
 export function barWidth(span: [string, string], dayWidth: number): number {
   return (daysBetween(span[0], span[1]) + 1) * dayWidth - 4
 }

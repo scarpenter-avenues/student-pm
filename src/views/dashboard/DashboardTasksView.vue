@@ -188,4 +188,14 @@ h2 {
 .table-wrap .task-table {
   min-width: 820px;
 }
+/* Phones: before any sideways scroll, the screen shows the name (as wide as it can be) and the status at the right
+   edge, as in List and Planning. The columns after Status are a swipe away. */
+@media (max-width: 680px) {
+  .table-wrap .task-table {
+    min-width: calc(100% + 500px);
+  }
+  .table-wrap .task-table col:nth-child(2) {
+    width: 96px !important;
+  }
+}
 </style>

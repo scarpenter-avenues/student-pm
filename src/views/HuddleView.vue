@@ -269,6 +269,8 @@ h2 {
 }
 .feed {
   display: grid;
+  /* Never wider than the page: a collapsed huddle's one-line summary is cut short instead. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 .empty {

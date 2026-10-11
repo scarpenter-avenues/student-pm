@@ -1,17 +1,20 @@
 <script setup lang="ts">
 // A Board card: title (renames in place; Open on hover), subteam tags, assignees, due date, and the subtasks, which
 // expand to a checklist (a square checkbox to the right: Done ↔ To do) with "+ Add subtask". New subtasks for a
-// task without any are added in the side panel.
+// task without any are added in the side panel. The card drags by everything but its subtasks; a subtask drags
+// to a new place within its own card.
 import { computed, nextTick, ref } from 'vue'
 import { writes } from '@/data'
-import { addSubtask, updateSubtask } from '@/model/subtasks'
+import { addSubtask, moveSubtask, placeSubtask, updateSubtask } from '@/model/subtasks'
 import type { Subtask, Task, WithId } from '@/model/types'
 import { useTeam } from '@/composables/useTeamData'
 import { useTaskPanel } from '@/stores/taskPanel'
 import { useToast } from '@/stores/toast'
+import { vDragSort, type TaskDrop } from '@/ui/dragSort'
 import { formatShortDate } from '@/ui/format'
 import AvatarStack from '@/components/ui/AvatarStack.vue'
 import EditableTitle from '@/components/ui/EditableTitle.vue'
+import RankHandle from '@/components/ui/RankHandle.vue'
 import SubteamTags from '@/components/ui/SubteamTags.vue'
 
 const props = defineProps<{ task: WithId<Task> }>()
@@ -43,6 +46,28 @@ function toggleSubtask(item: Subtask) {
   writes
     .updateTask(teamId.value, props.task.id, {
       subtasks: updateSubtask(props.task.subtasks, item.id, { status }),
+    })
+    .catch(fail)
+}
+
+/** A subtask dragged to a new place in this card (see v-drag-sort): between its new neighbors. */
+function reorderSubtask(drop: TaskDrop) {
+  writes
+    .updateTask(teamId.value, props.task.id, {
+      subtasks: placeSubtask(props.task.subtasks, drop.id, drop.beforeId, drop.afterId),
+    })
+    .catch(fail)
+}
+
+/** The ⠿ menu on a subtask: Move to top / up / down / bottom (indexes among the subtasks shown). */
+function moveSubtaskTo(from: number, to: number) {
+  const item = subtasks.value[from]
+  const target = subtasks.value[Math.max(0, Math.min(to, subtasks.value.length - 1))]
+  if (!item || !target || item === target) return
+  const all = props.task.subtasks
+  writes
+    .updateTask(teamId.value, props.task.id, {
+      subtasks: moveSubtask(all, all.indexOf(item), all.indexOf(target)),
     })
     .catch(fail)
 }
@@ -118,13 +143,30 @@ function onKeydown(event: KeyboardEvent) {
           <span class="sr-only">subtasks</span>
         </button>
       </div>
-      <div v-if="expanded" class="subtask-list">
+      <div
+        v-if="expanded"
+        v-drag-sort="{
+          group: `subtasks-${task.id}`,
+          key: task.id,
+          draggable: '.subtask-row',
+          idAttr: 'subtask',
+          onDrop: reorderSubtask,
+        }"
+        class="subtask-list"
+      >
         <div
-          v-for="item in subtasks"
+          v-for="(item, index) in subtasks"
           :key="item.id"
+          :data-subtask="item.id"
           class="subtask-row"
           :class="{ completed: item.status === 'Done' }"
         >
+          <RankHandle
+            :index="index"
+            :count="subtasks.length"
+            :label="item.title"
+            @move="moveSubtaskTo(index, $event)"
+          />
           <button type="button" class="subtask-open" @click="panel.open(teamId, task.id, item.id)">
             {{ item.title }}
           </button>
@@ -166,6 +208,8 @@ function onKeydown(event: KeyboardEvent) {
   border-radius: 7px;
   background: #fff;
   box-shadow: 0 1px 2px rgba(32, 45, 61, 0.06);
+  /* The card's background says it can be picked up; its title, buttons, and checkboxes keep their own cursors. */
+  cursor: grab;
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease,
@@ -264,6 +308,16 @@ h3 :deep(.title-button) {
   min-height: 37px;
   padding: 5px 3px;
   border-bottom: 1px solid #edf0f3;
+}
+/* The ⠿ grip, as on List rows: shown on hover or focus. Drag by it (or anywhere on the row), or click for the menu. */
+.subtask-row :deep(.rank-handle) {
+  flex: 0 0 auto;
+  margin: 0 -4px 0 -5px;
+  cursor: grab;
+}
+.subtask-row:hover :deep(.rank-handle),
+.subtask-row:focus-within :deep(.rank-handle) {
+  opacity: 1;
 }
 .subtask-open {
   flex: 1;

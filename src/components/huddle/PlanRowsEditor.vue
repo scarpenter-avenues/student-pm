@@ -35,19 +35,21 @@ function removeRow(index: number) {
   <div v-for="(row, index) in rows" :key="index" class="plan-row">
     <input v-model="row.time" type="time" aria-label="Time" />
     <input v-model="row.text" maxlength="120" placeholder="What" aria-label="What" />
-    <SelectButton
-      class="run-by"
-      :model-value="row.runBy ?? ''"
-      :options="adultOptions()"
-      label="Run by"
-      placeholder="Run by"
-      @update:model-value="setRunBy(row, $event as string)"
-    >
-      <template #value="{ value }">{{
-        adults.find((adult) => adult.id === value)?.displayName ?? 'Run by'
-      }}</template>
-    </SelectButton>
-    <WhoPicker v-model="row.audience" :teams="teams" />
+    <div class="people">
+      <SelectButton
+        class="run-by"
+        :model-value="row.runBy ?? ''"
+        :options="adultOptions()"
+        label="Run by"
+        placeholder="Run by"
+        @update:model-value="setRunBy(row, $event as string)"
+      >
+        <template #value="{ value }">{{
+          adults.find((adult) => adult.id === value)?.displayName ?? 'Run by'
+        }}</template>
+      </SelectButton>
+      <WhoPicker v-model="row.audience" :teams="teams" />
+    </div>
     <button
       type="button"
       class="remove"
@@ -66,6 +68,10 @@ function removeRow(index: number) {
   grid-template-columns: 110px minmax(0, 1fr) 140px 170px 28px;
   align-items: center;
   gap: 6px;
+}
+/* On wide screens the two pickers are just two more columns of the row. */
+.plan-row .people {
+  display: contents;
 }
 .plan-row input {
   height: 32px;
@@ -95,13 +101,36 @@ function removeRow(index: number) {
   color: #2864c7;
   font-size: 13px;
 }
+/* Phones: two lines per row. Time, what, and × on the first; who runs it and who it's for share the second. */
 @media (max-width: 680px) {
   .plan-row {
-    grid-template-columns: 96px minmax(0, 1fr) 28px;
+    grid-template-columns: 104px minmax(0, 1fr) 28px;
+    grid-template-areas:
+      'time what remove'
+      'people people people';
+    padding-bottom: 6px;
+    border-bottom: 1px solid #edf0f2;
   }
-  .plan-row :deep(.who),
-  .plan-row .run-by {
-    grid-column: span 2;
+  .plan-row > input[type='time'] {
+    grid-area: time;
+    min-width: 0;
+  }
+  .plan-row > input:not([type='time']) {
+    grid-area: what;
+    min-width: 0;
+  }
+  .plan-row .remove {
+    grid-area: remove;
+  }
+  .plan-row .people > :deep(*) {
+    width: 100%;
+    min-width: 0;
+  }
+  .plan-row .people {
+    display: grid;
+    grid-area: people;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
   }
 }
 </style>

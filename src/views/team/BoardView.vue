@@ -77,7 +77,13 @@ async function move(list: WithId<Task>[], index: number, step: -1 | 1) {
         <span class="column-count">{{ column.tasks.length }}</span>
       </header>
       <div
-        v-drag-sort="{ group: 'board', key: column.status, draggable: '.task-card', onDrop }"
+        v-drag-sort="{
+          group: 'board',
+          key: column.status,
+          draggable: '.task-card',
+          ignore: '.card-subtasks',
+          onDrop,
+        }"
         class="task-list"
       >
         <TaskCard

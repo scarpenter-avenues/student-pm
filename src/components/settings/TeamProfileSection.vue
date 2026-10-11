@@ -72,7 +72,7 @@ function save() {
 <style scoped>
 .profile {
   display: grid;
-  grid-template-columns: minmax(0, 260px) 120px;
+  grid-template-columns: minmax(0, 260px) minmax(0, 120px);
   gap: 10px;
   margin-bottom: 14px;
 }

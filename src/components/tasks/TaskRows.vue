@@ -165,7 +165,12 @@ const colspan = computed(() => props.columns.length + 1 + (props.extra ? 1 : 0))
             ☷
           </button>
           <span class="row-actions">
-            <button v-if="subtaskButton" type="button" class="row-open" @click="startSubtask(task)">
+            <button
+              v-if="subtaskButton"
+              type="button"
+              class="row-open row-add-subtask"
+              @click="startSubtask(task)"
+            >
               + Subtask
             </button>
             <button
@@ -195,6 +200,7 @@ const colspan = computed(() => props.columns.length + 1 + (props.extra ? 1 : 0))
           done: item.status === 'Done',
         }"
         :data-subtask="item.id"
+        :data-parent="task.id"
         @keydown="onSubtaskKeydown($event, task, subIndex)"
       >
         <td class="name-cell">

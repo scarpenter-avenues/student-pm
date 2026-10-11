@@ -283,35 +283,86 @@ tr:hover .row-open,
   border-radius: 50%;
 }
 
-/* Dragging tasks (v-drag-sort): the spot it will land shows faded; the card or row follows the pointer. While a
-   drag is on, subtask rows step aside so a task moves as one row. */
+/* Dragging tasks (v-drag-sort). A card is picked up: it follows the pointer exactly, tilted and lifted a little,
+   and leaves an empty slot where it will land. While a drag is on, subtask rows step aside so a task moves as one
+   row. */
+.drag-ghost {
+  /* No transitions on the floating copy: SortableJS reads its position on every move, and a transition (the
+     cards' hover lift) makes it read a half-finished value, so the copy falls behind the pointer. */
+  transition: none !important;
+  opacity: 1 !important;
+  box-shadow: 0 14px 34px rgba(32, 45, 61, 0.28);
+  cursor: grabbing;
+}
+/* A card tilts and lifts. The individual properties add to the transform SortableJS sets instead of replacing it. */
+.task-card.drag-ghost {
+  rotate: 2.5deg;
+  scale: 1.03;
+}
 .drag-placeholder {
   opacity: 0.35;
 }
-.drag-ghost {
-  box-shadow: 0 10px 28px rgba(32, 45, 61, 0.22);
-  opacity: 0.95;
-  cursor: grabbing;
-}
-/* Table rows can't float with their column widths, so the row itself slides into place, highlighted. */
-tr.drag-ghost {
-  opacity: 0 !important; /* SortableJS sets an inline opacity on the floating copy */
-}
-tr.drag-placeholder {
+/* Board: the slot the card will drop into. (`body` so it outranks the card's own scoped styles.) */
+body .task-card.drag-placeholder {
+  border: 1px dashed var(--team-line);
+  background: var(--team-soft);
+  box-shadow: none;
   opacity: 1;
 }
-tr.drag-placeholder > td {
-  background: var(--team-soft);
+body .task-card.drag-placeholder > * {
+  visibility: hidden;
 }
-tr.drag-placeholder > td:first-child {
-  box-shadow: inset 3px 0 0 var(--team-ink);
+/* Nothing under the pointer reacts while a task is being carried: no Open button, no grips, no hop. */
+body.is-dragging .row-open,
+body.is-dragging .rank-handle {
+  visibility: hidden;
+}
+
+body.is-dragging .task-card:not(.drag-ghost) {
+  transform: none !important;
+  transition: none !important;
+}
+/* A task row carried in List or Planning: the same look as a subtask, a floating row and a faded slot. (The copy's
+   cells are sized from the real row; see sizeRowCopy.) */
+.subtask-row.drag-ghost,
+tr.drag-ghost {
+  border-radius: 5px;
+  background: #fff;
+}
+tr.drag-ghost > td {
+  border-color: transparent;
+}
+/* Touch: dragging needs a short press-and-hold, so a swipe can still scroll. The moment the hold is long enough
+   the card or row lifts, which is the cue that it can now be dragged. (Mice have no hold, so no lift on click.) */
+@media (hover: none) {
+  .task-card,
+  .task-table tr.task-row,
+  .subtask-row {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .task-card.drag-chosen:not(.drag-ghost):not(.drag-placeholder) {
+    z-index: 2;
+    box-shadow: 0 12px 28px rgba(32, 45, 61, 0.26);
+    scale: 1.03;
+    rotate: 1.5deg;
+    transition:
+      scale 0.12s ease,
+      rotate 0.12s ease,
+      box-shadow 0.12s ease;
+  }
+  .task-table tr.drag-chosen:not(.drag-ghost) > td,
+  .subtask-row.drag-chosen:not(.drag-ghost) {
+    background: var(--team-soft);
+  }
 }
 body.is-dragging,
 body.is-dragging * {
   cursor: grabbing !important;
   user-select: none;
 }
-body.is-dragging .subtask-row,
-body.is-dragging .subtask-add-row {
+body.is-dragging-task tr.subtask-row,
+body.is-dragging-task tr.subtask-add-row {
   display: none;
 }

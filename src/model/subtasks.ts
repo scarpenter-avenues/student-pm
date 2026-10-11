@@ -42,6 +42,22 @@ export function moveSubtask(list: readonly Subtask[], from: number, to: number):
   return next
 }
 
+/** Puts a subtask between two others (a drag and drop): after `beforeId`, before `afterId`; null is an end. */
+export function placeSubtask(
+  list: readonly Subtask[],
+  id: string,
+  beforeId: string | null,
+  afterId: string | null,
+): Subtask[] {
+  const moved = list.find((item) => item.id === id)
+  if (!moved) return [...list]
+  const rest = list.filter((item) => item.id !== id)
+  const after = afterId ? rest.findIndex((item) => item.id === afterId) : -1
+  const before = beforeId ? rest.findIndex((item) => item.id === beforeId) : -1
+  const at = after >= 0 ? after : before >= 0 ? before + 1 : rest.length
+  return [...rest.slice(0, at), moved, ...rest.slice(at)]
+}
+
 /** The subtasks people see: not archived. */
 export function activeSubtasks(list: readonly Subtask[]): Subtask[] {
   return list.filter((subtask) => !subtask.archived)

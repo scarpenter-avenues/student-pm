@@ -6,6 +6,18 @@ The sender is a small Google Apps Script that you run under a Google account in 
 minute it checks for new posts and sends them through that account's Gmail. Nothing goes through an outside mail
 company, and it works on Firebase's free Spark plan.
 
+## Check this first: can the sending account send mail?
+
+From the Google account that will run the script, send an ordinary email to an address outside your organization
+(a personal one).
+
+- **It arrives:** carry on.
+- **It bounces** with something like "550 5.7.26 Unauthenticated email … DMARC policy": your organization's email
+  isn't hosted by Google, so the outside world rejects mail that Google sends for your domain. This is common where
+  Google accounts are used for sign-in and Drive but mail is on Microsoft 365. The sender can't deliver from that
+  account until your IT team authorizes Google to send for the domain (adding Google to the domain's SPF record and
+  turning on DKIM for Google Workspace). Ask them before installing anything below.
+
 ## What gets sent, and to whom
 
 | Post | Emailed to |

@@ -42,6 +42,11 @@
   font-size: 12px;
   font-weight: 650;
 }
+/* A field's box fills its column and can shrink with it (an input's natural width is ~20 characters). */
+.settings-field input {
+  width: 100%;
+  min-width: 0;
+}
 .settings-field input,
 .settings-input {
   height: 36px;

@@ -114,6 +114,7 @@ const summary = computed(() => props.huddle.status ?? props.huddle.text ?? '')
 .card {
   position: relative;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 6px;
   width: 100%;
   padding: 14px 16px;

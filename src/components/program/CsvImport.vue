@@ -183,6 +183,9 @@ const teamName = (id: string | null) =>
 }
 .example {
   overflow-x: auto;
+  /* Long lines wrap instead of scrolling sideways. */
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
   margin: 10px 0 4px;
   padding: 8px 10px;
   border-radius: 6px;

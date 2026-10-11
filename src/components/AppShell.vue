@@ -82,6 +82,7 @@ watchEffect(() => {
           :key="tab.id"
           class="top-tab"
           :class="{
+            [`tab-${tab.id}`]: true,
             active: activeTab === tab.id,
             'settings-tab': tab.gear,
             'has-dot': tab.id === 'goals' && !onDashboard && goalsDot,
@@ -107,7 +108,10 @@ watchEffect(() => {
             />
             <circle cx="12" cy="12" r="3" />
           </svg>
-          {{ tab.label }}
+          <span class="tab-label">{{ tab.label }}</span>
+          <span v-if="tab.id === 'home' && !onDashboard" class="tab-short" aria-hidden="true"
+            >Home</span
+          >
         </RouterLink>
       </nav>
     </header>
@@ -165,6 +169,9 @@ watchEffect(() => {
 .settings-tab {
   margin-left: auto;
 }
+.tab-short {
+  display: none;
+}
 .has-dot::after {
   position: absolute;
   top: 9px;
@@ -187,10 +194,46 @@ watchEffect(() => {
     padding: 0 12px;
   }
   .tabs-row {
+    gap: 0;
     height: 40px;
   }
   .top-tab {
-    padding: 0 11px;
+    padding: 0 9px;
+  }
+  /* The gear says "Settings" on its own (the label stays for screen readers). */
+  .settings-tab .tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+/* A phone held upright: the tabs must fit without scrolling sideways, so the two wide planning views (Planning
+   and Timeline) leave the bar and "Team Home" reads "Home". Turn the phone sideways and they're back. */
+@media (max-width: 680px) and (orientation: portrait) {
+  .top-tab.tab-planning,
+  .top-tab.tab-timeline {
+    display: none;
+  }
+  .tab-home .tab-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .tab-home .tab-short {
+    display: inline;
+  }
+}
+/* The narrowest phones need slightly tighter tabs to fit all six. */
+@media (max-width: 350px) and (orientation: portrait) {
+  .top-tab {
+    padding: 0 6px;
+    font-size: 12px;
   }
   .content {
     padding: 18px 13px 34px;

@@ -3,8 +3,14 @@
 import { Timestamp } from 'firebase/firestore'
 import { writes, type NewTask } from '@/data'
 import { rankBetween, rankForMove } from '@/model/rank'
-import type { TaskDrop } from '@/ui/dragSort'
-import { addSubtask, moveSubtask, updateSubtask, type NewSubtask } from '@/model/subtasks'
+import type { SubtaskDrop, TaskDrop } from '@/ui/dragSort'
+import {
+  addSubtask,
+  moveSubtask,
+  placeSubtask,
+  updateSubtask,
+  type NewSubtask,
+} from '@/model/subtasks'
 import type { Subtask, Task, WithId } from '@/model/types'
 import type { TaskChanges } from '@/data/writes'
 import { useSession } from '@/stores/session'
@@ -91,6 +97,15 @@ export function useTaskEdits(team: TeamData) {
     return task
   }
 
+  /** A subtask dragged to a new place among its siblings (it never changes task). */
+  function dropSub(move: SubtaskDrop) {
+    const task = team.tasks.value.find((item) => item.id === move.taskId)
+    if (!task) return
+    save(task, null, {
+      subtasks: placeSubtask(task.subtasks, move.id, move.beforeId, move.afterId),
+    })
+  }
+
   function moveSub(task: WithId<Task>, visible: readonly Subtask[], from: number, to: number) {
     const all = latest(task).subtasks
     const fromIndex = all.findIndex((item) => item.id === visible[from]?.id)
@@ -111,5 +126,5 @@ export function useTaskEdits(team: TeamData) {
     return save(task, null, { subtasks: addSubtask(latest(task).subtasks, fields) })
   }
 
-  return { save, archive, restore, move, drop, moveSub, add, addSub, fail }
+  return { save, archive, restore, move, drop, dropSub, moveSub, add, addSub, fail }
 }

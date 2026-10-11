@@ -175,3 +175,37 @@
 .task-table.dense .cell-button {
   min-height: 22px;
 }
+
+/* Phones: less space in front of each title (the grip, the subtask arrow, and the cell's own padding), so more of
+   the title shows. */
+@media (max-width: 680px) {
+  .task-table td.name-cell {
+    padding-left: 2px;
+  }
+  /* No adding subtasks from the table on a phone (the title needs the room): open the task and add them there. */
+  .task-table .row-add-subtask,
+  .task-table tr.subtask-add-row {
+    display: none;
+  }
+  .task-table .name-wrap {
+    gap: 1px;
+  }
+  .task-table .rank-handle,
+  .task-table .handle-space,
+  .task-table .toggle-space,
+  .task-table .subtask-toggle {
+    width: 13px;
+  }
+  .select-circle {
+    margin: 0 5px 0 1px;
+  }
+  .task-table .subtask-name {
+    padding-left: 14px;
+  }
+  .task-table .add-button {
+    padding-left: 30px;
+  }
+  .task-table .subtask-add {
+    padding-left: 46px;
+  }
+}

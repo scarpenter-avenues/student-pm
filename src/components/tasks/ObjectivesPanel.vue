@@ -26,6 +26,12 @@ const props = withDefaults(
 const toast = useToast()
 const open = ref(!props.collapsed)
 const grouped = computed(() => props.sprints.length > 1)
+// With several sprints listed (All sprints), one without objectives is left out: read-only, it has nothing to show.
+const listed = computed(() =>
+  grouped.value && !props.editable
+    ? props.sprints.filter((sprint) => sprint.objectives.length)
+    : props.sprints,
+)
 const all = computed(() => props.sprints.flatMap((sprint) => sprint.objectives))
 const metCount = computed(() => all.value.filter((objective) => objective.met).length)
 
@@ -119,7 +125,7 @@ function onKeydown(event: KeyboardEvent, sprint: WithId<Sprint>) {
       </button>
     </div>
     <div v-if="open" class="objectives-body">
-      <div v-for="sprint in sprints" :key="sprint.id" class="objectives-group">
+      <div v-for="sprint in listed" :key="sprint.id" class="objectives-group">
         <p v-if="grouped && (sprint.objectives.length || editable)" class="group-name">
           {{ sprint.name }}
         </p>
@@ -305,6 +311,8 @@ function onKeydown(event: KeyboardEvent, sprint: WithId<Sprint>) {
 }
 .objectives-list {
   display: grid;
+  /* The column never grows past the panel: a long one-line objective is cut short, not the page made wider. */
+  grid-template-columns: minmax(0, 1fr);
   margin: 2px 0 0;
   padding: 0;
   list-style: none;

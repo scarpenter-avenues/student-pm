@@ -1,9 +1,14 @@
 <script setup lang="ts">
-// Timeline: the season's days across, tasks grouped by subteam (a task with several sits in its first; "No subteam"
-// last), dense 34px lanes. Bar color + icon = status. Solid lines only at sprint boundaries; event days are dashed
+// Timeline: the season's days across, one task per row in Planning's order (top is first), under a header row for
+// each subteam (a task with several sits in its first; "No subteam" last). Dense 34px rows; no column of names on
+// the left, since the bars carry their titles. Bar color + icon = status. "Group by subteam" can be switched off
+// (remembered on this device) for one list in exactly Planning's order, each bar marked with its subteam's color. Solid lines only at sprint boundaries; event days are dashed
 // (competitions purple, work sessions teal, other gray). Opens on the current sprint's first day unless today would
 // be off-screen. Titles too long for their bar run past its right edge, and lanes leave room so they never overlap.
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+// Drag a bar's middle to move it (its dates shift together) or an end to change that date; it snaps to days and
+// saves on release, with Undo. A row whose task starts off-screen to the right isn't left empty: a "Later" column
+// appears at the right edge, where the chart fades out, naming it; clicking jumps there.
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { writes } from '@/data'
 import { todayIso } from '@/model/dates'
 import type { Status, Subtask, Task, WithId } from '@/model/types'
@@ -13,14 +18,15 @@ import { useClickAway } from '@/composables/usePopover'
 import { useTaskPanel } from '@/stores/taskPanel'
 import { useToast } from '@/stores/toast'
 import { formatEventDate, formatShortDate, plural } from '@/ui/format'
+import { SUBTEAM_PALETTE } from '@/ui/palette'
 import {
   TIMELINE_ZOOMS,
   barWidth,
   contentWidth,
   dateSpan,
+  dragDates,
+  type BarDrag,
   daysBetween,
-  overflowDays,
-  packLanes,
   shiftIsoDate,
   timelineRange,
 } from '@/ui/timeline'
@@ -30,8 +36,12 @@ import SprintHeader from '@/components/tasks/SprintHeader.vue'
 import TaskFilterBar from '@/components/tasks/TaskFilterBar.vue'
 import AvatarStack from '@/components/ui/AvatarStack.vue'
 
-const LABEL_W = 220
+// No fixed column on the left: each subteam is a header row.
+const LABEL_W = 0
 const LANE_H = 34
+/** A subteam's header row, and the "Later" column at the right edge. */
+const LABEL_H = 34
+const LATER_W = 230
 const SUB_ROW = 30
 
 const { team, sprint, visible } = useTaskView(() => false)
@@ -45,6 +55,28 @@ const today = todayIso()
 const collapsed = ref<Set<string>>(new Set())
 const expanded = ref<Set<string>>(new Set())
 
+// Grouped by subteam (the default), or one list in Planning's order. Remembered on this device.
+const GROUPED_KEY = 'switchback.timeline.grouped'
+function storedGrouped() {
+  try {
+    return localStorage.getItem(GROUPED_KEY) !== 'no'
+  } catch {
+    return true
+  }
+}
+const grouped = ref(storedGrouped())
+watch(grouped, (on) => {
+  try {
+    localStorage.setItem(GROUPED_KEY, on ? 'yes' : 'no')
+  } catch {
+    // Private windows can refuse storage; the choice just lasts for this visit.
+  }
+})
+/** The header row's height, when there is one. */
+const labelHeight = computed(() => (grouped.value ? LABEL_H : 0))
+const firstSubteam = (task: Task) =>
+  team.subteams.value.find((subteam) => task.subteamIds.includes(subteam.id)) ?? null
+
 // ---------- measuring titles (bar font) ----------
 const context = document.createElement('canvas').getContext('2d')
 const fontFamily = getComputedStyle(document.body).fontFamily
@@ -54,10 +86,18 @@ function textWidth(text: string) {
   return context.measureText(text).width
 }
 const activeSubtasks = (task: Task) => task.subtasks.filter((item) => !item.archived)
-function overflowPx(title: string, people: number, span: [string, string], subtaskCount: boolean) {
+function overflowPx(
+  title: string,
+  people: number,
+  span: [string, string],
+  subtaskCount: boolean,
+  subteamDot = false,
+) {
   return Math.max(
     0,
-    contentWidth(textWidth(title), people, subtaskCount) - barWidth(span, dayWidth.value),
+    contentWidth(textWidth(title), people, subtaskCount) +
+      (subteamDot ? 9 + 7 : 0) -
+      barWidth(span, dayWidth.value),
   )
 }
 
@@ -72,23 +112,20 @@ interface Item {
   expandable: boolean
   expanded: boolean
   reach: [string, string]
-  packStart: string
-  packEnd: string
   overflow: number
 }
 const groups = computed(() => {
-  const order = [
-    ...team.subteams.value.map((s) => ({ id: s.id, name: s.name })),
-    { id: '', name: 'No subteam' },
-  ]
+  const order: { id: string | null; name: string }[] = grouped.value
+    ? [
+        ...team.subteams.value.map((s) => ({ id: s.id, name: s.name })),
+        { id: '', name: 'No subteam' },
+      ]
+    : // One list of everything (id null), in Planning's order.
+      [{ id: null, name: '' }]
   return order
     .map(({ id, name }) => {
       const items: Item[] = visible.value
-        .filter(
-          (task) =>
-            (task.subteamIds.find((sid) => team.subteams.value.some((s) => s.id === sid)) ?? '') ===
-            id,
-        )
+        .filter((task) => id === null || (firstSubteam(task)?.id ?? '') === id)
         .flatMap((task) => {
           const span = dateSpan(task)
           if (!span) return []
@@ -108,20 +145,13 @@ const groups = computed(() => {
                 [...span],
               )
             : span
-          const overflow = overflowPx(task.title, task.assigneeIds.length, span, subs.length > 0)
-          const ends = [reach[1], shiftIsoDate(span[1], overflowDays(overflow, dayWidth.value))]
-          if (isOpen)
-            dated.forEach((d) =>
-              ends.push(
-                shiftIsoDate(
-                  d.span[1],
-                  overflowDays(
-                    overflowPx(d.subtask.title, d.subtask.assigneeIds.length, d.span, false),
-                    dayWidth.value,
-                  ),
-                ),
-              ),
-            )
+          const overflow = overflowPx(
+            task.title,
+            task.assigneeIds.length,
+            span,
+            subs.length > 0,
+            !grouped.value && !!firstSubteam(task),
+          )
           return [
             {
               task,
@@ -131,14 +161,21 @@ const groups = computed(() => {
               expandable,
               expanded: isOpen,
               reach,
-              // A free day before tasks with subtasks leaves room for the expand arrow.
-              packStart: expandable ? shiftIsoDate(reach[0], -1) : reach[0],
-              packEnd: ends.sort().at(-1)!,
               overflow,
             },
           ]
         })
-      const { lanes, count } = packLanes(items)
+      // One row per task, in Planning's order (order is priority): by sprint, then rank. `visible` is already in
+      // rank order; with All sprints showing, earlier sprints come first and the Backlog last.
+      const sprintOrder = (item: Item) => {
+        const index = item.task.sprintId
+          ? team.sprints.value.findIndex((s) => s.id === item.task.sprintId)
+          : -1
+        return index < 0 ? Number.MAX_SAFE_INTEGER : index
+      }
+      items.sort((a, b) => sprintOrder(a) - sprintOrder(b))
+      const lanes = items.map((_, index) => index)
+      const count = items.length
       const panelHeight = (item: Item) =>
         6 + item.dated.length * SUB_ROW + (item.undated ? 24 : 0) + 12
       const extra = Array.from({ length: count }, (_, lane) =>
@@ -151,7 +188,7 @@ const groups = computed(() => {
         (_, lane) => 5 + extra.slice(0, lane).reduce((sum, e) => sum + e, 0) + lane * LANE_H,
       )
       return {
-        id,
+        id: id ?? 'all',
         name,
         items: items.map((item, i) => ({ ...item, top: tops[lanes[i]!]! })),
         height: count * LANE_H + extra.reduce((sum, e) => sum + e, 0) + 4,
@@ -239,6 +276,103 @@ function addTask() {
 const barTitle = (title: string, status: string, span: [string, string]) =>
   `${title} · ${status} · ${formatShortDate(span[0])}${span[0] === span[1] ? '' : ` – ${formatShortDate(span[1])}`}`
 
+// ---------- dragging bars: move, or pull an end ----------
+// While a bar is dragged only that bar is redrawn (shifted and resized in whole days); lanes repack when the new
+// dates are saved. A press that doesn't move is still a click, which opens the task.
+type Dates = { start: string | null; due: string | null }
+const drag = ref<{ key: string; mode: BarDrag; days: number } | null>(null)
+let dragFrom: {
+  x: number
+  scroll: number
+  moved: boolean
+  dates: Dates
+  save: (dates: Dates) => void
+  title: string
+} | null = null
+let justDragged = false
+const barKey = (task: WithId<Task>, subtask?: Subtask) =>
+  subtask ? `${task.id}/${subtask.id}` : task.id
+
+/** The dates a bar shows: its own, or where the drag has taken it. */
+function shownSpan(key: string, dates: Dates, span: [string, string]): [string, string] {
+  const d = drag.value
+  return (d && d.key === key && dateSpan(dragDates(dates, d.mode, d.days))) || span
+}
+/** While dragged, a bar shifts and resizes in place (its lane and neighbors wait for the save). */
+function dragStyle(key: string, dates: Dates, span: [string, string]) {
+  if (drag.value?.key !== key) return {}
+  const shown = shownSpan(key, dates, span)
+  return {
+    transform: `translateX(${daysBetween(span[0], shown[0]) * dayWidth.value}px)`,
+    width: `${barWidth(shown, dayWidth.value)}px`,
+  }
+}
+const spanLabel = (span: [string, string]) =>
+  `${formatShortDate(span[0])}${span[0] === span[1] ? '' : ` – ${formatShortDate(span[1])}`}`
+
+function startDrag(event: PointerEvent, task: WithId<Task>, subtask?: Subtask) {
+  // Touch scrolls the timeline; dragging is for a mouse, trackpad, or pen.
+  if (event.button !== 0 || event.pointerType === 'touch') return
+  const from = event.target as HTMLElement
+  if (from.closest('.status-icon')) return
+  const bar = event.currentTarget as HTMLElement
+  const mode = (from.closest<HTMLElement>('.tl-grip')?.dataset.edge ?? 'move') as BarDrag
+  const source = subtask ?? task
+  dragFrom = {
+    x: event.clientX,
+    scroll: scroller.value?.scrollLeft ?? 0,
+    moved: false,
+    dates: { start: source.start, due: source.due },
+    title: source.title,
+    save: (dates) =>
+      writes
+        .updateTask(
+          team.teamId.value!,
+          task.id,
+          subtask
+            ? {
+                subtasks: updateSubtask(
+                  team.tasks.value.find((t) => t.id === task.id)?.subtasks ?? task.subtasks,
+                  subtask.id,
+                  dates,
+                ),
+              }
+            : dates,
+        )
+        .catch(fail),
+  }
+  drag.value = { key: barKey(task, subtask), mode, days: 0 }
+  bar.setPointerCapture(event.pointerId)
+}
+function moveDrag(event: PointerEvent) {
+  if (!dragFrom || !drag.value) return
+  const dx = event.clientX - dragFrom.x + ((scroller.value?.scrollLeft ?? 0) - dragFrom.scroll)
+  if (Math.abs(dx) > 3) dragFrom.moved = true
+  if (dragFrom.moved) drag.value = { ...drag.value, days: Math.round(dx / dayWidth.value) }
+}
+function endDrag(event: PointerEvent, cancelled = false) {
+  const from = dragFrom
+  const state = drag.value
+  dragFrom = null
+  drag.value = null
+  ;(event.currentTarget as HTMLElement).releasePointerCapture?.(event.pointerId)
+  if (!from || !state || !from.moved) return
+  // The click that follows a drag isn't a click on the task.
+  justDragged = true
+  setTimeout(() => (justDragged = false), 0)
+  const next = dragDates(from.dates, state.mode, state.days)
+  if (cancelled || (next.start === from.dates.start && next.due === from.dates.due)) return
+  from.save(next)
+  const span = dateSpan(next)
+  toast.show(`“${from.title}” is now ${span ? spanLabel(span) : 'undated'}`, {
+    label: 'Undo',
+    run: () => from.save(from.dates),
+  })
+}
+function openBar(task: WithId<Task>, subtask?: Subtask) {
+  if (!justDragged) panel.open(team.teamId.value!, task.id, subtask?.id)
+}
+
 // ---------- No date menu ----------
 const noDateOpen = ref(false)
 const noDateRoot = ref<HTMLElement | null>(null)
@@ -249,6 +383,33 @@ useClickAway(
 
 // ---------- scrolling and zoom ----------
 const scroller = ref<HTMLElement | null>(null)
+
+// ---------- "Later": tasks that start past the right edge of the view ----------
+const view = reactive({ left: 0, width: 0 })
+function measureView() {
+  if (!scroller.value) return
+  view.left = scroller.value.scrollLeft
+  view.width = scroller.value.clientWidth
+}
+let viewObserver: ResizeObserver | null = null
+onMounted(() => {
+  measureView()
+  if (scroller.value && typeof ResizeObserver !== 'undefined') {
+    viewObserver = new ResizeObserver(measureView)
+    viewObserver.observe(scroller.value)
+  }
+})
+onBeforeUnmount(() => viewObserver?.disconnect())
+/** Starts beyond what's showing (allowing for the Later column itself, once it's there). */
+const startsLater = (span: [string, string], column: boolean) =>
+  view.width > 0 && x(span[0]) > view.left + view.width - (column ? LATER_W : 0) - 30
+const laterShown = computed(() =>
+  groups.value.some(
+    (group) =>
+      !collapsed.value.has(group.id) && group.items.some((item) => startsLater(item.span, false)),
+  ),
+)
+const isLater = (span: [string, string]) => laterShown.value && startsLater(span, true)
 function scrollTo(iso: string, lead = 5) {
   if (scroller.value && range.value)
     scroller.value.scrollLeft = (daysBetween(range.value.start, iso) - lead) * dayWidth.value
@@ -327,6 +488,10 @@ function zoomBy(step: number) {
           </button>
         </div>
       </div>
+      <label class="group-toggle">
+        <input v-model="grouped" type="checkbox" />
+        Group by subteam
+      </label>
       <div class="zoom">
         <button type="button" aria-label="Zoom out" :disabled="zoom === 0" @click="zoomBy(-1)">
           −
@@ -343,7 +508,7 @@ function zoomBy(step: number) {
       </div>
     </div>
 
-    <div ref="scroller" class="timeline-scroll">
+    <div ref="scroller" class="timeline-scroll" @scroll.passive="measureView">
       <div
         v-if="range"
         class="canvas"
@@ -354,7 +519,9 @@ function zoomBy(step: number) {
         }"
       >
         <div class="tl-header">
-          <div class="tl-corner" />
+          <div v-if="laterShown" class="tl-later tl-later-head">
+            <div class="later-strip" :style="{ width: `${LATER_W}px` }"><span>Later</span></div>
+          </div>
           <div class="tl-scale" :style="{ width: `${width}px` }">
             <div
               v-for="month in months"
@@ -441,7 +608,33 @@ function zoomBy(step: number) {
             class="tl-group"
             :class="{ collapsed: collapsed.has(group.id) }"
           >
-            <div class="tl-label">
+            <div v-if="laterShown" class="tl-later">
+              <div
+                class="later-strip"
+                :style="{
+                  width: `${LATER_W}px`,
+                  height: `${labelHeight + (collapsed.has(group.id) ? 4 : group.height)}px`,
+                }"
+              >
+                <template v-if="!collapsed.has(group.id)">
+                  <template v-for="item in group.items" :key="item.task.id">
+                    <button
+                      v-if="isLater(item.span)"
+                      type="button"
+                      class="later-chip"
+                      :data-state="item.task.status"
+                      :title="`${barTitle(item.task.title, item.task.status, item.span)} · Show it`"
+                      :style="{ top: `${labelHeight + item.top}px` }"
+                      @click="scrollTo(item.span[0], 3)"
+                    >
+                      <span class="later-title">{{ item.task.title }}</span>
+                      <span class="later-date">{{ formatShortDate(item.span[0]) }} ›</span>
+                    </button>
+                  </template>
+                </template>
+              </div>
+            </div>
+            <div v-if="grouped" class="tl-label">
               <button
                 type="button"
                 :aria-expanded="!collapsed.has(group.id)"
@@ -463,19 +656,40 @@ function zoomBy(step: number) {
                 <template v-for="item in group.items" :key="item.task.id">
                   <div
                     class="tl-bar"
-                    :class="{ 'label-overflows': item.overflow > 0 }"
+                    :class="{
+                      'label-overflows': item.overflow > 0,
+                      dragging: drag?.key === barKey(item.task),
+                    }"
                     :data-state="item.task.status"
                     role="button"
                     tabindex="0"
-                    :title="barTitle(item.task.title, item.task.status, item.span)"
+                    :title="
+                      drag ? undefined : barTitle(item.task.title, item.task.status, item.span)
+                    "
                     :style="{
                       left: `${x(item.span[0]) + 2}px`,
                       width: `${barWidth(item.span, dayWidth)}px`,
                       top: `${item.top}px`,
+                      ...dragStyle(barKey(item.task), item.task, item.span),
                     }"
-                    @click="panel.open(team.teamId.value!, item.task.id)"
+                    @pointerdown="startDrag($event, item.task)"
+                    @pointermove="moveDrag"
+                    @pointerup="endDrag($event)"
+                    @pointercancel="endDrag($event, true)"
+                    @click="openBar(item.task)"
                     @keydown.enter.prevent="panel.open(team.teamId.value!, item.task.id)"
                   >
+                    <span class="tl-grip" data-edge="start" aria-hidden="true" />
+                    <span class="tl-grip" data-edge="end" aria-hidden="true" />
+                    <span v-if="drag?.key === barKey(item.task)" class="tl-drag-dates">{{
+                      spanLabel(shownSpan(barKey(item.task), item.task, item.span))
+                    }}</span>
+                    <span
+                      v-if="!grouped && firstSubteam(item.task)"
+                      class="subteam-dot"
+                      :title="firstSubteam(item.task)!.name"
+                      :style="{ background: SUBTEAM_PALETTE[firstSubteam(item.task)!.color].fg }"
+                    />
                     <button
                       type="button"
                       class="status-icon"
@@ -529,6 +743,7 @@ function zoomBy(step: number) {
                       <div
                         class="tl-bar tl-sub-bar"
                         :class="{
+                          dragging: drag?.key === barKey(item.task, d.subtask),
                           'label-overflows':
                             overflowPx(
                               d.subtask.title,
@@ -540,16 +755,32 @@ function zoomBy(step: number) {
                         :data-state="d.subtask.status"
                         role="button"
                         tabindex="0"
-                        :title="barTitle(d.subtask.title, d.subtask.status, d.span)"
+                        :title="
+                          drag ? undefined : barTitle(d.subtask.title, d.subtask.status, d.span)
+                        "
                         :style="{
                           width: `${barWidth(d.span, dayWidth)}px`,
                           marginRight: `${overflowPx(d.subtask.title, d.subtask.assigneeIds.length, d.span, false) + 10}px`,
+                          ...dragStyle(barKey(item.task, d.subtask), d.subtask, d.span),
                         }"
-                        @click="panel.open(team.teamId.value!, item.task.id, d.subtask.id)"
+                        @pointerdown="startDrag($event, item.task, d.subtask)"
+                        @pointermove="moveDrag"
+                        @pointerup="endDrag($event)"
+                        @pointercancel="endDrag($event, true)"
+                        @click="openBar(item.task, d.subtask)"
                         @keydown.enter.prevent="
                           panel.open(team.teamId.value!, item.task.id, d.subtask.id)
                         "
                       >
+                        <span class="tl-grip" data-edge="start" aria-hidden="true" />
+                        <span class="tl-grip" data-edge="end" aria-hidden="true" />
+                        <span
+                          v-if="drag?.key === barKey(item.task, d.subtask)"
+                          class="tl-drag-dates"
+                          >{{
+                            spanLabel(shownSpan(barKey(item.task, d.subtask), d.subtask, d.span))
+                          }}</span
+                        >
                         <button
                           type="button"
                           class="status-icon"
@@ -646,6 +877,22 @@ function zoomBy(step: number) {
   color: #858e96;
   white-space: nowrap;
 }
+.group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #4d5962;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+/* Ungrouped: a dot in the subteam's color at the start of each bar. */
+.subteam-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
 .zoom {
   display: flex;
   align-items: center;
@@ -685,14 +932,6 @@ function zoomBy(step: number) {
 .tl-header {
   display: flex;
   border-bottom: 1px solid var(--line);
-  background: #fff;
-}
-.tl-corner {
-  position: sticky;
-  z-index: 4;
-  left: 0;
-  flex: 0 0 var(--label-w);
-  border-right: 1px solid var(--line);
   background: #fff;
 }
 .tl-scale {
@@ -854,22 +1093,93 @@ function zoomBy(step: number) {
 }
 .tl-group {
   position: relative;
-  display: flex;
   min-height: 38px;
   border-bottom: 1px solid var(--line);
 }
+/* A subteam's header row. Its name stays at the left edge of the view while the days scroll under it. */
 .tl-label {
   position: sticky;
   z-index: 3;
   left: 0;
   display: flex;
-  align-items: flex-start;
-  flex: 0 0 var(--label-w);
+  width: max-content;
+  max-width: 100%;
+  height: 34px;
+  padding: 5px 8px 1px;
+}
+/* "Later": pinned to the right edge of the view. A zero-size sticky anchor holds a strip that fades the chart
+   out, with a chip on the row of each task that starts further right. */
+.tl-later {
+  position: sticky;
+  z-index: 4;
+  right: 0;
+  width: 0;
+  height: 0;
+  margin-left: auto;
+}
+.later-strip {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), #fff 34px);
+}
+.tl-later-head {
+  align-self: stretch;
+  order: 2;
+}
+.tl-later-head .later-strip {
+  bottom: 0;
+  height: 86px;
+}
+.tl-later-head span {
+  position: absolute;
+  bottom: 4px;
+  left: 40px;
+  color: #59636d;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.later-chip {
+  position: absolute;
+  right: 8px;
+  left: 40px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: calc(var(--lane-h) - 8px);
+  padding: 0 8px;
+  border: 1px dashed #c3cad2;
+  border-radius: 6px;
+  background: #fff;
+  color: #3f474e;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+.later-chip:hover {
+  border-color: var(--team-ink);
+  color: var(--team-ink);
+}
+.later-chip[data-state='In progress'] {
+  border-color: #efb064;
+}
+.later-chip[data-state='Done'] {
+  border-color: #a9d5b9;
+  color: #4b6656;
+}
+.later-title {
+  flex: 1;
   min-width: 0;
   overflow: hidden;
-  padding: 3px 8px;
-  border-right: 1px solid var(--line);
-  background: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.later-date {
+  flex: 0 0 auto;
+  color: #737d86;
+  font-weight: 500;
 }
 .tl-label button {
   display: flex;
@@ -878,10 +1188,11 @@ function zoomBy(step: number) {
   max-width: 100%;
   min-width: 0;
   min-height: 28px;
-  padding: 0 6px;
+  padding: 0 8px 0 6px;
   border: 0;
   border-radius: 6px;
-  background: transparent;
+  /* Readable over the weekend shading and the day lines. */
+  background: rgba(255, 255, 255, 0.92);
   font-size: 14px;
   font-weight: 650;
   text-align: left;
@@ -927,11 +1238,48 @@ function zoomBy(step: number) {
   font-size: 12px;
   font-weight: 600;
   text-align: left;
-  cursor: pointer;
+  /* Grab the middle to move it; the ends (.tl-grip) change one date. A press without a move still opens it. */
+  cursor: grab;
+  touch-action: pan-x pan-y;
+  user-select: none;
   transition: box-shadow 0.15s ease;
 }
 .tl-bar:hover {
   box-shadow: 0 4px 12px rgba(31, 50, 45, 0.14);
+}
+.tl-bar.dragging {
+  z-index: 5;
+  overflow: visible;
+  box-shadow: 0 8px 20px rgba(31, 50, 45, 0.24);
+  cursor: grabbing;
+}
+.tl-grip {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  z-index: 1;
+  width: 7px;
+  cursor: ew-resize;
+}
+.tl-grip[data-edge='start'] {
+  left: -1px;
+}
+.tl-grip[data-edge='end'] {
+  right: -1px;
+}
+/* The dates the bar would get, shown above it while it's dragged. */
+.tl-drag-dates {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: #2c343b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+  pointer-events: none;
 }
 .tl-bar:focus-visible {
   outline: 2px solid #82a8e8;

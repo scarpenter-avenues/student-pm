@@ -115,11 +115,14 @@ const dragTo = (key: string) => ({
   group: 'planning',
   key,
   draggable: 'tr.task-row',
+  onDropSubtask: edits.dropSub,
   onDrop: (drop: TaskDrop) => {
     const sprintId = drop.to === 'backlog' ? null : drop.to
     const task = edits.drop(drop, { sprintId })
-    if (task && drop.from !== drop.to)
-      toast.show(`Moved “${task.title}” to ${team.sprintName(sprintId)}`)
+    if (!task || drop.from === drop.to) return
+    toast.show(`Moved “${task.title}” to ${team.sprintName(sprintId)}`)
+    // A task dropped on a collapsed section opens it, so you can see where it landed.
+    if (!open.value.has(drop.to)) open.value = new Set([...open.value, drop.to])
   },
 })
 
@@ -399,6 +402,16 @@ const calendarNote = computed(() => {
   }
   .planning thead th {
     position: static;
+  }
+}
+/* Phones: before any sideways scroll, the screen shows two columns, the name (as wide as it can be) and the status
+   at the right edge. The table is the screen's width plus the columns after Status, which are a swipe away. */
+@media (max-width: 680px) {
+  .planning .task-table {
+    min-width: calc(100% + 564px);
+  }
+  .planning .task-table col:nth-child(2) {
+    width: 96px !important;
   }
 }
 /* One pinned column header under the top bar. */

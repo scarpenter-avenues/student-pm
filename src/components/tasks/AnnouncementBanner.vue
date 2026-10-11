@@ -1,10 +1,12 @@
 <script setup lang="ts">
-// On the task tabs: every unread announcement for this team, each with its own "Mark read".
+// On the task tabs: every unread announcement for this team, shown in full with its formatting, each with its own
+// "Mark read" (that's how it goes away).
 import { computed } from 'vue'
 import { useAnnouncements } from '@/composables/useInbox'
 import { useTeam } from '@/composables/useTeamData'
 import { useSession } from '@/stores/session'
 import AudienceChips from '@/components/ui/AudienceChips.vue'
+import RichText from '@/components/ui/RichText.vue'
 
 const team = useTeam()
 const session = useSession()
@@ -16,12 +18,7 @@ const teams = computed(() => {
 </script>
 
 <template>
-  <section
-    v-if="unread.length"
-    class="announcement"
-    :class="{ multiple: unread.length > 1 }"
-    aria-label="Unread announcements"
-  >
+  <section v-if="unread.length" class="announcement" aria-label="Unread announcements">
     <span class="announcement-mark" aria-hidden="true">!</span>
     <div class="announcement-copy">
       <div v-for="item in unread" :key="item.id" class="banner-item">
@@ -30,7 +27,8 @@ const teams = computed(() => {
             New from {{ team.nameOf(item.authorId) }} · {{ item.title }}
             <AudienceChips :audience="item.audience" :teams="teams" />
           </strong>
-          <p>{{ item.body }}</p>
+          <RichText v-if="item.bodyHtml" :html="item.bodyHtml" :label="item.title" />
+          <p v-else>{{ item.body }}</p>
         </div>
         <button type="button" class="mark-read" @click="markRead([item.id])">Mark read</button>
       </div>
@@ -86,16 +84,24 @@ strong {
   margin-bottom: 3px;
   font-size: 13px;
 }
-p {
-  overflow: hidden;
+p,
+.banner-item-copy :deep(.rich-content) {
+  min-height: 0;
   margin: 0;
   color: #606870;
   font-size: 15px;
   line-height: 1.55;
-  text-overflow: ellipsis;
 }
-.multiple p {
-  white-space: nowrap;
+.banner-item-copy :deep(.rich-content > :last-child) {
+  margin-bottom: 0;
+}
+/* Headings stay modest in a banner, and an empty last line (left by the editor) takes no room. */
+.banner-item-copy :deep(.rich-content :is(h1, h2, h3)) {
+  margin: 0.5em 0 0.15em;
+  font-size: 15px;
+}
+.banner-item-copy :deep(.rich-content > p:last-child:has(> br:only-child)) {
+  display: none;
 }
 .mark-read {
   flex: 0 0 auto;
@@ -115,7 +121,8 @@ p {
     grid-template-columns: 27px minmax(0, 1fr);
     gap: 9px;
   }
-  p {
+  p,
+  .banner-item-copy :deep(.rich-content) {
     font-size: 14px;
   }
 }

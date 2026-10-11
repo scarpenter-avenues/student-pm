@@ -76,7 +76,13 @@ function toggleGroup(status: string) {
       <tbody
         v-for="group in groups"
         :key="group.status"
-        v-drag-sort="{ group: 'list', key: group.status, draggable: 'tr.task-row', onDrop }"
+        v-drag-sort="{
+          group: 'list',
+          key: group.status,
+          draggable: 'tr.task-row',
+          onDrop,
+          onDropSubtask: edits.dropSub,
+        }"
       >
         <tr class="group-row">
           <td colspan="6">
@@ -118,6 +124,16 @@ function toggleGroup(status: string) {
 }
 .list-view .task-table {
   min-width: 860px;
+}
+/* Phones: before any sideways scroll, the screen shows two columns, the name (as wide as it can be) and the status
+   at the right edge. The table is the screen's width plus the columns after Status, which are a swipe away. */
+@media (max-width: 680px) {
+  .list-view .task-table {
+    min-width: calc(100% + 540px);
+  }
+  .list-view .task-table col:nth-child(2) {
+    width: 96px !important;
+  }
 }
 .group-row td {
   padding: 14px 8px 8px;
