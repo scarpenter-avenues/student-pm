@@ -121,7 +121,7 @@ You're welcome to, whether you're a student, a coach, or neither. [CONTRIBUTING.
 rules (privacy comes first), how to get set up, and what to run before you open a pull request.
 
 To report a security or privacy problem, please don't open a public issue. Use the repository's Security tab →
-"Report a vulnerability".
+"Report a vulnerability". [SECURITY.md](SECURITY.md) has the details.
 
 ## Project status
 
@@ -143,7 +143,8 @@ To report a security or privacy problem, please don't open a public issue. Use t
 - [docs/email.md](docs/email.md): optional email for announcements and huddles.
 - [docs/github.md](docs/github.md): optional GitHub issues as tasks.
 - [CONTRIBUTING.md](CONTRIBUTING.md): ground rules, setup, and checks for contributors.
-- [CLAUDE.md](CLAUDE.md): the running design notes behind the app which help your Claude agent understand the features, decisions, and rationales.
+- [SECURITY.md](SECURITY.md): how to report a security or privacy problem.
+- [CLAUDE.md](CLAUDE.md): notes for a Claude agent helping you edit the code: the rules, decisions, and conventions behind the app.
 
 ## License
 

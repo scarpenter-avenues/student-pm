@@ -1,272 +1,243 @@
 # Switchback
 
-Team boards, sprints, and learning goals for student teams (MIT license, open source).
+Project management for student teams (boards, sprints, a timeline) plus learning goals and tools for coaches. MIT
+license, open source. Each school or club runs its own copy in its own Firebase project.
 
-A UI mock-up for an open-source web app that manages a program of FTC robotics teams (the sample program has 7 teams; students ~13, some under 13). It replaces GitHub Projects, which is clunky for students; schools often can't approve Asana, Monday, or Trello because of student data privacy. Build it for anyone: no school or person is named in code or docs, and each deployment describes itself in `program.config.json` (see `docs/configuration.md`). The current goal is to **finish the UI design before building the real app or connecting data**.
+This file is for an agent helping someone edit the project. Read "Rules that don't bend" before changing anything.
+For a gentler walk through the code, read `docs/code-tour.md`; for what is stored and who may read it,
+`docs/data-model.md`.
 
-## Repo layout
+## Rules that don't bend
 
-- `mockup/index.html`: the finished UI mock-up and **the design spec** for the production app. One self-contained file (HTML, CSS, and a classic `<script>`, plus one `<script type="module">` for the Tiptap editor). No build step: open it in Chrome. Most of this file (below) describes the mock-up.
-- The production app (Vue 3 + Vite + TypeScript + Pinia + Vue Router; Vitest, Playwright, ESLint + oxlint, Prettier) lives at the repo root: `src/`, `e2e/`, `index.html` (the Vite entry), `package.json`.
-  - `src/firebase.ts` is the only place that connects to Firebase (Auth + Firestore with the persistent multi-tab offline cache). `npm run dev` uses `--mode emulator` (`.env.emulator`, committed, no secrets, project `demo-switchback`) and connects to the emulators.
-  - `npm start` = Firebase emulators (Auth 9099, Firestore 8080, Hosting 5000, UI 4000; data kept in `.emulator-data/`) + the dev server. No Firebase account needed.
-  - `firebase.json`, `.firebaserc` (default `demo-switchback`), `firestore.rules`, `firestore.indexes.json`.
-  - **Rules tests:** `tests/rules/*.test.ts` (83 tests: people and invites, the public sign-in doc, the app's own queries and writes per role, teams and tasks, announcements/huddles/userState, goals) run against the Firestore emulator with `@firebase/rules-unit-testing` via `npm run test:rules` (starts its own emulator; `npm run test:rules:live` uses one already running from `npm start`). They use their own project id, `demo-switchback-rules`, so they never clear the demo data (`vitest.rules.config.ts`, files run one at a time; `setup.ts` seeds a sample program with fake people for each role and sign-in method). The normal unit tests exclude `tests/rules/`. Writing them caught three rule holes, now fixed: an announcement author could re-target a post to other teams by editing it; a student could move their goal summary to another team; a mentor could pull another team's invite onto their own team. Lesson: every `update` rule must check both the old and new document as strictly as `create`.
-  - Deployment-specific files are not committed: `program.config.json` (from `program.config.example.json`), `.env.local` (from `.env.example`).
-  - `package.json` overrides `@grpc/grpc-js` to ^1.14.6 (Firebase 13 pins a vulnerable 1.9.x); runtime `npm audit --omit=dev` is clean. Remaining audit findings are in dev-only tools.
-- `docs/data-model.md` (Firestore design), `docs/configuration.md` (deploying), `README.md`, `LICENSE` (MIT, "Switchback contributors").
-- **Docs for newcomers (students may read the code):** `README.md` (what it is, screenshots, privacy, try it locally with the sample accounts, deploy summary, status), `docs/code-tour.md` (big picture, folder map, glossary, one feature traced from the screen to the database, first things to try), `docs/email.md`, `docs/github.md`. Screenshots are in `docs/images/` (1280x800 at 2x, phones 390x760; made-up demo data only, taken from the seeded emulator). Retake them when a pictured page changes.
-- **Comment conventions:** every source file starts with a comment saying what it is for (inside `<script setup>` for `.vue` files); every function that isn't a one-line obvious helper has a comment above it saying what it does or why, in plain words a student can follow; exported functions and types use `/** */`, the rest `//`. `firestore.rules` opens with "How to read this file" and has a comment on every helper. Keep comments true: when code changes, change its comment in the same edit. New code follows the same conventions.
-- **Shared model code:** `src/model/types.ts` (Firestore document types, mirroring `docs/data-model.md`), `src/model/dates.ts` (UTC "YYYY-MM-DD" helpers), `src/model/sprints.ts` (`buildSprints`: back-to-back sprints for a season, folding a short leftover into the last one; `sprintIndexOn`).
-- **Scripts** (`scripts/`, run with `tsx`, Admin SDK so they bypass the rules):
-  - `npm run setup [-- --emulator] [--project <id>] [--config <path>] [--dry-run]`: reads and checks `program.config.json` (`scripts/lib/config.ts`: `checkConfig` lists every problem in plain words; `signInMethodFor` mirrors the rules), then creates or updates the program, season, subteam defaults, starting teams with sprint calendars, and the first coach's invite. Idempotent. Real projects use Application Default Credentials or `GOOGLE_APPLICATION_CREDENTIALS`.
-  - Sample tasks are listed in priority order that matches their dates (decided): finished work with the earliest dates at the top, work in progress in the middle, not-yet-started work below with later dates, so the Timeline reads as a staircase. Keep that when adding sample tasks.
-  - `npm run seed:demo` (emulator only; clears it first): `scripts/demo/data.ts` ports the mock-up's sample program "Example Robotics" (`example-robotics`): 7 teams with their own sprint calendars, Rust Buckets (last season only), every sample person with an emulator sign-in account (Google for `@example.edu`; Mr. Okafor is the outside volunteer mentor, `okafor.volunteer@gmail.com` / `switchback-demo`), Circuit Breakers' full board/backlog/sprints/objectives and two GitHub issues, other teams' tasks placed relative to today, all sample goals with history, announcements, events (generic venues), huddles, and Team Home. Member uids are name slugs (`avery-k`); Google accounts link to them via provider uid `google-<uid>`.
-- **Sign-in and app shell (step 4):**
-  - `src/stores/session.ts` (Pinia `useSession`): phases `starting → signedOut | verifyEmail → joining → ready | noAccess | failed`. Joining reads your member doc (a permission error means "not a member"), else claims `invites/{email}` in one batch (member + `users/{uid}` + delete invite; display name from the invite, never Google). It refuses the wrong kind of account up front: a Google account off the program's domains, or a password on them (signs out with a notice). Then live listeners on the program, your member doc (removal → noAccess) and your teams (program coaches: every team in the current season). Signing out (here or in another tab) terminates Firestore and clears its IndexedDB cache, then reloads: shared Chromebooks keep no data.
-  - `programs/{p}/public/signIn` (`{ name, auth }`, anyone can read, coaches write; written by setup and the demo seed) lets the sign-in page show the program name and the right buttons before sign-in. `src/model/signIn.ts` (`signInMethodFor`, `isGoogleEmail`) is shared with `scripts/lib/config.ts`.
-  - `src/views/SignInView.vue` shows every pre-app phase: Google button (with `hd` hint) and/or email+password (sign in, "First time? Create a password" with verification, "Forgot password?"), verify-email screen, "You're not in <program> yet", errors (`src/auth/messages.ts`, plain words).
-  - Routes (`src/router/index.ts`): `/sign-in`, `/` (→ home), `/no-team`, `/huddle` (mentors), `/t/:teamId/:tab` (`src/router/tabs.ts`: home, planning, my-tasks, board, list, timeline, goals, settings; default board), `/t/:teamId/announcements`, `/dashboard/:tab` (huddle, announcements, tasks, goals, settings; coaches). Guards are a pure function `decide()` in `src/router/access.ts` (unit-tested), run on navigation and again from `App.vue` whenever the phase, role or teams change. Signed-out deep links keep `?next=`. The router's `scrollBehavior` opens a different page at its top (the scroll used to carry over from the last tab), returns Back and Forward to where you were after 350ms for the data to load, and leaves the scroll alone when only the query changes.
-  - `src/components/AppShell.vue` + `TopBar.vue` port the mock-up's top bar: team badge (`TeamBadge.vue`) and name, ⌄ switcher (coaches: Coaches' Dashboard + every team; mentors with 2+ teams), Huddle (adults, off the dashboard), Announcements, profile menu (who · role, Sign out), tabs with the gear Settings tab at the right. Switching teams keeps the tab. Team colors (`src/ui/teamColor.ts`, ported `teamColorOf`/`teamAccent`) set the `--team-*` variables on `:root`. `src/styles/base.css` holds the shared tokens and controls; `src/composables/useMenu.ts` handles menu keyboard and click-away. Views are `ComingSoonView` placeholders until step 7. The top bar's unread counts and countdown chip come from the data layer (step 5).
-- **Data layer (step 5, `src/data/`):** `refs.ts` (`createRefs(db, programId)`: a typed ref for every collection, using one converter that adds `id` on read, drops it on write, and shows pending server timestamps as estimates), `queries.ts` (`createQueries(refs)`: every query in docs/data-model.md), `writes.ts` (`createWrites(refs, uid)`: add/update/archive/restore/delete task, comments, read markers), `live.ts` (`useLiveQuery(() => query | null)` / `useLiveDoc`: `{ data, loading, error, fromCache }` shallow refs; re-subscribe only when the query really changes (`queryEqual`), reset to empty on switch, stop with the component's scope). `index.ts` binds them to the app (`refs`, `queries`, `writes`). The factories take a Firestore instance so `tests/rules/queries.test.ts` runs the app's own queries and writes as each role. Writes resolve only when the server confirms (offline they wait), so UI code shouldn't block on them. `src/model/rank.ts` (fractional-index `rank`: `rankAt`, `rankForMove`, `rankBetween`, sort `byRank` = rank then id) and `src/model/subtasks.ts` (subtasks are an ordered list inside the task: add/update/move return a new list). `src/composables/useInbox.ts` (`useAnnouncements`, `useHuddles`: unread lists + `markRead`) and `useNextCompetition.ts` drive the top bar's counts and countdown chip. Not done yet: promoting a subtask to a task. Its comments would have to move, and the rules only let authors or adults delete comments.
-- **Shared components (step 6, `src/components/ui/`), ported from the mock-up with its CSS:**
-  - `ChoiceMenu` (`openChoiceMenu`): anchored menu. Single pick emits `pick` and closes; `multiple` toggles and emits `change` once on close (Esc cancels); the anchor toggles it; `#option` slot shows the same chips as the table.
-  - `SelectButton` (themed `<select>`), `CalendarPopover` (`openCalendar`: range shading, min/max, arrow keys, `actions` footer; the parent decides whether a pick closes it) and `DateButton` (picker-only date with Clear date).
-  - `AssigneePicker` (chips, type-to-filter, ↑/↓/Enter/Backspace; people are `{ id, displayName }`), `EditableTitle` (rename in place; Open button on hover), `TeamPicker` (`teamChecklist`: single radios + No team close on pick; several checkboxes + All teams / All my teams apply on close), `MultiFilter` (all ticked = none).
-  - Chips: `StatusChip`, `SubteamTags` (team's subteam order), `TypeLabel` (GitHub mark), `AvatarStack`, `TeamChip`, `AudienceChips`.
-  - `RichEditor`: Tiptap 3.31.4 bundled from npm (`@tiptap/vue-3`, starter-kit, extensions); the mock-up's bubble and link rules (http(s) only, new tab, no referrer, ⌘K); emits HTML and plain text.
-  - Toast: `useToast().show(message, { label, run })`, rendered by `ToastHost` in `App.vue`.
-  - Plumbing: floating parts are teleported to `<body>` with `position: fixed` (z-index 55: above pop-ups at 50, below toasts at 60, so pickers work inside dialogs) (`FloatingPanel`, `useAnchoredPosition`, `useClickAway` in `src/composables/usePopover.ts`). Two-root components put attributes on their button (`inheritAttrs: false`). Teleported roots can't use scoped styles, so `.check-menu`, `.field-button` and `.row-open` live in `base.css`.
-  - **Dev gallery:** `/dev/components` (dev server only, no sign-in) shows them all with sample data; `e2e/components.spec.ts` tests them there.
-- **Views (step 7):** every page of the mock-up, live on Firestore. Team tabs route through `src/views/team/TeamView.vue`, dashboard tabs through `src/views/dashboard/DashboardView.vue`.
-  - Shared team data: `src/composables/useTeamData.ts` (`createTeamData(teamId)`: team, season sprints, current sprint, all unarchived tasks in one listener, roster, `can.plan/editTeam/manage/assignSubteams`); AppShell provides it (`useTeam()`); the task panel and dashboard groups create their own. `useTaskView` (sprint + filters for Board/List/Timeline; My Tasks = current sprint, mine), `useTaskEdits` (save/archive with Undo/rank moves/subtasks), `useSelection` + `BulkBar`, `useEvents`, `useNames`, `useInbox`.
-  - Tasks: `TaskPanel.vue` (global, `stores/taskPanel`), `BoardView` (Board and My Tasks), `ListView`, `PlanningView`, `TimelineView` (`src/ui/timeline.ts` layout, tested). Rows shared by List/Planning/dashboard: `components/tasks/TaskRows.vue`, `TaskFieldCell.vue`, `DraftTaskRow.vue`, `tables.css`. "Make it a task" (`writes.promoteSubtask`) leaves the subtask's comments on the parent ("From a former subtask"): moving them would mean deleting others' comments.
-  - `TeamHomeView` (notes, GitHub card, events + `EventForm`), `AnnouncementsView` (team and dashboard), `HuddleView` (dashboard tab and mentors' `/huddle`) + `HuddlePopup` at sign-in, `TeamSettingsView` (`components/settings/*`).
-  - Goals: `src/model/goals.ts` (check-in windows, date passed, coach flags; tested), `useGoals`, `useGoalActions`, `stores/goalFlow` (one pop-up at a time, queued steps) + `components/goals/GoalFlowHost.vue` (wizard, check-in, reflection, finished, pause, date passed, arrival prompt), `TeamGoalsView`, `StudentGoalDetail`, Goals-tab dot. Goals carry `lastFeedbackAt` so coach flags need only the goal doc.
-  - Dashboard: `DashboardTasksView` / `DashboardGoalsView` (one child group per team registering with the page for selection and totals; keep computed totals as plain numbers or the page re-renders forever), `ProgramSettingsView` (`components/program/*`: seasons + `NewSeasonWizard`, teams, subteam defaults, people + `CsvImport`; `src/model/csv.ts` tested). Multi-document changes are in `src/data/admin.ts` (createTeam, deleteTeam (archive then delete, since only archived tasks can be deleted), addTeamToSeason, setTeams, removeFromProgram, startSeason), run as a coach in the rules tests.
-  - Rich text is never `v-html`: `RichText.vue` renders it through Tiptap's schema.
-  - **Drag and drop (app):** `v-drag-sort` (`src/ui/dragSort.ts`, SortableJS bundled from npm) on Board columns (reorder, or drop in another column to change status; My Tasks too), List status groups (reorder, or change status), and Planning sections (reorder, or move to another sprint or the Backlog, even onto a collapsed section's header, which then opens so you can see where it landed; toast "Moved … to Sprint 4"; past sprints too). On drop the DOM goes back where it was and the view saves status/sprint plus a rank between the new neighbors (`useTaskEdits().drop`); the live listener re-renders. Touch needs a short press first so phones still scroll; inputs never start a drag. While dragging, subtask rows hide so a task moves as one row; table rows drag like card subtasks: a floating row under the pointer over a faded slot. A floating row loses its column widths, so its copy stays inside the table (for the cell styles) and `sizeRowCopy` gives each cell the real row's width. Board cards feel picked up: the floating card tracks the pointer exactly, tilted 2.5° and slightly larger with a deep shadow, and a dashed team-tint slot shows where it will land; nothing under the pointer reacts (no Open button, no hover lift). Gotcha: the floating copy must have `transition: none`. The cards' hover transition on `transform` made SortableJS read a half-finished position on every move, so the copy trailed the pointer by ~80% (it looked stuck until the slot jumped columns). The tilt and scale use the separate `rotate`/`scale` properties so they add to the transform SortableJS sets. Second gotcha: the floating copy lives on `<body>` (`fallbackOnBody`), not inside its list. Inside a card it was positioned relative to the card's hover lift, which the drag then removed, so the copy was drawn hundreds of pixels from the pointer (a stray second subtask). A card's background shows the open-hand cursor (title, buttons, and checkboxes keep their own). A card never drags by its subtask area (`ignore: '.card-subtasks'`), so a near-miss on a checkbox doesn't carry the card off; instead a subtask drags to a new place within its own card (a nested `v-drag-sort` with `idAttr: 'subtask'`; subtasks never move to another task). Each card subtask has the same ⠿ grip as List rows (`RankHandle`, shown on hover or focus): drag by it, or click it for Move to top / up / down / bottom. The rule that hides subtask rows during a drag is scoped to table rows (`tr.subtask-row`): the cards' subtask rows share that class name and used to vanish too. The ⠿ menu and Alt+↑/↓ stay for keyboard users. Subtask rows in List and Planning drag the same way, but only among their own task's subtasks (`onDropSubtask`; `onMove` refuses any other spot, so a subtask never lands under another task and a task never lands between another task's subtasks; `placeSubtask` in `src/model/subtasks.ts`, tested). While a *task* is carried its subtask rows hide (`body.is-dragging-task`); while a subtask is carried its siblings stay. Not on the Coaches' Dashboard.
-  - **Email (app + Apps Script; chosen: Google Apps Script, free on Spark, mail stays inside the organization's Workspace):** posting an announcement with "Also send by email", or any huddle or quick note, writes `outbox/{kind}-{sourceId}` in the same batch (`state: "pending"`; no addresses, no text). Rules: create only, for a post you're creating in that write; coaches read; nobody updates or deletes. The sender is `scripts/email/` (TypeScript: `messages.ts` who gets what and the text, `rest.ts` Firestore/Auth REST, `outbox.ts` the run, `appsScript.ts` the glue), bundled by `npm run build:email` into `dist-email/Code.gs` for pasting into Apps Script (`docs/email.md` has the install steps). It runs every minute as the project's owner, claims each item with an "only if unchanged" commit (so two runs can't both send), reads addresses from Firebase Authentication (members' emails are NOT in Firestore after an invite is claimed; only the demo seed writes `private/contact`), blind-copies recipients, and sends plain text built from the stored HTML (never the HTML itself). Team posts go to that team's students, leads, and mentors plus every program coach (decided: coaches get every post); program-wide posts to everyone; huddles and notes to coaches and mentors; never the author. Students are emailed only with the script property `INCLUDE_STUDENTS=true`; `TEST_REDIRECT` sends everything to one address. `install` sets `program.email.on`, and the app offers email only then. Tests: `scripts/email/__tests__/` (unit) and `tests/rules/email.test.ts` (the whole sender against the emulator with a fake mailbox; it uses `curl` for synchronous HTTP like UrlFetchApp). Gotchas: the emulator ignores `currentDocument.updateTime` in a PATCH URL, so preconditions go in a `:commit` body; in zsh write `"${R}:commit"`, since `$R:c…` is a modifier. Run for real on the test project: the script works and reaches the project, but the first deployment's Google accounts can't deliver mail (the domain's email is on Microsoft 365, so Gmail-sent mail fails DMARC, "550 5.7.26"). Waiting on IT (authorize Google for the domain, or another approved method). A Power Automate route was tried and removed: its HTTP trigger needs a premium license. `sendTestEmail` goes to `TEST_REDIRECT` when set (Gmail hides mail you send yourself). docs/email.md starts with a "can this account send mail?" check.
-  - **Phones, the rule (decided):** except in Planning, Board, List, and Timeline, nobody should have to scroll sideways, neither the page nor a box inside it. An audit at 390px and 360px (51 screens: every page, dialog, and composer per role) found and fixed: the sprint objectives list, the Huddle feed, and huddle cards (each a `display: grid` with no column, which grows to fit a one-line child; always give such grids `grid-template-columns: minmax(0, 1fr)`); the team-number box (inputs in `.settings-field` now fill and shrink with their column); the huddle plan rows (two lines per row on phones); the check-in's next-step row (a scoped rule never reached the sprint picker's button, which is another component's root: use `:deep`); the CSV example (wraps). On phones the gear tab drops its "Settings" label so the dashboard's tabs fit. The eight team tabs can't fit a phone held upright (481px needed, ~366px available), so in portrait at 680px and under (decided) Planning and Timeline leave the tab bar and "Team Home" reads "Home"; the six that remain fit down to 320px. In landscape and on desktop all eight show. The two pages still open by link in portrait; only the tabs are hidden.
-  - **Touch dragging (app):** a short press-and-hold (160ms) picks a card or row up, so a swipe can still scroll; the moment the hold is long enough the item lifts (`.drag-chosen` under `@media (hover: none)`), which is the cue that it can be dragged. Long-press text selection is off on cards and rows. Holding an item near an edge scrolls whatever scrolls there, including the Board sideways to reach the other columns on a phone (its column snapping is switched off during a drag, since snapping cancels each scroll step); the page itself never scrolls sideways during a drag (`scrollFn`). iOS gotcha: there SortableJS places the floating copy in the page (`position: absolute`) instead of pinning it to the screen. On the Board that let the page grow to ~2,000px and scroll into empty space; in List and Planning the copy escaped the table's scrolling wrapper and the page jumped toward the top. The wrappers (`.list-view`, `.planning`) are now `position: relative`, so the copy is positioned inside them. Tests fake an iPhone by setting the user agent (SortableJS decides by user agent) and send real touch events through the DevTools protocol.
-  - **Phones, List and Planning (app):** at 680px and under, the table is sized so that before any sideways scroll the screen shows exactly two columns: the name (as wide as it can be) and Status (96px) at the right edge. The other columns are a swipe away (`min-width: calc(100% + <the columns after Status>)`). Before this the name column got ~185px of a 390px screen and titles were cut to a few letters. The Coaches' Dashboard task list does the same, and on phones the space in front of each title is tightened (13px grip and arrow slots, 2px cell padding; `tables.css`). Phones also drop both ways of adding a subtask from a table (Planning's "+ Subtask" button and the "+ Add subtask" row): open the task and add them there.
-  - **Timeline rows (app, decided):** one task per row, in Planning's order (order is priority: by sprint, then rank; the Backlog last), under a header row for each subteam whose name stays at the left edge while the days scroll. No fixed left column and no column of task names, since the bars carry their titles. This replaced the packed lanes, which saved height but put tasks in an order that meant nothing. `packLanes` is still in `src/ui/timeline.ts` (tested) but unused. A **Group by subteam** checkbox in the toolbar (on by default; remembered on the device in `localStorage`) switches the header rows off for one list in exactly Planning's order, with a small square in the subteam's color at the start of each bar (its name in the tooltip). So a row is never left looking empty, a **Later** column appears at the right edge, where the chart fades to white (a zigzag break mark was tried and dropped as too loud), whenever some task starts off-screen to the right: a dashed chip on that task's row with its title and start date; clicking it scrolls there. The column is absent when everything showing fits (a zero-size `position: sticky; right: 0` anchor per group holds it; `view` tracks the scroll position).
-  - **Timeline dragging (app):** drag a bar's middle to move it (start and due shift together; a task with one date keeps one), or an end (`.tl-grip`, 7px, resize cursor) to change that date; ends can't cross, and pulling an end of a one-date task fills in the other. Snaps to whole days; a dark label above the bar shows the dates it would get; saves on release with a toast and Undo. Subtask bars work the same. Only the dragged bar is redrawn during the drag (a transform and width); lanes repack after the save. A press that doesn't move is still a click (opens the task). Mouse, trackpad, or pen only: touch scrolls the timeline. The rule is `dragDates` in `src/ui/timeline.ts` (tested). Moving a task's dates doesn't change its sprint, and the view doesn't auto-scroll at the edges.
-  - **GitHub sync (app + Apps Script; decided: an Apps Script poller, one way, GitHub → Switchback, including the description):** `scripts/github/sync.ts` (`planIssue` decides what one issue does to its task; `syncGithub` runs every team with a connected repo). It's bundled into the same `Code.gs` as email (`syncIssues` every 5 minutes, `installGithub`, `uninstallGithub`; script property `GITHUB_TOKEN`, a fine-grained read-only Issues token; cursors per team and repo in script properties). A new open issue becomes a "GitHub issue" task at the bottom of the Backlog (doc id `gh-<repo>-<number>`, so a run never makes a second one; `createdBy: "github"`), in the subteams the team chose (Team Settings → GitHub → "Subteam for new issues", `github.subteamIds`). Closing marks it Done and reopening moves a Done task back to To do (if that option is on). Title and description follow GitHub unless edited in the app (`github.title` and `github.descriptionHash` record what was last synced). Copied: title, number, link, state, description as plain text (escaped, 5,000 characters). Never: authors, assignees, labels, comments, pull requests, or issues already closed when first seen. `installGithub` sets `program.githubSync.on`; until then Team Settings says nothing syncs. The task panel has a "GitHub" row linking to the issue. Local try-out: `npm run sync:github` (real GitHub, emulator only). Tests: `scripts/github/__tests__/` and `tests/rules/github.test.ts`. Docs: `docs/github.md`. Not yet run inside real Apps Script.
-  - Not built yet: team chat, coach reminders for goals.
-- **Setup plan:** 1 skeleton (done) · 2 rules tests against the emulator (done) · 3 setup script and demo seed (done) · 4 sign-in, invite claim, route guards, app shell (done) · 5 data layer: refs, converters, queries, writes, `useLiveQuery` (done) · 6 shared components ported from the mock-up (done) · 7 views (done; pages still to get the clutter review: My Tasks, Board, List, Timeline, Team Goals, Team Settings, team Announcements, student pop-ups) · 8 CI (GitHub Actions) and CONTRIBUTING (done).
-- **CI** (`.github/workflows/ci.yml`; push to main, pull requests, or by hand): three parallel jobs, all on the emulators with no secrets: `checks` (prettier --check, oxlint + eslint without --fix, type-check, unit tests, build, `npm audit --omit=dev`), `rules` (`npm run test:rules`, Java 21), `e2e` (`firebase emulators:exec --only auth,firestore` → `seed:demo` → Playwright; uploads the report on failure). The e2e dev server is the same locally and on CI (`npm run dev`). Lint the workflow with actionlint. `CONTRIBUTING.md` holds the contributor ground rules (privacy, rules + tests for access changes, no third-party requests, no real names).
+Students use this, including some under 13. These rules outrank any feature request; if a request conflicts with one,
+say so and explain the trade-off before doing anything.
 
-## Project brief (summary)
+1. **Store very little.** Auth UID, email, display name (first name and last initial), role, team, and what people
+   create. Don't add fields or features that invite students to type personal details. Member lists never show emails.
+2. **Access is enforced in `firestore.rules`, never only in the interface.** Hiding a button is a courtesy. A change
+   to who can read or write something changes the rules, a test in `tests/rules/`, and the access table in
+   `docs/data-model.md`, together. Every `update` rule checks the document before and after the change as strictly
+   as `create` (three real holes were found this way).
+3. **Students see only their own team's work and their own goals.** Teammates see a goal's statement and status,
+   nothing else. That is why goals are split into `goalSummaries` (team-readable) and private `goals` + `events`.
+4. **No private adult-to-student channels.** Coach feedback on a goal is visible to every coach of that team. No DMs.
+5. **No third-party requests.** No ads, analytics, trackers, CDNs, or remote fonts. Everything is bundled from npm.
+6. **Stored HTML is never rendered with `v-html`.** Use `RichText.vue`, which renders through Tiptap's schema.
+7. **No real people, schools, or deployments in the repo.** Sample data is "Example Robotics" at `example.edu`. Each
+   deployment describes itself in `program.config.json`, which is never committed, and neither are `.env.local`,
+   `.env.*.local`, service-account keys, or `dist-email/`. Before a commit, check the diff for project IDs, keys,
+   tokens, and personal addresses.
+8. **Secrets live outside the code.** The email and GitHub jobs keep theirs in Apps Script properties.
 
-- **Planned stack:** web app (Chromebooks and phones), Vue 3 + Vite + TypeScript (decided; see Open items), Firebase Auth with two sign-in methods, turned on per program in `program.config.json` (one or both): Google sign-in restricted to the program's Workspace domain(s) (typical for schools), and email/password, optionally limited by role (e.g. outside mentors and coaches; or everyone, for community teams). Emails on the Google domains must use Google. Also Firestore and Hosting, ideally under the organization's own Google account. About 100 daily users, so it should fit the free Spark plan; scope queries to the user's team. Cloud Functions would need the Blaze plan.
-- **Features:** team boards (Trello-simple), coach dashboard across teams, student goal tracker with coach feedback, team home/wiki pages, announcements (in-app plus email), team chat (team channels only, no DMs), and PM features (subtasks, backlog, sprints, timeline).
-- **Privacy (COPPA):**
-  - Store only the auth UID, school email, display name, team, and user-created content.
-  - Enforce access in Firestore security rules, not just the UI.
-  - Students see only their own team's data and their own goals. Exception, decided below: teammates see goal *statement and status*.
-  - No ads or trackers. No AI training on student data.
-  - Design deletion and review in from the start.
-  - Coach goal feedback must be visible to more than one coach (no private 1:1 adult–student channels).
-  - Don't build features that invite students to type personal info.
-- **Pending admin approval in the first deployment (no real student data until approved):** COPPA consent on parents' behalf, whether Firebase is covered by Workspace for Education, retention rules, Google Chat vs. built-in chat, the approved email method, coach–student communication policy, and the approval process for internal tools. **Add:** teammates seeing goal statements and status. Programs using Google sign-in keep it inside their Workspace domain(s), so outside emails can't sign in; programs that choose email/password own their own consent for under-13 students. (The mock-up accepts any valid email in Add person, Add member, and CSV import.)
-- **Design direction:** progressive disclosure (students get a simple view; sprints, backlog, and timeline are for leads and coaches). Trello's approachability, Linear's restraint, Asana's timeline and subtasks. Avoid Monday/ClickUp clutter.
+## Running it
 
-## How the mock-up works
+Node 22.18+ (or 24.12+) and Java 21+ (for the emulators). No Firebase account is needed for any of this.
 
-- **Demo roles:** use the profile button (top right, shows initials) → **Preview as**:
-  - Student (Avery K.) — the default on load (`demoRole`). Her Sprint 2 check-in is overdue, so the check-in pop-up appears on load. Avery also has one paused goal.
-  - Student · no goal yet (Mina L.) — shows the set-a-goal pop-up and setup.
-  - Team lead (Jordan M.) — Jordan's goal date (End of Sprint 2) has passed, so the "date passed" pop-up appears.
-  - Team mentor (Ms. Patel)
-  - Program coach (Coach Rivera). Program coaches land on **Coaches' Dashboard → Huddle** (on load and when switching to this role; `orgTab` defaults to `huddle`).
-- **"Later" on goal pop-ups** is remembered for the browser tab's session (`sessionStorage`), so it won't reappear on refresh. Use a new tab to see it again.
-- **Today's date** comes from the real clock (`todayIso()`). Sample data was written around Oct 6, 2026.
-- **Circuit Breakers (FTC 418)** is the only "live" team with full task data. The other six teams (Gear Grinders, Bolt Brigade, Torque Titans, Servo Squad, Pixel Pilots, Iron Owls) have sample tasks, members, sprint calendars, and goals for the coach views. Switching to them in team mode shows Circuit Breakers' tasks, with a toast saying so.
-- **Data model:** the board's task cards (DOM `dataset`) and the Backlog's task records (plain objects) are still **separate data sets**. This was deliberately deferred until the UI is final. Fields are shared (title, type, subteam, assignee, start, due, state/status, detail). Assignees and subteams are stored as `"|"`-joined strings (a task can have several subteams; `subteamsOf` / `subteamValue`, kept in subteam order). Unifying these into one Firestore-shaped store is the next big step.
-- **Tiptap** (v3.31.4) loads from esm.sh via `window.createRichEditor()` in the module script. It powers Team Home, announcement bodies, and task descriptions. The production app bundles it from npm (`RichEditor.vue`), so there are no third-party requests.
+```sh
+npm install
+npm start              # Firebase emulators + the app at http://localhost:5173
+npm run seed:demo      # second terminal; CLEARS the emulator, then loads the sample program
+```
 
-## What's built (by area)
+Sign in with Google and pick a sample person in the emulator's pop-up:
 
-- **Top bar:** team badge (a colored number block) plus the team name. Program coaches get a ⌄ switcher: Coaches' Dashboard and every team; team mentors get one only if they mentor more than one team (no dashboard). Also the next-competition countdown chip (e.g. "🏆 Qualifier 2 · Sun, Nov 8 · 30 days"; skips "If qualified" events; hidden on the Coaches' Dashboard; name hidden on phones), the Huddle button (adults, unread count), the Announcements button (with unread count) and the profile/preview menu.
-- **Announcement banner** (on task tabs): lists *every* unread announcement, each with its own "Mark read". In the app each one shows in full with its formatting (`RichText`; headings toned down to 15px), not a one-line summary: Mark read is how it goes away (decided). There is no "Mark all read" or "All announcements" link.
-- **Team tabs:** Team Home · Planning · My Tasks · Board · List · Timeline · Goals · Settings (gear icon, right-aligned).
-- **Task filters (Board / List / Timeline):** the sprint picker sits in the heading (it changes the heading and objectives). Subteam, assignee, and search sit on the "N tasks · …" line just above the tasks, since they filter tasks only. That line now shows on Timeline too. Dropdowns use a drawn chevron with 10px right padding (`select.select-control`).
-- **My Tasks:** deliberately the simplest view: the Board filtered to the signed-in user for the **current sprint only**. No filter controls (sprint, subteam, assignee, search are hidden and ignored), empty columns kept, ＋ Add task pre-assigns you.
-- **Team Home:**
-  - No page heading, subtitle, or ＋ Announcement button (removed as clutter; announcements are posted from the Announcements page).
-  - Tiptap notes with Edit / Cancel / Save floating at the top right of the notes area.
-  - When a GitHub repo is connected (Settings → GitHub), a card above Events links to it: GitHub mark, `owner/repo`, "Code repository on GitHub ↗" (`renderHomeGithub`).
-  - Events column: the real 2026–27 calendar.
-    - Shows the next 5 upcoming events, then "Show all upcoming (N)"; titles wrap to two lines (location stays one line).
-    - Program-wide events carry no chip (most events are program-wide); only program coaches can edit them.
-    - Each team has one Nov/Dec and one Jan/Feb qualifier, picked by a name-seeded hash so they're stable across loads.
-    - Super Qualifiers and the NYC Championship are marked "If qualified" and are skipped by the countdown.
-    - The family social and open lab events were removed at the user's request.
-- **Sprint objectives** (Board / My Tasks / List / Timeline, under the sprint title): **read-only** and dense (26px rows). One line each (max 80 characters), subteam tags, met mark, collapsible. Team leads, mentors, and coaches can mark them met from any view (`canMarkObjectives`); editing the text and subteams happens only in Planning (`canEditObjectives`). Students see them read-only everywhere. The sprint dropdown includes **All sprints**, which groups objectives by sprint. In the app, a sprint with no objectives is left out of that grouped, read-only list (it used to show as a blank gap with a rule).
-- **Planning tab** (formerly "Backlog"; code still calls it `backlog`, and the unplanned pool section is still named Backlog):
-  - Dense planning view: 12px text, ~29px rows; sprint headers have 11px padding above and below (names centered between the lines) and 24px of space under the Backlog.
-  - One pinned column header at the top (no per-section headers); fixed column widths so sections line up.
-  - Collapsible sprint sections, each with a collapsible Objectives panel (collapsed by default). All sprints stay listed; no "Upcoming" label; section counts show only non-empty parts ("2 objectives", "3 tasks", or nothing).
-  - Sprint dates: the start and end in each header are separate buttons that open a small calendar (`openSprintCalendar`) with the sprint highlighted. Start: pick a day (saved instantly), then optionally an end. End: pick a day and it closes. Click away or Esc closes. Arrow keys move by day/week. Days that break the one-week minimum are disabled; later sprints shift with the end date.
-  - **Move to ▾** button per row, and a Sprint field in the task panel.
-  - **Past sprints (N)** is one collapsible row below the upcoming sprints, closed on every load (`pastSprintsOpen`); each past sprint inside is its own collapsed section.
-  - Quiet defaults: no assignee shows "—" (no gray avatar), and open sections hide their task/objective counts (collapsed ones keep them).
-- **Board:**
-  - Columns tinted with the team color; each column scrolls on its own.
-  - The board is exactly one screen tall, so when scrolled to the bottom the column titles sit under the top bar.
-  - Cards show the subteam tag top-right.
-- **No priority field (order is priority):** like Scrum's *ordered* backlog and Trello/Kanban, tasks are ranked by position, highest first; the coach teaches students to rank. Priority was removed from every view, the task panel, bulk actions, drafts, and data.
-  - Reorder with the ⠿ handle (shows on hover/focus at the left of List and Planning rows): Move to top / up / down / bottom. **Alt+↑ / Alt+↓** moves the focused row or card. Board cards have no handle; they'll be reordered by dragging only.
-  - **Subtasks reorder within their parent** (they read as steps): ⠿ handle and Alt+↑/↓ on List and Planning subtask rows, and a ⠿ handle in the side panel's subtask list (`moveSubtaskRank`). Board cards just show that order. Subtasks never move to another task; instead, **Make it a task** (side panel toolbar, subtasks only) turns one into its own task right after its parent, in the same sprint, keeping its fields, description, and comments (`promoteOpenSubtask`).
-  - **Subtasks aren't full tasks** (decided): a subtask's panel has no Subtasks section, and the line under its title reads Team › Sprint › *Parent task* with the parent as a link back. Comments and description stay. To give a subtask its own subtasks, promote it with Make it a task. Board and List share the board column order; Planning orders each section's `taskRecords`. Drag-and-drop replaces this in the React build.
-- **Column order:** Planning is Name · Status · Due date · Assignee · Subteam · Type, then a Move to column (the button shows only on the hovered/focused row). Dashboard Tasks is the same without Type. List is still Name · Type · Subteam · Assignee · Due date · Status (to revisit on its page). Task names are semibold 13px in Planning and Dashboard Tasks. Subteam cells use the colored tags.
-- **No done-circles anywhere** (circles mean select): tasks and subtasks are marked done by changing Status (task panel, Status column, a per-subtask status menu in the task panel, and inline in List/Backlog subtask rows). Exception: board card subtasks have a square checkbox to the right of the text (Done ↔ To do), since the board has no Status column; done subtasks get strikethrough.
-- **Multi-select in list views** (List, Planning, Coaches' Dashboard Tasks): the row circle **selects** the row and fills like a radio button. Shift-click selects a range; Esc or Clear deselects; switching tabs clears. A floating bulk bar appears at the bottom:
-  - Planning: Move to · Status · Assign (Move to clears the selection afterward).
-  - List: Status · Assign.
-  - Dashboard: Status only (teams have different rosters).
-  - Assign adds a person to each task (or Unassign). There's no bulk Delete because there's no single-task delete yet.
-  - Subtask rows in List and Backlog are selectable too and can be mixed with tasks (Status · Assign apply to both). Move to appears only when a task is selected; subtasks travel with their parent.
-- **Timeline:**
-  - Grouped by subteam; status shown by bar color plus icon (gray/orange/green = To do/In progress/Done).
-  - Event markers and lines; dense rows (34px).
-  - Sprint boundaries are the only solid lines: each sprint's label in the sprint row is a pill with a 2px solid `--team-ink` left edge, and a matching 2px solid line runs down the chart at every sprint start (plus the last sprint's end). Event days are dashed (competitions purple, work sessions teal, other gray).
-  - Expandable subtask panels for tasks that have dated subtasks.
-  - Opens on the current sprint's first day (`scrollTimelineToSprint`), unless that would push today off-screen. No ‹ Today › buttons; scroll sideways to move.
-  - Bars read: status icon · title · assignee initials (team-color background, no ring, overlapping only 3px so every set of initials is readable) · subtask count. Subtask bars in an expanded panel follow the same rules: placed and sized by their dates, colored by status, long titles run past the end (no due text; dates are in the tooltip). Every title starts at the same spot; a title too long for its bar runs past the bar's right edge instead of being cut off. Text is measured with a canvas, and lane packing leaves room so the overflow never overlaps the next bar (`timelineLabelOverflow` / `timelineLabelDays`).
-  - Bars sit under the sticky subteam column (no stray avatars at the left edge). "No date (N)" only shows when some tasks have no dates.
-- **Task panel:**
-  - Toolbar: Mark complete · Archive · avatar · a larger close ×. Footer: just Close (the "changes save automatically" note is gone). Under the title: Team › Sprint. No "visible to members" banner.
-  - Dates sit on one row: Start → Due (empty shows "Start date" / "Due date").
-  - Multi-assignee picker (chips, type-to-filter; no emails, no invite).
-  - Start and due dates are **picker-only**: a themed calendar popover (with Clear date); due can't be before start. Status, Subteam, Type, Sprint, and each subtask's status are themed menus. No native selects or date inputs in the panel.
-- **Editing in task tables and cards (all views except Timeline):**
-  - **Titles rename in place**: click the title, then Enter or click away to save, Esc to cancel (`editableTitle`). An **Open** button appears on hover (always shown on touch) and opens the side panel; in List it sits at the far right of the name cell. In Planning, task rows show **+ Subtask** and **Open** on hover at the right end of the name cell, over the cut-off end of the title (rows never change height); + Subtask opens the inline subtask row, right under the task if it has none yet. This covers List, Planning, Board / My Tasks cards, the Coaches' Dashboard, and subtask rows.
-  - Other cells open themed popovers anchored to the cell, so column widths never shift: choice menus with the same chips as the table (`openFieldMenu` → `openChoiceMenu`), a calendar for due dates with the task's sprint shaded (`openCalendar`, shared with sprint dates), and an assignee popover.
-  - New-task rows use the same themed controls (`makeFieldControl` returns buttons with `.value` that fire input/change). Add / Cancel sit at the right end of the name cell (Enter adds, Esc cancels). Type starts as "Task". Status and Subteam show just their chips (box on hover).
-  - **Inline subtasks (List):** "+ Add subtask" opens a new-subtask row in place, lined up with the subtask circles; subteam defaults to the parent's. Enter adds the subtask and closes the row; Esc or Cancel closes it (`createSubtaskDraftRow`). Planning works the same way (`createBacklogSubtaskDraftRow`). In both views, new-task and new-subtask name boxes start under the circles of the rows above.
-  - **Subteam is multi-select** everywhere (cells, new-task rows, side panel): tick several in the menu, click away to save, Esc cancels. Cells and cards show every tag. The subteam filter matches any of a task's subteams. Timeline puts a task in its first subteam's group, with a "No subteam" group for tasks without one. Renaming or deleting a subteam updates each task's list.
-- **Task types:** Task · Learning · Idea can be picked. **GitHub issue** isn't in the menus (only the planned integration creates it); it displays as the GitHub mark + "Issue" (`typeNode`), and a GitHub issue's type is **locked**: its Type cell (List, Planning) doesn't open a menu and the panel's Type field is disabled, with a "Set by GitHub" tooltip (`isTypeLocked`). Samples: "Intake motor stalls at full power" (Sprint 3 board) and "Auto drifts left after the third sample" (Backlog).
-  - Tiptap description; subtasks; comments.
-- **Goals tab (team):**
-  - Students see "My goal" plus team goal cards. Teammates see only the statement and status (no check-in dates; only mentors and coaches also see "Checked in …". Team leads don't, because they can't read the private goal doc).
-  - **My goal card** (student view, `renderMyGoalCard`; coach views still use `goalCardBody`):
-    - Check-in / date-passed banner on top; then the goal title with its status chip, and a **⋯** menu (Check in when one isn't already due, Edit goal, Pause goal).
-    - Date line: "By Qualifier 2 · Nov 8 (in 30 days) · Last check-in Sep 15".
-    - **My plan** (🔒 only you and your coaches): three blocks, Done when · What might get in the way · My if-then plan.
-    - A **History** heading (same style as My plan; shown once there's any history) separates the plan from what follows.
-    - Latest: the last check-in and the last coach feedback (with Reply; "New" if unread), oldest first so the feedback reads as a reply, dates in their header lines. Everything else is behind **Show full history (N)**.
-    - With several active goals, each is its own card; only the first that needs attention (check-in due, date passed, new feedback) starts open, and the others show title, status, a flag, and the date line. **Paused goals (N)** is a collapsed row below the cards.
-  - Adults see the team cards plus a pointer to the Coaches' Dashboard, which is where review happens.
-- **Goal design (research-based: WOOP / mental contrasting, implementation intentions, learning goals):**
-  - **Setup steps:** intro → learn (the user's 7 ideas) → evidence (the user's 3 ideas) → by when → obstacle → if-then plan (pre-filled from the obstacle) → first step (fill-in-the-blank starters; blanks must be filled; becomes a Learning task in the current sprint) → review. "Your team will see" shows the statement and status only.
-  - **Edit** opens on the review screen.
-  - Goals read as written, verb-first, e.g. "Learn Java for FTC".
-  - **Status scale:** Haven't started · Stuck · Making progress · Almost there · Got it. Avoid "Not yet": it's the school's lowest grade.
-  - **Multiple goals:** up to 3 active at once (`maxActiveGoals`). "＋ New goal" on My goal; the wizard intro says "Add another goal" when one exists. Each goal gets its own check-in, Edit, and Pause.
-  - **Pause:** tap-only reasons (no free text). Paused goals skip check-ins, are hidden from teammates, and sit in a **Paused goals** container under My goal with Resume. Coaches see them in student detail and as a "Goal paused" dashboard flag/filter.
-  - **Date passed:** when an active goal's "by" date is past → Keep going (wizard opens on the By step) · I got it (reflection) · Change my goal (new goal; old one becomes "Changed" in history) · Pause it. Dashboard flag/filter "Date passed".
-  - **Pop-up cleanup (app, decided):** arrival pop-ups have no "Your goal" eyebrow and use one plain sentence per goal instead of bullets ("Your Sprint 2 check-in is due. It takes about a minute. A coach also commented on this goal."); "about 5 minutes" is said only on the wizard intro (its 6-step list stays). A passed date with nothing else due opens the date-passed choices directly (no "Decide now" step; its Later snoozes like the reminder). Wizard: "Your goal will read" shows only once there's text; no "Example:" lines (the placeholder already shows one); By when lists only sprint ends, competitions, and Pick a date (which opens the calendar right on that row, then shows the picked date there); first-step lead is "This task will be added to your team board."; the review's team card has the title with its own Edit (no "My goal" row) and no status chip for a new goal. Check-in: answers are indented under the first letter of each numbered question (`.question-number`); no "Your finished tasks in…" label and no "From your goal" chip; the plan shows in italics; the rewrite note is gray, not orange; no next-step suggestion chips (so no fill-in-the-blank check either). The wizard intro puts "It takes about 5 minutes…" in its own paragraph after the "already working on…" or "will move to your history" line. Idea lists say "Onshape" and "Use the shop tools safely" (no school-specific names). The wizard's answer boxes have no example placeholder text (only the if-then step keeps its "If ___, then I will ___" shape), and tips are generic: the intro tip is “Learn to explain my design choices” beats “Win our next competition”; coach prompts say "the next meeting", not "build night".
-  - **Arrival pop-up** covers every active goal: no goal (or only paused goals → Resume / Set a new goal), due check-ins, passed dates, new feedback. "Start (N steps)" runs them in a queue (`goalQueue`; date decisions before check-ins; Cancel drops the rest).
-  - **Check-in each sprint**, by pop-up on arrival when due (or when there's new feedback, or the student has no goal):
-    1. Status.
-    2. Evidence = finished tasks *in the covered sprint*; tasks from this goal are listed first and pre-ticked (no "From your goal" chip).
-    3. Did the plan work? If not, rewrite it.
-    4. Next steps: multiple rows, each with a current/next sprint picker; each becomes a Learning task linked to the goal.
-  - **"Got it"** → reflection questions → goal history → offer to set the next goal.
-  - **Timeline per goal** with coach feedback and student replies, visible to the student and the team's coaches.
-  - **My goal history:** grouped by season; goals follow students across teams.
-- **Roles and permissions:**
-  - **Student / Team lead:** leads can edit subteam assignments, and (decided) their team's name, number, color, subteams, and GitHub settings in Team Settings. Members (adding people by email, roles, removing) and permanently deleting archived tasks stay with mentors and coaches.
-  - **Team mentor:** team-scoped adult; only the team(s) they're assigned to (`mentorTeams()`, from team rosters). **No Coaches' Dashboard** (so no program settings). Keeps full access to their team's Settings tab (team look, members, CSV import, subteams). Reviews goals in the team **Goals tab**: student cards show warn/alert flags and open the student detail (timeline, feedback composer) in place. Can't see comments written by other teams' coaches on a student's earlier goals.
-  - **Program coach:** org-wide. Sees everything; can post program-wide announcements and events.
-  - Anyone can post an announcement to their own team.
-- **Huddle** (adults only): the coaches' and mentors' daily status and session plan.
-  - Program coaches post from **Coaches' Dashboard → Huddle** (first tab): session date (picker), "Where things stand" (Tiptap), a timed plan (time · what · who: a multi-select of All teams (exclusive) / Coaches & mentors / any teams, shown as one chip each; stored as `teams` arrays; "Copy plan from <last huddle>"), and optional "Heads-ups and needs" (Tiptap). Rich fields store `statusHtml`/`notesHtml` (editor-serialized) plus plain-text `status`/`notes`. Hint warns to keep student health, family, and discipline details out.
-  - Posting "emails" every coach and mentor (mocked as a toast; pending the approved email method) and shows a **sign-in pop-up** with the newest unread huddle (Later = this browser session · See all huddles · Got it).
-  - **Huddle** top-bar button (adults; unread count) opens the dashboard tab for program coaches, or a read-only Huddle page for mentors. Opening the page marks all read. Cards show "seen by N of M" (adults across team rosters).
-  - **App changes (decided):** the composer's first field is **Date**; "Where things stand" hints "How things are going, what's coming up…". Plan rows are time · what · **Run by** (optional coach or mentor; stored as `runBy`, shown after the text in the feed as "· Ms. Patel") · who, in a shared `PlanRowsEditor`. **Import default** and **Copy plan from <date>** are small buttons above the rows. **Program settings → Default huddle plan** edits the program's `huddlePlan` with the same rows (Save/Cancel appear once changed; Reset when it's been set); until then it's the built-in plan (`src/model/huddles.ts`: the Oct 10 sample, every row All teams). **Edit** (program coaches; beside Collapse and Delete on an open huddle) reopens the composer in place, filled in, with Save changes (`writes.updateHuddle`): it sets `editedAt` (the card's meta shows "· Edited") and doesn't re-notify anyone. **@ mentions** in both huddle text boxes and in Quick notes (`src/ui/mentions.ts`, Tiptap's Mention extension bundled from npm): @ opens a search of teams, coaches and mentors, and students (up to 8; names starting with the query first; arrows, Enter/Tab, Esc closes only the menu). The pick replaces the "@…" with a chip: teams in their color, students in their team's tint, coaches and mentors gray. Every editor and `RichText` has the node, so saved mentions render anywhere; team colors pass through `teamColorOf`, so stored HTML can't inject CSS.
-  - **Quick note** (button "＋ Quick note" beside "＋ New huddle"; program coaches): a Tiptap message, no length cap (stores `textHtml` plus plain `text`; Cmd/Ctrl+Enter sends; Esc cancels). Same email and sign-in pop-up as a huddle; shown in the feed as a slim "Quick note" card. The pop-up lists every unread item (newest first, up to 3; "Got it" marks those read).
-  - Data: `huddles` (`readBy` is a Set; quick notes have `kind: "note"` and `text`). Sample: yesterday's (read by Ms. Patel) and today's (unread for her).
-- **Coaches' Dashboard** (program coaches only; from the ⌄ menu; dark "All" badge):
-  - Tabs: Huddle · **Announcements** · Tasks · Goals · ⚙ Settings. Announcements reuses the announcements page (`openAnnouncements()`): in the dashboard it hides "← Back to team board", its eyebrow reads "Coaches' Dashboard · All teams", and new posts default to all teams. **Send to** in the composer is the same team picker as Add person (`teamChecklist` with `options`): program coaches pick any teams (All teams = program-wide), mentors pick among their teams ("All my teams"), students get their own team. Every post shows its audience beside the title: one team-color chip per team, or the dark "All teams" pill (`audienceChips`). **Visibility** (`visibleAnnouncements()`): the dashboard sees every post; a team view (list, banner, unread count) sees only its team's and program-wide posts. Samples: two Circuit Breakers posts, one program-wide, one Gear Grinders post from Mr. Okafor. The page has no subtitle, and no eyebrow on the dashboard. The top-bar Announcements button opens this tab while on the dashboard.
-  - **Tasks** (tab was "All tasks"): grouped by team; sprint filter (Previous / Current / Next / All Tasks), relative to each team's own sprints. The status filter is multi-select (`mountMultiFilter`, a reusable checklist dropdown; nothing or everything ticked = "Any status"). Columns: Name (semibold 13px) · Status · Due date · Assignee · Subteam; rows keep each team's own order; whitespace (no rule) between team groups. Subtasks are collapsed by default: a ▸ toggle plus a "done/total ☷" count beside the name (either expands); expanded subtask rows show status, due, assignee, subteam, open their own detail panel, and are selectable for bulk Status. Sample subtasks: Gear Grinders "Rebuild lift string routing", Pixel Pilots "Vision pipeline for samples".
-- **Icons:** the Settings gear is Lucide's `settings` icon (lucide-static v1.53.0, ISC license; credited in an HTML comment).
-  - **Goals:** grouped by team, one row per active goal (student name on the first). Columns: Student · Goal (both semibold 13px) · Status · Last check-in · **Needs**. A **Needs attention / Everyone** toggle (default Needs attention) replaces the old status and attention dropdowns; plus team filter and search. Students who need something sort first; group headers say only "N need you"; whitespace (no rule) between teams.
-    - Needs (`coachNeeds()`, most urgent first, max 2 chips + "+N"): Check-in overdue · Date passed · Needs feedback (merges "no coach feedback yet", "new goal", and "check-in needs a response") · No goal yet · Goal paused. "Stuck" isn't repeated (Status shows it) but still counts as needing attention. No "On track" chips: blank means fine. Mentors' team Goals cards use the same wording.
-- **Archive (instead of delete):**
-  - **Archive** button in the task panel toolbar (hidden while creating a task), plus Archive in the bulk bar. Works on board cards, Planning tasks, the other teams' dashboard tasks, and subtasks.
-  - Archived tasks vanish from every view (Board, List, Timeline, Planning, dashboard) but keep their subtasks and comments. The toast offers **Undo** (6 seconds); restoring puts a task back at its old position.
-  - **Settings → Archived tasks** lists them (subteam tag, title, type, where it was, who archived it and when) with **Restore** for anyone and **Delete** (permanent, with a confirm row) for mentors and coaches only.
-  - Archived tasks still follow roster and subteam changes (`eachTaskRecord` includes them). Store: `archivedTasks` (entries hold the record, kind, origin and index). In Firestore this becomes an `archived` flag plus `archivedBy/archivedAt`, with rules that keep hard delete to adults.
-- **Program settings** (Coaches' Dashboard → gear tab; **program coaches only**: hidden for mentors, who use their team's Settings):
-  - **Seasons** (first section): current and past seasons (`seasons`, `currentSeasonId`) with dates (always with the year, `seasonDate`) and team counts; the current season's dates open the shared calendar. **Start a new season…** opens a 5-step pop-up (`openNewSeason`): Season (name, start, end; defaults are next year's dates) → Teams (which carry over; the live team always does) → People (per person: Keep / Remove from team / Remove from program, grouped by team, with "Set everyone…" per group; people only on teams not carried over default to Remove from team, and people with no team get Keep / Remove from program) → Tasks (unfinished tasks to Backlog, or archive) → Review. Start (`startSeason`) applies it all; in the mock-up the live team keeps its sample sprints. Teams not carried over move to `inactiveTeams`, listed under Teams → **Not in this season (N)** with "Add to <season>". Sample: Rust Buckets (FTC 5512, 2025–26 only); Iron Owls is new in 2026–27. Goal history groups by these seasons (`seasonOf` uses `seasonForDate`).
-  - **Teams:** list (badge, FTC number, sprint length, student count, mentors; no warning when a team has no mentor) with Open →, Edit, Delete. **＋ New team**: name, FTC number (unique), sprint length (7/10/14/21 days; Sprint 1 starts today), color, plus a copy of the subteam defaults. Renaming carries through to goals (`renameTeamReferences`, also used by team Settings). Delete has a confirm row: tasks/events/Team Home go; people move to "No team"; students keep their goals. Circuit Breakers (the live team) can't be deleted.
-  - No page subtitle or Teams note (removed as clutter).
-  - **Subteam defaults** (`subteamDefaults`): add, edit, recolor (click the colored tag; no separate dot), delete. Copied into new teams only. Descriptions use sentence case.
-  - **Goal ideas** (app only, after Subteam defaults; decided, so programs that aren't FTC can fit the wizard to themselves): the tappable chips for each set-a-goal step (What to learn · How they'll know they've got it · What might get in the way · If-then plans · First steps, where ___ marks a blank). Each list is a collapsible row (closed on every load; title and "N ideas", like the People groups); open, it shows its hint, chips with × to remove, an "Add an idea…" box (Enter), and Reset when it's been changed. Stored on the program doc as `goalIdeas.<step>` (`writes.setGoalIdeas`; coaches only, by the existing program rule); a missing list falls back to `DEFAULT_GOAL_IDEAS` (`goalIdeasFor`). Up to 12 ideas, 80 characters each. The defaults no longer mention Robotics ("I get distracted").
-  - **People:** everyone in the program, filterable by team ("No team" included) and searchable. Inline role and team selects, Remove (with a confirm row), ＋ Add person (Display name · Email on row 1, Role · Team on row 2; any valid email). The team field follows the role but uses one picker (`teamChecklist`, also in the People rows): radios with "No team" on top for students and leads (closes on pick), checkboxes with "All teams" on top for mentors, a fixed "All teams" for program coaches. Changing team takes the person off the old team's tasks and resets their subteams; goals follow the student. Program coaches show "All teams". You can't change your own role or remove yourself. The note is just "32 people · N without a team". People are grouped into collapsible sections (`collapsedPeopleGroups`): Program coaches, each team (mentors first; a multi-team mentor appears under each), then No team; search opens every group and the team filter shows one group. Role and team read as plain text until the row is hovered or focused, then show as dropdowns (`personRow`).
-  - Data: every `orgTeams` entry has a `roster` (live team: `teamRoster`; sample teams get one built from their names, plus a sample mentor; Iron Owls has none). `team.members` is now a getter for student/lead names. `unassignedPeople` holds people without a team.
-  - **Import CSV** (in People; moved here from team Settings): five columns Name · Email · Role · Subteams · Team (Team last and optional: name or FTC number, so a 4-column team file still works), header row optional, example + template download. A "Team for rows without one" picker defaults to the People filter's team. Only those columns are read; extras (e.g. phone) are dropped. Full last names are shortened to an initial. The preview marks rows ready or skipped (invalid email, already in the program, listed twice, unknown role or team). `openMemberImport({ program })`; the team mode is kept but unused.
-  - **Mentors can be on several teams:** their team cell is a checklist with team-color dots and an **All teams** option at the top (ticks every current team; a team created later doesn't add them automatically). Changes apply when the menu closes. The same member object sits in each team's roster; `programPeople()` dedupes and `setMentorTeams()` joins/leaves (leaving takes them off that team's tasks). Changing a mentor to another role keeps only their first team. Mentors on 2+ teams get the ⌄ switcher.
-- **Settings:**
-  - Team name, FTC number, and color (program coach / mentors only). Team icon upload was dropped (decided); badges are always the colored number block. Color: the preset swatches, then the team's custom color as its own selectable swatch (once there is one), then a rainbow button that opens the native color picker. Picking updates the custom swatch live and selects it; choosing a preset keeps the custom swatch so you can switch back. Custom colors are stored as `#rrggbb`, and `teamColorOf()` picks readable badge text and drives every team tint. The same controls are in Program settings' team form (`customTeamColorControls`).
-  - Members (name, role, subteams; no emails shown; adding someone requires an email, any valid address).
-  - **Who can edit (app):** people who can't change a section see a small gray 🔒 note at the right of its header, where the action button would be (`.edit-note` in `settings.css`): Members "Mentors and coaches can change this" (leads: "…add members and change roles"), Subteams and GitHub "Team leads, mentors, and coaches can change this", Archived tasks "Mentors and coaches can delete". The Members header has no note text, and Subteams has no subtitle.
-  - Subteams (rename, recolor, delete with reassignment).
-  - **GitHub** (mentors/coaches edit; others see the linked repo): connect the code team's repo (`owner/repo` or a github.com URL; stored on `teamProfile.github`), plus two options: add new issues to the Backlog, and mark the task Done when its issue is closed (reopen → To do). Nothing syncs in the mock-up. Every sample team starts with a made-up repo (`example-robotics/<team-name>-<number>`, e.g. `example-robotics/circuit-breakers-418`); teams created in Program settings start unconnected. Defaults (also the program's `subteamDefaults`): Mechanical (red; design, CAD, fabrication, maintenance), Software (green; tele-op, autonomous, wiring), Outreach (purple; Reach and Connect), Competition Ops (blue; pit, judge's interview, scouting, packing, logistics), Drive Team (teal; driving, strategy, alliance coordination).
-- **Theming:** light blues are replaced by team-color shades (`--team-soft/softer/line/ink/wash`, computed in `applyTeamAccent()`). Links, the timeline's today line, and solid Save buttons stay blue.
+| Account | Shows |
+|---|---|
+| `avery.k@example.edu` | A student whose sprint check-in is due (the check-in pop-up appears) |
+| `mina.l@example.edu` | A student with no goal yet |
+| `jordan.m@example.edu` | A team lead whose goal date has passed |
+| `ms.patel@example.edu` | A mentor |
+| `coach.rivera@example.edu` | A program coach (lands on Coaches' Dashboard → Huddle) |
+| `okafor.volunteer@gmail.com` / `switchback-demo` | An outside mentor who signs in with a password |
 
-## User preferences learned in this project
+Emulators: Auth 9099, Firestore 8080, Hosting 5000, UI 4000; project `demo-switchback`; data kept in
+`.emulator-data/`. `npm run dev` alone runs the app in `--mode emulator` (`.env.emulator`, committed, no secrets).
+"Port taken" on start usually means an emulator from an earlier run is still alive.
 
-- Keep things **dense** for planning views (12px text, tight rows), and avoid repeated headers and unnecessary whitespace or placeholder text.
-- Dates are chosen with a picker, never typed.
-- No emails displayed in member lists.
-- Don't use "Not yet" as a status label.
-- When the user asks for UI tweaks, make them directly. Explain trade-offs only when a request conflicts with the brief's privacy rules.
+## Checks
 
-## Testing approach used
+Run what CI runs (`.github/workflows/ci.yml`: three jobs, all on emulators, no secrets) before calling work done:
 
-Tests are ad-hoc scripts injected before `</body>` into a scratch copy of `mockup/index.html`. Each is run with headless Chrome (`--dump-dom`, results written into a `<pre id="results">`) under a `perl -e 'alarm N'` timeout, because headless Chrome sometimes hangs. These scripts are not in the repo. Before testing, extract the main `<script>` and run `node --check` on it; a syntax error stops every function from loading, and tests then fail in confusing ways ("selectTeam is not defined"). Many older ones assumed Program coach as the default role and now need `setDemoRole(...)` first.
-“When testing in Chrome, always launch it headless with --no-first-run --no-default-browser-check.”
-**Production app tests:** `npm run test:unit` (Vitest), `npm run test:rules`, and `npm run test:e2e` (Playwright, Chromium only, headless; `sign-in.spec.ts` needs `npm start` + `npm run seed:demo` and uses the password account; `components.spec.ts` needs only the dev server). For Google flows, script the Auth emulator's pop-up, but note it loads its scripts from a CDN and sometimes ignores clicks or hangs: retry the click until the pop-up closes, and reopen it if it hangs. Gotchas from step 7: `waitForURL(/list$/)` also matches `/sign-in?next=…/list`, so anchor URL patterns; the huddle sign-in pop-up appears once data loads (and again after a full reload), so dismiss it after each navigation. Invites can be written for tests with the Firestore emulator REST API and `Authorization: Bearer owner`; verification links come from `http://127.0.0.1:9099/emulator/v1/projects/demo-switchback/oobCodes`.
+```sh
+npx prettier --check src e2e tests scripts   # npm run format fixes
+npm run lint                                 # oxlint + eslint (these --fix locally)
+npm run type-check
+npm run test:unit -- --run                   # Vitest
+npm run test:rules                           # starts its own emulator; test:rules:live uses the one from npm start
+npm run test:e2e                             # Playwright, Chromium; needs npm start and npm run seed:demo
+npm run build
+npm run build:email                          # only if scripts/email or scripts/github changed
+```
 
-Those flags alone didn't stop the macOS prompt, so tests don't launch the installed Google Chrome at all: run `~/.cache/chrome-for-testing/headless-chrome.sh [--timeout=SECONDS] <chrome args>` (e.g. `--dump-dom file://…`, or `--screenshot=… --window-size=…`). It uses Chrome for Testing's `chrome-headless-shell` (headless-only, not registered as a browser) with those flags, a throwaway profile, and the hang timeout. If it's missing: `npx -y @puppeteer/browsers install chrome-headless-shell@stable --path ~/.cache/chrome-for-testing`.
+- Rules tests use their own project id (`demo-switchback-rules`), so they never clear the demo data. Files run one
+  at a time; `tests/rules/setup.ts` seeds a small program with a person for each role and sign-in method.
+- `tests/rules/queries.test.ts` runs the app's own queries and writes as each role. A new query or write belongs
+  there too: a query the rules refuse fails silently in the app as an empty list.
+- e2e gotchas: anchor URL patterns (`/list$` also matches `/sign-in?next=…/list`); the huddle pop-up appears once
+  data loads and again after a full reload, so dismiss it after each navigation; the Auth emulator's Google pop-up
+  loads from a CDN and sometimes ignores clicks, so retry until it closes.
+- For a one-off visual check, a throwaway Playwright script against the dev server is the normal tool. Touch tests
+  send real touch events through the DevTools protocol and fake an iPhone by user agent (SortableJS decides by it).
 
-## Open items / next steps
+## Where things live
 
-### In progress: page-by-page UI cleanup ("get rid of clutter")
+```
+src/
+  firebase.ts     the only place that connects to Firebase
+  model/          plain logic and types; no Vue, no Firebase; unit-tested (types, dates, sprints, rank, subtasks,
+                  goals, huddles, csv, signIn, slug)
+  data/           the only code that touches Firestore: refs, queries, writes, admin (multi-document changes), live
+  stores/         Pinia: session, taskPanel, taskFilters, goalFlow, toast
+  composables/    useTeamData, useTaskView, useTaskEdits, useSelection, useGoals, useGoalActions, useInbox, …
+  router/         index.ts (routes, scrollBehavior), access.ts (decide(): the guard, a pure tested function), tabs.ts
+  ui/             screen helpers: format, teamColor, dragSort, timeline, mentions, calendar
+  components/     ui/ (shared controls), tasks/, goals/, huddle/, home/, settings/, program/, dashboard/,
+                  AppShell, TopBar, TaskPanel
+  views/          team/ (one per team tab), dashboard/ (one per dashboard tab), SignIn, Announcements, Huddle,
+                  dev/ComponentsView (a gallery at /dev/components, dev server only)
+  styles/         base.css (tokens, shared controls), tables.css, goals.css
+firestore.rules   who can read and write what
+scripts/          setup.ts, seed-demo.ts + demo/data.ts, lib/, email/, github/
+tests/rules/      security-rule tests        e2e/   browser tests        docs/   guides
+mockup/index.html the original clickable design (see "The mock-up")
+```
 
-The user is reviewing the app one page at a time. Follow this loop and **don't move to the next page until the user agrees to move on**:
+### How the pieces fit
 
-1. Take a screenshot of the page with the headless wrapper (see Testing) and look at it.
-2. Reply with a short, **numbered** list of clutter candidates. Each item says what it is, why it's clutter, and what you'd do. Mark anything you'd keep as such.
-3. The user answers per number ("1 yes, 2 no, 4a yes…") and often adds requests mid-turn. Make only what they approved, plus their additions.
-4. Run `node --check` on the main script (a missing comma once broke the whole page), run a headless test of the change, and look at a fresh screenshot.
-5. Report what changed and anything you noticed or fixed along the way. Ask "Anything else on this page?" and name the next page.
-6. Update CLAUDE.md as you go.
+- **Everything is under `programs/{programId}`.** People are invited by email (`invites/{email}`) and the invite is
+  claimed at first sign-in, which creates the member doc. Display names come from the invite, never from Google.
+  After that, emails live only in Firebase Authentication, not Firestore.
+- **Session** (`stores/session.ts`): phases `starting → signedOut | verifyEmail → joining → ready | noAccess |
+  failed`. It refuses the wrong kind of account up front (a Google account off the program's domains, or a password
+  on them). Signing out clears Firestore's local cache and reloads, so shared Chromebooks keep nothing.
+- **Sign-in methods** are per program (`program.config.json`): Google restricted to the program's domains, email and
+  password (optionally limited by role), or both. `src/model/signIn.ts` is shared with `scripts/lib/config.ts` and
+  mirrored in the rules. `programs/{p}/public/signIn` is the one publicly readable doc, so the sign-in page can show
+  the right buttons.
+- **Data layer**: `createRefs` / `createQueries` / `createWrites` take a Firestore instance, so tests can run them as
+  any role; `data/index.ts` binds them for the app. `useLiveQuery(() => query | null)` returns `{ data, loading,
+  error, fromCache }` and re-subscribes only when the query really changes. **Writes resolve only when the server
+  confirms** (offline they wait), so screens never `await` one before updating; they `.catch` and show a toast.
+- **Team data**: `AppShell` provides `createTeamData(teamId)` (`useTeam()`): the team, sprints, every unarchived task
+  in one listener, the roster, and `can.*` permissions. The task panel and each dashboard group create their own.
+- **Order is `rank`**, a fractional index (`model/rank.ts`); moving a task changes only its own rank. Sort is rank,
+  then id. **Subtasks are an ordered list inside the task document**, so any subtask change saves the whole list.
+- **Dates are plain `"YYYY-MM-DD"` text** (`model/dates.ts`). Don't introduce `Date` arithmetic in views.
+- **Scripts** use the Admin SDK and bypass the rules. `npm run setup` (`--emulator`, `--project`, `--config`,
+  `--dry-run`) is idempotent and lists every config problem in plain words. Running it against a real project is the
+  maintainer's job, not an agent's.
 
-**Order and status** (preview role for team pages: Student, the default):
-- Done: 1 Huddle · 2 Dashboard Tasks · 3 Dashboard Goals · 4 Program settings · Dashboard Announcements · 5 Team Home · 6 Planning (wrapping up; confirm before moving on).
-- Next: 7 My Tasks · 8 Board · 9 List (apply the agreed column order: Name · Status · Due date · Assignee · Subteam · Type; semibold 13px names) · 10 Timeline · 11 Team Goals (coach/mentor view, then student) · 12 Team Settings · 13 Announcements (team view) · 14 student pop-ups (goal check-in, set a goal, date passed; first pass done in the app, see Goal design).
+## Product decisions
 
-**Patterns the user has approved (apply them to later pages):**
-- Whitespace separates groups; no extra rules or lines between them. Keep headers vertically centered between any lines that remain.
-- No subtitles or eyebrows that restate the tab or page name.
-- Don't show a chip for the default case ("All teams" on events, plan rows, and similar); show chips only for exceptions.
-- Task, student, and goal names: semibold 13px, near-black.
-- Hide repeated per-row controls until hover or focus (⠿ reorder handle, Move to, role and team dropdowns).
-- Team-name chips use the team's own color; one team picker everywhere (`teamChecklist`): radios for one team, checkboxes plus All teams for several.
-- Order is priority (no priority field). Sentence case for descriptions.
-- The user often declines collapsing or truncating lists ("keep all sprints shown") and keeps things like the announcement banner as is. Offer these, but don't push.
+These were decided deliberately. Don't undo one as a side effect of something else.
 
-### Other open items
+**Roles.** Student · Team lead · Mentor (team-scoped adult; may be on several teams; no Coaches' Dashboard) · Program
+coach (everything, across teams). Leads can edit their team's name, number, color, subteams, and GitHub settings, and
+plan sprints. Members, roles, and permanently deleting archived tasks stay with mentors and coaches. Anyone can post
+an announcement to their own team. Where someone can't edit a settings section, a small 🔒 note says who can.
 
+**Tasks.**
+- **Order is priority.** There is no priority field, on purpose.
+- **Status is how things get done.** There are no "done" circles: a circle on a row means *select*. The one exception
+  is the square checkbox on a Board card's subtasks, because the Board has no Status column.
+- **Archive, not delete.** Archive has Undo; Team Settings lists archived tasks with Restore; only adults can delete
+  for good.
+- **Subtasks aren't full tasks**: no subtasks of their own, and they never move to another task. "Make it a task"
+  promotes one (its comments stay on the parent, since moving them would mean deleting other people's comments).
+- Types are Task · Learning · Idea. "GitHub issue" is set only by the sync and is locked.
+- Subteam is multi-select everywhere. Dates are chosen with a picker, never typed.
+- **My Tasks is deliberately the simplest view**: the current sprint, yours, no filters.
+- Column order in tables: Name · Status · Due date · Assignee · Subteam · Type.
 
-- **Goals:** reminders for coaches (email/notification; needs the approved email method).
-- **Data:** the Firestore data model is designed in `docs/data-model.md`, with security rules in `firestore.rules` (tested; see Repo layout). Key decisions: everything under `programs/{programId}`; invites keyed by email and claimed at first sign-in; subtasks embedded in task docs; `rank` (fractional index) for order; goals split into `goalSummaries` (statement + status, team-readable) and private `goals` + `events`; IDs instead of names everywhere. Open questions are listed at the end of the doc.
-- **Production stack (decided):** Vue 3 + Vite + TypeScript, a single-page app on Firebase Hosting (Spark), using the Firebase SDK directly through our own small data layer (`useLiveQuery`; VueFire optional later, as it lags Firebase SDK versions).
-- **GitHub integration:** built as an Apps Script poller (see Repo layout). GitHub's terms require users to be 13+, so under-13 students can't have accounts; that's why the sync copies no authors or assignees, and tasks are assigned in the app. Still to check with admin: whether a school GitHub org is approved. Possible later: closing the issue from the app (two-way), which needs a token that can write.
-- **Not built yet:** 
-  - drag-and-drop in the mock-up (the app has it; keep Move to and the tap menus for touch and keyboard).
+**Views.**
+- Progressive disclosure: students get the simple views; Planning and Timeline are for leads and adults.
+- **Timeline**: one task per row in Planning's order, under subteam header rows (a toolbar checkbox turns grouping
+  off). Sprint boundaries are the only solid lines. A "Later" column appears when a task starts off-screen. Bars drag
+  to move or resize with a mouse or pen; touch scrolls instead.
+- **Phones**: except in Planning, Board, List, and Timeline, nothing scrolls sideways, neither the page nor a box in
+  it. In portrait at 680px and under, the Planning and Timeline tabs are hidden (the pages still open by link) and
+  tables show the name and Status before any swipe.
+- **Announcement banner** shows every unread post in full; "Mark read" is how one goes away.
+
+**Goals** (based on WOOP and implementation intentions).
+- Wizard: what to learn → how you'll know → by when → obstacle → if-then plan → first step (becomes a Learning task)
+  → review. Up to 3 active goals.
+- Status scale: Haven't started · Stuck · Making progress · Almost there · Got it. **Never "Not yet"** as a label.
+- A check-in each sprint, by pop-up on arrival; "Later" is remembered for the browser tab only. Pause uses tap-only
+  reasons (no free text). A passed date offers Keep going · I got it · Change my goal · Pause it.
+- The idea chips in the wizard are editable per program (Program settings → Goal ideas), so non-robotics programs can
+  fit it to themselves. Keep built-in wording generic.
+- Coaches see a "Needs" column (Check-in overdue · Date passed · Needs feedback · No goal yet · Goal paused). Blank
+  means fine; there are no "On track" chips.
+
+**Huddle** (adults only): a dated status, a timed plan (time · what · run by · who), and quick notes, with @ mentions.
+Editing a posted huddle doesn't notify anyone again. The composer warns to keep student health, family, and
+discipline details out.
+
+**Optional background jobs** (one Google Apps Script, bundled by `npm run build:email` into `dist-email/Code.gs`;
+written in TypeScript here so they can be tested; all IO is synchronous, like Apps Script's):
+- **Email** (`scripts/email/`, `docs/email.md`): a post writes `outbox/{kind}-{sourceId}` in the same batch (no
+  addresses, no text). The sender claims each item with an "only if unchanged" commit, reads addresses from Firebase
+  Authentication, blind-copies, and sends plain text. Students are emailed only with `INCLUDE_STUDENTS=true`. It
+  can't deliver when the organization's mail isn't hosted by Google (DMARC); the doc opens with that check.
+- **GitHub sync** (`scripts/github/`, `docs/github.md`): one way, GitHub → Switchback. Copies title (cut to the
+  rules' 90-character limit), number, link, state, and the description as plain text. Never authors, assignees,
+  labels, or comments: GitHub requires users to be 13+, and no profiles should reach the database.
+- The app offers either feature only after its `install` function has switched it on in the program doc.
+
+**Not built:** reminders for coaches. **On hold:** team chat (privacy concerns, and students default to their own
+chat apps anyway).
+
+## Design preferences
+
+The maintainer's taste, learned over many rounds. Apply it without being asked.
+
+- **Less on the screen.** No subtitles or eyebrows that restate the page name, no placeholder or example text that
+  isn't needed, no notes explaining the obvious.
+- **Dense planning views**: 12px text, ~29px rows, one pinned column header, fixed column widths.
+- Whitespace separates groups; don't add rules or lines between them.
+- No chip for the default case ("All teams"); chips are for exceptions.
+- Task, student, and goal names are semibold 13px, near-black.
+- Per-row controls (⠿ handle, Move to, role and team dropdowns) stay hidden until hover or focus; on touch they show.
+- Team chips use the team's own color. One team picker everywhere: radios for one team, checkboxes plus "All teams"
+  for several.
+- Sentence case. Plain words in every message a student might read, including errors.
+- Collapsing or truncating a list is often declined ("keep all sprints shown"). Offer it; don't push.
+- UI tweaks are made directly, without a discussion of alternatives, unless one conflicts with the rules at the top.
+
+## Conventions
+
+- **Comments** (students read this code): every file starts with a comment saying what it is for (inside
+  `<script setup>` in `.vue` files). Every function that isn't an obvious one-liner has a comment saying what it does
+  or why, in plain words. Exported things use `/** */`, the rest `//`. When code changes, its comment changes in the
+  same edit.
+- **Shared controls** live in `src/components/ui/` and are shown in the dev gallery (`/dev/components`, tested by
+  `e2e/components.spec.ts`). Use them rather than building a one-off; dates are always picked from `CalendarPopover`, never typed or left to a native date input.
+- **Floating parts** (menus, calendars) are teleported to `<body>` with `position: fixed`, z-index 55: above dialogs
+  (50), below toasts (60). Teleported roots can't use scoped styles, so their CSS is in `base.css`.
+- **Team colors** go through `teamColorOf()` / `teamAccent()`, which set the `--team-*` variables. Stored colors
+  never reach CSS unchecked.
+- Keep docs current: a feature change updates the README's status list or the relevant `docs/` page, and this file
+  if a decision or convention changed.
+- Commit and push only when asked.
+
+## Gotchas already paid for
+
+- A `display: grid` with no column grows to fit a one-line child. Give it `grid-template-columns: minmax(0, 1fr)`.
+- A scoped style doesn't reach another component's root element. Use `:deep(...)`.
+- Dashboard totals computed across child groups must stay plain numbers, or the page re-renders forever.
+- **Drag and drop** (`src/ui/dragSort.ts`, the `v-drag-sort` directive over SortableJS): on drop the DOM is put back
+  and the view saves status or sprint plus a new rank; the live listener redraws. The floating copy must have
+  `transition: none` (a hover transition made it trail the pointer) and must live on `<body>` (`fallbackOnBody`),
+  except table rows, whose copy stays in the table and is sized by `sizeRowCopy`. On iOS SortableJS positions the
+  copy in the page, so the scrolling wrappers are `position: relative` and the page never scrolls sideways during a
+  drag (`scrollFn`). Touch needs a 160ms hold so a swipe still scrolls.
+- The Firestore emulator ignores `currentDocument.updateTime` in a PATCH URL; preconditions go in a `:commit` body.
+- Firebase 13 pins a vulnerable `@grpc/grpc-js`; `package.json` overrides it. `npm audit --omit=dev` must stay clean.
+- Deleting a team archives its tasks first, because the rules only allow deleting archived tasks.
+
+## The mock-up
+
+`mockup/index.html` is the original single-file design, where the UI was worked out before the app existed. The app
+has since moved past it (goal pop-ups, huddles, drag and drop, the Timeline, phone layouts), so **the app is the
+reference now**. Don't port changes back to the mock-up, and don't treat a difference from it as a bug.
